@@ -2,14 +2,25 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Input } from "@/components/ui/input";
+import { Field, SelectField, TextField } from "@/components/builder/fields";
 import { useDraftSync } from "@/hooks/builder/use-draft-sync.hook";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
 import { HEADER_DEFAULTS, HeaderSchema, type HeaderValues } from "./schemas";
 
+const LEVEL_OPTIONS = [
+  { label: "H1", value: "1" },
+  { label: "H2", value: "2" },
+  { label: "H3", value: "3" },
+];
+
 export const HeaderEditor: BlockRenderer = ({ vm, handlers }) => {
-  const { register, handleSubmit, watch } = useForm<HeaderValues>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<HeaderValues>({
     resolver: zodResolver(HeaderSchema),
     defaultValues: {
       ...HEADER_DEFAULTS,
@@ -23,21 +34,15 @@ export const HeaderEditor: BlockRenderer = ({ vm, handlers }) => {
       onSubmit={handleSubmit(() => handlers.onCommitEdit())}
       onCancel={handlers.onCancelEdit}
     >
-      <div className="block space-y-1 text-xs">
-        <span className="font-medium">Level</span>
-        <select
+      <Field label="Level" error={errors.level?.message}>
+        <SelectField
+          options={LEVEL_OPTIONS}
           {...register("level", { valueAsNumber: true })}
-          className="w-full rounded border bg-background px-2 py-1 text-sm"
-        >
-          <option value="1">H1</option>
-          <option value="2">H2</option>
-          <option value="3">H3</option>
-        </select>
-      </div>
-      <div className="block space-y-1 text-xs">
-        <span className="font-medium">Text</span>
-        <Input {...register("text")} placeholder="Heading text" />
-      </div>
+        />
+      </Field>
+      <Field label="Text" error={errors.text?.message}>
+        <TextField {...register("text")} placeholder="Heading text" />
+      </Field>
     </EditorShell>
   );
 };

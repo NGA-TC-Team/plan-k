@@ -4,6 +4,42 @@ import { StubBlock } from "../stub-block";
 import type { BlockRenderer } from "../types";
 import { AgentStepDetail } from "./agent-step";
 import { CardGridDetail } from "./card-grid";
+import {
+  AvatarDetail,
+  BadgeDetail,
+  BannerDetail,
+  BlockquoteDetail,
+  BottomNavDetail,
+  ButtonDetail,
+  CalloutDetail,
+  ChecklistDetail,
+  CodeBlockDetail,
+  CtaSectionDetail,
+  DecisionDetail,
+  DefinitionDetail,
+  DividerDetail,
+  EmptyStateDetail,
+  FabDetail,
+  FigureDetail,
+  FooterDetail,
+  ImageDetail,
+  InputDetail,
+  LinkCardDetail,
+  ListRowDetail,
+  MetricDetail,
+  ModalDetail,
+  PageHeaderDetail,
+  PersonaDetail,
+  RiskDetail,
+  RuleDetail,
+  SheetDetail,
+  SidebarDetail,
+  StatDetail,
+  StatusBarDetail,
+  TableDetail,
+  TabsDetail,
+  UserStoryDetail,
+} from "./extra";
 import { FormDetail } from "./form";
 import { HeaderDetail } from "./header";
 import { HeroDetail } from "./hero";
@@ -13,13 +49,25 @@ import { TextDetail } from "./text";
 
 type ContextRegistry = Partial<Record<BlockKind, BlockRenderer>>;
 
-// Real renderers shipping in commit 3 — every other kind in the registry
-// falls back to StubBlock until a dedicated component lands.
 const realDocs: ContextRegistry = {
   paragraph: TextDetail,
   heading: HeaderDetail,
   "bullet-list": ListDetail,
   "numbered-list": ListDetail,
+  blockquote: BlockquoteDetail,
+  callout: CalloutDetail,
+  "code-block": CodeBlockDetail,
+  checklist: ChecklistDetail,
+  table: TableDetail,
+  rule: RuleDetail,
+  figure: FigureDetail,
+  "link-card": LinkCardDetail,
+  definition: DefinitionDetail,
+  decision: DecisionDetail,
+  persona: PersonaDetail,
+  "user-story": UserStoryDetail,
+  risk: RiskDetail,
+  metric: MetricDetail,
 };
 
 const realApp: ContextRegistry = {
@@ -29,6 +77,27 @@ const realApp: ContextRegistry = {
   "card-grid": CardGridDetail,
   form: FormDetail,
   nav: NavDetail,
+  "page-header": PageHeaderDetail,
+  sidebar: SidebarDetail,
+  footer: FooterDetail,
+  tabs: TabsDetail,
+  modal: ModalDetail,
+  divider: DividerDetail,
+  "cta-section": CtaSectionDetail,
+  image: ImageDetail,
+  stat: StatDetail,
+  avatar: AvatarDetail,
+  badge: BadgeDetail,
+  button: ButtonDetail,
+  input: InputDetail,
+  banner: BannerDetail,
+  "empty-state": EmptyStateDetail,
+  // mobile
+  "status-bar": StatusBarDetail,
+  "bottom-nav": BottomNavDetail,
+  "list-row": ListRowDetail,
+  fab: FabDetail,
+  sheet: SheetDetail,
 };
 
 const realAgent: ContextRegistry = {

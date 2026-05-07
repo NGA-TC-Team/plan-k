@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { inferContextForParent } from "@/builder/decider/structure";
 import { type BlockKindSpec, blockKindsForContext } from "@/builder/defaults";
 import type { BlockKind } from "@/builder/types/entity";
@@ -32,8 +32,12 @@ export function InsertSlot({ parentId, index, variant = "between" }: Props) {
   );
   const platform: "mobile" | "web" = planKind === "mobile" ? "mobile" : "web";
 
+  const specs = useMemo(
+    () => blockKindsForContext(context, platform),
+    [context, platform],
+  );
+
   const grouped = useMemo(() => {
-    const specs = blockKindsForContext(context, platform);
     const byGroup = new Map<string, BlockKindSpec[]>();
     for (const s of specs) {
       const list = byGroup.get(s.group) ?? [];
@@ -41,11 +45,38 @@ export function InsertSlot({ parentId, index, variant = "between" }: Props) {
       byGroup.set(s.group, list);
     }
     return Array.from(byGroup.entries());
-  }, [context, platform]);
+  }, [specs]);
+
+  // Map shortcut letters to specs for fast lookup while the popover is open.
+  const shortcutMap = useMemo(() => {
+    const map = new Map<string, BlockKindSpec>();
+    for (const s of specs) {
+      if (s.shortcut) map.set(s.shortcut.toUpperCase(), s);
+    }
+    return map;
+  }, [specs]);
+
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-focus the popover content when it opens so it can receive keypresses.
+  useEffect(() => {
+    if (open && contentRef.current) {
+      contentRef.current.focus();
+    }
+  }, [open]);
 
   const handlePick = (kind: BlockKind) => {
     insert(kind, index);
     setOpen(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key.length !== 1) return;
+    const spec = shortcutMap.get(e.key.toUpperCase());
+    if (!spec) return;
+    e.preventDefault();
+    handlePick(spec.kind);
   };
 
   return (
@@ -69,26 +100,39 @@ export function InsertSlot({ parentId, index, variant = "between" }: Props) {
           <Plus className="h-3.5 w-3.5" />
         </PopoverTrigger>
         <PopoverContent
-          className="w-72 max-h-[60vh] overflow-y-auto p-1"
+          ref={contentRef}
+          className="w-72 max-h-[60vh] overflow-y-auto p-1 outline-none"
           sideOffset={6}
+          tabIndex={-1}
+          onKeyDown={handleKeyDown}
         >
-          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-            Insert {context} block
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="text-xs font-medium text-muted-foreground">
+              Insert {context} block
+            </div>
+            <div className="text-[10px] text-muted-foreground/70">
+              press a letter
+            </div>
           </div>
-          {grouped.map(([group, specs]) => (
+          {grouped.map(([group, groupSpecs]) => (
             <div key={group} className="mb-1">
               <div className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
                 {group}
               </div>
-              <div className="grid grid-cols-2 gap-0.5">
-                {specs.map((spec) => (
+              <div className="flex flex-col">
+                {groupSpecs.map((spec) => (
                   <button
                     key={spec.kind}
                     type="button"
-                    className="rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
+                    className="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
                     onClick={() => handlePick(spec.kind)}
                   >
-                    {spec.label}
+                    <span>{spec.label}</span>
+                    {spec.shortcut ? (
+                      <kbd className="ml-2 rounded border border-border/60 bg-muted px-1 text-[10px] font-mono text-muted-foreground">
+                        {spec.shortcut}
+                      </kbd>
+                    ) : null}
                   </button>
                 ))}
               </div>

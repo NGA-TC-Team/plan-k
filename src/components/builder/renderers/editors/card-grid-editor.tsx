@@ -3,9 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
+import {
+  Field,
+  NumberField,
+  TextAreaField,
+  TextField,
+} from "@/components/builder/fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useDraftSync } from "@/hooks/builder/use-draft-sync.hook";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
@@ -16,7 +20,13 @@ import {
 } from "./schemas";
 
 export const CardGridEditor: BlockRenderer = ({ vm, handlers }) => {
-  const { register, handleSubmit, control, watch } = useForm<CardGridValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    formState: { errors },
+  } = useForm<CardGridValues>({
     resolver: zodResolver(CardGridSchema),
     defaultValues: {
       ...CARD_GRID_DEFAULTS,
@@ -31,15 +41,13 @@ export const CardGridEditor: BlockRenderer = ({ vm, handlers }) => {
       onSubmit={handleSubmit(() => handlers.onCommitEdit())}
       onCancel={handlers.onCancelEdit}
     >
-      <div className="block space-y-1 text-xs">
-        <span className="font-medium">Columns (1–4)</span>
-        <Input
-          type="number"
+      <Field label="Columns" hint="1–4" error={errors.columns?.message}>
+        <NumberField
           min={1}
           max={4}
           {...register("columns", { valueAsNumber: true })}
         />
-      </div>
+      </Field>
       <div className="space-y-2">
         {fields.map((field, i) => (
           <div key={field.id} className="space-y-1 rounded border p-2">
@@ -54,11 +62,11 @@ export const CardGridEditor: BlockRenderer = ({ vm, handlers }) => {
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-            <Input
+            <TextField
               {...register(`cards.${i}.title` as const)}
               placeholder="Card title"
             />
-            <Textarea
+            <TextAreaField
               rows={2}
               {...register(`cards.${i}.desc` as const)}
               placeholder="Description"

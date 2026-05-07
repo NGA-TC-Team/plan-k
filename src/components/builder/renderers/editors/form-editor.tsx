@@ -2,15 +2,43 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useId } from "react";
+import {
+  type UseFormRegisterReturn,
+  useFieldArray,
+  useForm,
+} from "react-hook-form";
+import {
+  SelectField,
+  type SelectOption,
+  SwitchField,
+  TextField,
+} from "@/components/builder/fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useDraftSync } from "@/hooks/builder/use-draft-sync.hook";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
 import { FORM_DEFAULTS, FormSchema, type FormValues } from "./schemas";
 
-const TYPES = ["text", "email", "password", "number", "tel", "url", "textarea"];
+const TYPE_OPTIONS: SelectOption[] = [
+  "text",
+  "email",
+  "password",
+  "number",
+  "tel",
+  "url",
+  "textarea",
+].map((t) => ({ label: t, value: t }));
+
+function RequiredToggle({ reg }: { reg: UseFormRegisterReturn }) {
+  const id = useId();
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <SwitchField id={id} {...reg} />
+      <label htmlFor={id}>Required</label>
+    </div>
+  );
+}
 
 export const FormEditor: BlockRenderer = ({ vm, handlers }) => {
   const { register, handleSubmit, control, watch } = useForm<FormValues>({
@@ -42,27 +70,15 @@ export const FormEditor: BlockRenderer = ({ vm, handlers }) => {
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-            <Input
+            <TextField
               {...register(`fields.${i}.label` as const)}
               placeholder="Label"
             />
-            <select
+            <SelectField
+              options={TYPE_OPTIONS}
               {...register(`fields.${i}.type` as const)}
-              className="w-full rounded border bg-background px-2 py-1 text-sm"
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                {...register(`fields.${i}.required` as const)}
-              />
-              Required
-            </div>
+            />
+            <RequiredToggle reg={register(`fields.${i}.required` as const)} />
           </div>
         ))}
         <Button

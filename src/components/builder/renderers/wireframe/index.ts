@@ -4,6 +4,28 @@ import { StubBlock } from "../stub-block";
 import type { BlockRenderer } from "../types";
 import { AgentStepWireframe } from "./agent-step";
 import { CardGridWireframe } from "./card-grid";
+import {
+  AvatarWireframe,
+  BadgeWireframe,
+  BannerWireframe,
+  BottomNavWireframe,
+  ButtonWireframe,
+  CtaSectionWireframe,
+  DividerWireframe,
+  EmptyStateWireframe,
+  FabWireframe,
+  FooterWireframe,
+  ImageWireframe,
+  InputWireframe,
+  ListRowWireframe,
+  ModalWireframe,
+  PageHeaderWireframe,
+  SheetWireframe,
+  SidebarWireframe,
+  StatusBarWireframe,
+  StatWireframe,
+  TabsWireframe,
+} from "./extra";
 import { FormWireframe } from "./form";
 import { HeaderWireframe } from "./header";
 import { HeroWireframe } from "./hero";
@@ -27,6 +49,27 @@ const realApp: ContextRegistry = {
   "card-grid": CardGridWireframe,
   form: FormWireframe,
   nav: NavWireframe,
+  "page-header": PageHeaderWireframe,
+  sidebar: SidebarWireframe,
+  footer: FooterWireframe,
+  tabs: TabsWireframe,
+  modal: ModalWireframe,
+  divider: DividerWireframe,
+  "cta-section": CtaSectionWireframe,
+  image: ImageWireframe,
+  stat: StatWireframe,
+  avatar: AvatarWireframe,
+  badge: BadgeWireframe,
+  button: ButtonWireframe,
+  input: InputWireframe,
+  banner: BannerWireframe,
+  "empty-state": EmptyStateWireframe,
+  // mobile
+  "status-bar": StatusBarWireframe,
+  "bottom-nav": BottomNavWireframe,
+  "list-row": ListRowWireframe,
+  fab: FabWireframe,
+  sheet: SheetWireframe,
 };
 
 const realAgent: ContextRegistry = {

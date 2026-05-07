@@ -2,15 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
+import { useId } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
+import { SwitchField, TextField } from "@/components/builder/fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useDraftSync } from "@/hooks/builder/use-draft-sync.hook";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
 import { LIST_DEFAULTS, ListSchema, type ListValues } from "./schemas";
 
 export const ListEditor: BlockRenderer = ({ vm, handlers }) => {
+  const orderedId = useId();
   const { register, handleSubmit, control, watch } = useForm<ListValues>({
     resolver: zodResolver(ListSchema),
     defaultValues: {
@@ -29,14 +31,14 @@ export const ListEditor: BlockRenderer = ({ vm, handlers }) => {
       onSubmit={handleSubmit(() => handlers.onCommitEdit())}
       onCancel={handlers.onCancelEdit}
     >
-      <div className="flex items-center gap-2 text-xs">
-        <input type="checkbox" {...register("ordered")} />
-        <span className="font-medium">Ordered</span>
+      <div className="flex items-center gap-2 text-xs font-medium">
+        <SwitchField id={orderedId} {...register("ordered")} />
+        <label htmlFor={orderedId}>Ordered</label>
       </div>
       <div className="space-y-2">
         {fields.map((field, i) => (
           <div key={field.id} className="flex items-center gap-1">
-            <Input
+            <TextField
               {...register(`items.${i}` as const)}
               placeholder={`Item ${i + 1}`}
             />

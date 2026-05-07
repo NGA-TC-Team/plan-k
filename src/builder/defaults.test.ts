@@ -63,8 +63,16 @@ describe("defaultDataFor", () => {
       ordered: true,
       items: [],
     });
-    expect(defaultDataFor("callout")).toEqual({ variant: "info", text: "" });
-    expect(defaultDataFor("code-block")).toEqual({ language: "ts", code: "" });
+    expect(defaultDataFor("callout")).toEqual({
+      variant: "info",
+      title: "",
+      text: "",
+    });
+    expect(defaultDataFor("code-block")).toEqual({
+      language: "ts",
+      code: "",
+      filename: "",
+    });
     expect(defaultDataFor("rule")).toEqual({});
   });
 

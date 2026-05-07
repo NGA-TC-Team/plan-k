@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
+import { TextField } from "@/components/builder/fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useDraftSync } from "@/hooks/builder/use-draft-sync.hook";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
@@ -40,11 +40,11 @@ export const NavEditor: BlockRenderer = ({ vm, handlers }) => {
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-            <Input
+            <TextField
               {...register(`items.${i}.label` as const)}
               placeholder="Label"
             />
-            <Input
+            <TextField
               {...register(`items.${i}.href` as const)}
               placeholder="/path"
             />

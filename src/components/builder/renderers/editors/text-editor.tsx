@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Textarea } from "@/components/ui/textarea";
+import { TextAreaField } from "@/components/builder/fields";
 import { useDraftSync } from "@/hooks/builder/use-draft-sync.hook";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
@@ -23,7 +23,7 @@ export const TextEditor: BlockRenderer = ({ vm, handlers }) => {
       onSubmit={handleSubmit(() => handlers.onCommitEdit())}
       onCancel={handlers.onCancelEdit}
     >
-      <Textarea
+      <TextAreaField
         rows={8}
         placeholder="Markdown / freeform"
         {...register("markdown")}
