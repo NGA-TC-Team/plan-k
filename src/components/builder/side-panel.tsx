@@ -6,7 +6,7 @@ import {
   useBuilderState,
   useBuilderStateShallow,
 } from "@/hooks/builder/use-builder-store.hook";
-import { editorRenderers } from "./renderers/editors";
+import { pickEditor } from "./renderers/editors";
 
 export function SidePanel() {
   const editingId = useBuilderState((s) =>
@@ -43,14 +43,7 @@ export function SidePanel() {
 function EditorPane({ blockId }: { blockId: string }) {
   const { vm, handlers } = useBlock(blockId);
   if (!vm) return <FallbackMessage>Block missing</FallbackMessage>;
-  const Editor = editorRenderers[vm.kind];
-  if (!Editor) {
-    return (
-      <FallbackMessage>
-        No editor registered for &lt;{vm.kind}&gt;
-      </FallbackMessage>
-    );
-  }
+  const Editor = pickEditor(vm.context, vm.kind);
   return (
     <div className="flex h-full flex-col">
       <Editor vm={vm} handlers={handlers} />

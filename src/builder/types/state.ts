@@ -32,7 +32,10 @@ export type Editing =
       previousValue: unknown;
     };
 
+export const SCHEMA_VERSION = 2;
+
 export type AppState = {
+  schemaVersion?: number;
   projects: Record<string, ProjectMeta>;
   plans: Record<string, PlanShell>;
   blocks: Record<string, BlockEntity>;

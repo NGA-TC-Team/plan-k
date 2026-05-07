@@ -13,11 +13,17 @@ export type BlockKind =
   | "nav"
   | "agent-step";
 
+export type BlockContext = "docs" | "app" | "agent";
+
 export type BlockEntity = {
   id: BlockId;
-  parentId: BlockId | ScreenId;
+  parentId: BlockId | ScreenId | SectionId;
   kind: BlockKind;
   data: Record<string, unknown>;
+  // Optional in commit 1; required after commit 2 lands the section-as-parent
+  // decider tightening. Reducer stamps it on INSERT_BLOCK by inspecting the
+  // parent (sections → docs unless agent-* kind, screens → app, blocks → inherit).
+  context?: BlockContext;
 };
 
 export type ScreenEntity = {

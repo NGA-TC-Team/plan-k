@@ -233,7 +233,8 @@ function BlockPrintNode({
 }): ReactNode {
   const block: BlockEntity | undefined = state.blocks[blockId];
   if (!block) return null;
-  const Renderer = detailRenderers[block.kind];
+  const context = block.context ?? "app";
+  const Renderer = detailRenderers[context]?.[block.kind];
   const childIds = state.children[blockId] ?? [];
   return (
     <div className="space-y-2 break-inside-avoid">
@@ -242,6 +243,7 @@ function BlockPrintNode({
           vm={{
             id: block.id,
             kind: block.kind,
+            context,
             parentId: block.parentId,
             data: block.data,
             isSelected: false,

@@ -5,7 +5,7 @@ import type {
   SectionKind,
 } from "./types/entity";
 import type { OriginId } from "./types/intent";
-import type { AppState } from "./types/state";
+import { type AppState, SCHEMA_VERSION } from "./types/state";
 
 export type SectionSeedSpec = {
   kind: SectionKind;
@@ -175,6 +175,7 @@ export function buildSeedSnapshot(
   }
 
   return {
+    schemaVersion: SCHEMA_VERSION,
     projects: {},
     plans: {
       [planId]: {

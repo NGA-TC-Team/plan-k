@@ -5,12 +5,13 @@ import {
   selectIsPending,
   selectIsSelected,
 } from "./selectors";
-import type { BlockKind } from "./types/entity";
+import type { BlockContext, BlockKind } from "./types/entity";
 import type { AppState } from "./types/state";
 
 export type BlockViewModel = {
   id: string;
   kind: BlockKind;
+  context: BlockContext;
   parentId: string;
   data: Record<string, unknown>;
   isSelected: boolean;
@@ -58,6 +59,7 @@ export function projectBlock(
   return {
     id: block.id,
     kind: block.kind,
+    context: block.context ?? "app",
     parentId: block.parentId,
     data: block.data,
     isSelected: selectIsSelected(state, blockId),

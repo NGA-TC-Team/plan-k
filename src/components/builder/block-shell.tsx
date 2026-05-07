@@ -11,7 +11,7 @@ export function BlockShell({ blockId }: { blockId: string }) {
   const reduceMotion = useReducedMotion();
   if (!vm) return null;
 
-  const Renderer = pickRenderer(viewMode, vm.kind);
+  const Renderer = pickRenderer(viewMode, vm.context, vm.kind);
 
   return (
     <motion.div

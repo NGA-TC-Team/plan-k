@@ -42,7 +42,7 @@ export function makeBlock(
   kind: BlockKind = "text",
   data: Record<string, unknown> = {},
 ): BlockEntity {
-  return { id, parentId, kind, data };
+  return { id, parentId, kind, data, context: "app" };
 }
 
 export type BlockSpec = {

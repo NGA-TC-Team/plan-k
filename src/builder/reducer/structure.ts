@@ -1,6 +1,19 @@
-import type { BlockEntity } from "../types/entity";
+import type { BlockContext, BlockEntity } from "../types/entity";
 import type { IntentLogEntry } from "../types/intent";
 import type { AppState, SliceResult } from "../types/state";
+
+function inferBlockContext(state: AppState, parentId: string): BlockContext {
+  if (parentId in state.blocks) {
+    const parent = state.blocks[parentId];
+    return parent.context ?? "app";
+  }
+  if (parentId in state.sections) {
+    const section = state.sections[parentId];
+    return section.kind.startsWith("agent-") ? "agent" : "docs";
+  }
+  if (parentId in state.screens) return "app";
+  return "app";
+}
 
 export function applyStructure(
   state: AppState,
@@ -10,7 +23,8 @@ export function applyStructure(
   switch (intent.type) {
     case "INSERT_BLOCK": {
       const { parentId, block, index } = intent;
-      const newBlock: BlockEntity = { ...block, parentId };
+      const context = block.context ?? inferBlockContext(state, parentId);
+      const newBlock: BlockEntity = { ...block, parentId, context };
 
       let nextBlocks = state.blocks;
       let nextChildren = state.children;

@@ -3,7 +3,7 @@ import { buildSeedSnapshot } from "@/builder/defaults";
 import { defaultIdFactory } from "@/builder/ids";
 import type { ProjectKind } from "@/builder/types/entity";
 import type { IntentLogEntry } from "@/builder/types/intent";
-import type { AppState } from "@/builder/types/state";
+import { type AppState, SCHEMA_VERSION } from "@/builder/types/state";
 import { db, intents, plans, projects } from "@/db";
 import { planStream } from "./plan-stream";
 
@@ -49,19 +49,35 @@ function rowToTailEntry(row: {
   };
 }
 
+let didWarnSchemaWipe = false;
+
 export async function getPlan(planId: string): Promise<PlanRecord | null> {
   const existing = db.select().from(plans).where(eq(plans.id, planId)).get();
   if (existing) {
-    const tailRows = db
-      .select()
-      .from(intents)
-      .where(eq(intents.planId, planId))
-      .orderBy(asc(intents.serverSeq))
-      .all();
-    return {
-      snapshot: JSON.parse(existing.snapshot) as AppState,
-      tailEntries: tailRows.map(rowToTailEntry),
-    };
+    const snapshot = JSON.parse(existing.snapshot) as AppState;
+    if (snapshot.schemaVersion !== SCHEMA_VERSION) {
+      // Pre-refactor data — drop and either reseed (for SEED_KINDS) or
+      // return null. Intents cascade-delete via FK.
+      db.delete(plans).where(eq(plans.id, planId)).run();
+      if (!didWarnSchemaWipe) {
+        didWarnSchemaWipe = true;
+        console.warn(
+          `[plan-store] schema migrated to v${SCHEMA_VERSION}; dropped pre-refactor plan rows.`,
+        );
+      }
+      // Fall through to seed/return-null path below.
+    } else {
+      const tailRows = db
+        .select()
+        .from(intents)
+        .where(eq(intents.planId, planId))
+        .orderBy(asc(intents.serverSeq))
+        .all();
+      return {
+        snapshot,
+        tailEntries: tailRows.map(rowToTailEntry),
+      };
+    }
   }
 
   const kind = SEED_KINDS[planId];
