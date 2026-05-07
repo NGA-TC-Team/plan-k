@@ -1,12 +1,14 @@
 "use client";
 
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { hydrate } from "@/builder/hydrate";
 import { defaultIdFactory } from "@/builder/ids";
 import { createBuilderStore } from "@/builder/store";
+import type { IntentLogEntry } from "@/builder/types/intent";
 import { usePersistIntentMutation } from "@/data/plans/mutations";
 import { usePlanQuery } from "@/data/plans/queries";
+import { usePlanStream } from "@/hooks/builder/use-plan-stream.hook";
 import { BuilderContext, type BuilderStoreHook } from "./builder-context";
 
 type Props = {
@@ -22,10 +24,12 @@ export function BuilderProvider({ planId, children }: Props) {
   persistRef.current = persistIntent;
 
   const storeRef = useRef<BuilderStoreHook | null>(null);
+  const originRef = useRef<string | null>(null);
 
   if (planQuery.data && !storeRef.current) {
     const ids = defaultIdFactory();
     const origin = ids.newOriginId("human");
+    originRef.current = origin;
     const initialState = hydrate(
       planQuery.data.snapshot,
       planQuery.data.tailEntries,
@@ -46,6 +50,18 @@ export function BuilderProvider({ planId, children }: Props) {
       },
     });
   }
+
+  const onRemoteIntent = useCallback((entry: IntentLogEntry) => {
+    storeRef.current
+      ?.getState()
+      .dispatch({ type: "REMOTE_INTENT_RECEIVED", entry });
+  }, []);
+
+  usePlanStream({
+    planId,
+    origin: originRef.current ?? "",
+    onRemoteIntent,
+  });
 
   if (planQuery.isLoading || !storeRef.current) {
     return (

@@ -5,6 +5,7 @@ import type { ProjectKind } from "@/builder/types/entity";
 import type { IntentLogEntry } from "@/builder/types/intent";
 import type { AppState } from "@/builder/types/state";
 import { db, intents, plans, projects } from "@/db";
+import { planStream } from "./plan-stream";
 
 export type PlanRecord = {
   snapshot: AppState;
@@ -154,6 +155,11 @@ export async function appendIntent(
       tx.delete(projects).where(eq(projects.id, projectId)).run();
     });
   }
+
+  // Fan out to any open SSE subscribers (other tabs / Claude Code editing
+  // the same plan). Subscribers filter by origin so the originator does
+  // not re-apply its own intent.
+  planStream.emit(entry);
 
   return { ok: true, serverVersion: serverSeq };
 }
