@@ -1,0 +1,107 @@
+export type BlockId = string;
+export type ScreenId = string;
+export type AgentNodeId = string;
+export type AgentEdgeId = string;
+
+export type BlockKind =
+  | "text"
+  | "list"
+  | "header"
+  | "hero"
+  | "card-grid"
+  | "form"
+  | "nav"
+  | "agent-step";
+
+export type BlockEntity = {
+  id: BlockId;
+  parentId: BlockId | ScreenId;
+  kind: BlockKind;
+  data: Record<string, unknown>;
+};
+
+export type ScreenEntity = {
+  id: ScreenId;
+  planId: string;
+  title: string;
+  route?: string;
+  position?: { x: number; y: number };
+};
+
+export type ScreenEdgeId = string;
+
+export type ScreenEdge = {
+  id: ScreenEdgeId;
+  from: ScreenId;
+  to: ScreenId;
+  label?: string;
+};
+
+export type SectionId = string;
+
+export type SectionKind =
+  | "overview"
+  | "personas"
+  | "glossary"
+  | "policy"
+  | "policy-general"
+  | "policy-special"
+  | "policy-writing"
+  | "policy-error"
+  | "business"
+  | "ops"
+  | "tech"
+  | "api"
+  | "data"
+  | "risks"
+  | "metrics"
+  | "agent-persona"
+  | "agent-tools"
+  | "agent-memory"
+  | "agent-trigger"
+  | "agent-examples"
+  | "agent-failure"
+  | "platform"
+  | "native-modules"
+  | "permissions"
+  | "custom";
+
+export type SectionEntity = {
+  id: SectionId;
+  planId: string;
+  parentId: SectionId | null;
+  kind: SectionKind;
+  title: string;
+};
+
+export type AgentNode = {
+  id: AgentNodeId;
+  role: "input" | "tool" | "llm" | "output";
+  label: string;
+  data: Record<string, unknown>;
+};
+
+export type AgentEdge = {
+  id: AgentEdgeId;
+  from: AgentNodeId;
+  to: AgentNodeId;
+};
+
+export type ProjectKind = "web" | "mobile" | "agent";
+
+export type ProjectMeta = {
+  id: string;
+  kind: ProjectKind;
+  title: string;
+  summary: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type PlanShell = {
+  id: string;
+  projectId: string;
+  kind: ProjectKind;
+  meta: Record<string, unknown>;
+  agentTab: "scenario" | "graph";
+};

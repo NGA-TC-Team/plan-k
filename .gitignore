@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ai-generated handoff & planning docs (local only)
+/ai-docs
+
+# sqlite (local DB lives in repo root, never committed)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# mock dev data (P4 — replaced by SQLite in P5)
+.next-mock-data.json

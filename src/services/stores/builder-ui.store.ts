@@ -1,0 +1,24 @@
+"use client";
+
+import { create } from "zustand";
+
+export type TopMode = "docs" | "app";
+export type CanvasMode = "screen" | "flow";
+
+type BuilderUiState = {
+  topMode: TopMode;
+  canvasMode: CanvasMode;
+  currentSectionId: string | null;
+  setTopMode: (mode: TopMode) => void;
+  setCanvasMode: (mode: CanvasMode) => void;
+  setCurrentSectionId: (id: string | null) => void;
+};
+
+export const useBuilderUiStore = create<BuilderUiState>((set) => ({
+  topMode: "app",
+  canvasMode: "screen",
+  currentSectionId: null,
+  setTopMode: (topMode) => set({ topMode }),
+  setCanvasMode: (canvasMode) => set({ canvasMode }),
+  setCurrentSectionId: (currentSectionId) => set({ currentSectionId }),
+}));

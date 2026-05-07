@@ -1,0 +1,22 @@
+CREATE TABLE `intents` (
+	`id` text PRIMARY KEY NOT NULL,
+	`plan_id` text NOT NULL,
+	`server_seq` integer NOT NULL,
+	`lamport` integer NOT NULL,
+	`origin` text NOT NULL,
+	`kind` text NOT NULL,
+	`parent_entry_id` text,
+	`intent` text NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`plan_id`) REFERENCES `plans`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `intents_plan_seq_idx` ON `intents` (`plan_id`,`server_seq`);--> statement-breakpoint
+CREATE UNIQUE INDEX `intents_plan_seq_uniq` ON `intents` (`plan_id`,`server_seq`);--> statement-breakpoint
+CREATE TABLE `plans` (
+	`id` text PRIMARY KEY NOT NULL,
+	`kind` text NOT NULL,
+	`snapshot` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch() * 1000) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch() * 1000) NOT NULL
+);

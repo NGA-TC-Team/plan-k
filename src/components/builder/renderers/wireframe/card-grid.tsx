@@ -1,0 +1,37 @@
+"use client";
+
+import type { BlockRenderer } from "../types";
+import { KindBadge, WireBar, WireBox } from "./primitives";
+
+export const CardGridWireframe: BlockRenderer = ({ vm }) => {
+  const columns = Math.max(
+    1,
+    Math.min(6, (vm.displayValue.columns as number) ?? 3),
+  );
+  const cards = (vm.displayValue.cards as unknown[]) ?? [];
+  const cardCount = Math.max(cards.length || columns * 2, columns);
+  return (
+    <WireBox className="space-y-3 px-3 py-3">
+      <div className="flex items-center justify-between">
+        <KindBadge kind="card grid" />
+        <span className="text-[10px] text-zinc-500">{columns} cols</span>
+      </div>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: placeholder cells
+            key={i}
+            className="flex h-20 flex-col gap-1 rounded border border-zinc-300 bg-white p-2 dark:border-zinc-600 dark:bg-zinc-900"
+          >
+            <div className="h-8 rounded bg-zinc-200 dark:bg-zinc-700" />
+            <WireBar className="w-3/4" />
+            <WireBar className="h-1.5 w-1/2" />
+          </div>
+        ))}
+      </div>
+    </WireBox>
+  );
+};
