@@ -14,14 +14,14 @@ import { TextWireframe } from "./text";
 type ContextRegistry = Partial<Record<BlockKind, BlockRenderer>>;
 
 const realDocs: ContextRegistry = {
-  text: TextWireframe,
-  header: HeaderWireframe,
-  list: ListWireframe,
+  paragraph: TextWireframe,
+  heading: HeaderWireframe,
+  "bullet-list": ListWireframe,
+  "numbered-list": ListWireframe,
 };
 
 const realApp: ContextRegistry = {
   text: TextWireframe,
-  header: HeaderWireframe,
   list: ListWireframe,
   hero: HeroWireframe,
   "card-grid": CardGridWireframe,

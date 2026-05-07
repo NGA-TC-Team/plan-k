@@ -16,14 +16,14 @@ type ContextRegistry = Partial<Record<BlockKind, BlockRenderer>>;
 // Real renderers shipping in commit 3 — every other kind in the registry
 // falls back to StubBlock until a dedicated component lands.
 const realDocs: ContextRegistry = {
-  text: TextDetail,
-  header: HeaderDetail,
-  list: ListDetail,
+  paragraph: TextDetail,
+  heading: HeaderDetail,
+  "bullet-list": ListDetail,
+  "numbered-list": ListDetail,
 };
 
 const realApp: ContextRegistry = {
   text: TextDetail,
-  header: HeaderDetail,
   list: ListDetail,
   hero: HeroDetail,
   "card-grid": CardGridDetail,

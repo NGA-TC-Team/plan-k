@@ -129,13 +129,53 @@ function blockText(block: BlockEntity): string {
   const data = block.data as Record<string, unknown>;
   switch (block.kind) {
     case "text":
+    case "paragraph":
       return String(data.markdown ?? "");
-    case "header":
+    case "heading":
       return String(data.text ?? "");
-    case "list": {
+    case "blockquote":
+      return [data.text, data.cite].filter(Boolean).join(" ");
+    case "callout":
+      return String(data.text ?? "");
+    case "code-block":
+      return String(data.code ?? "");
+    case "list":
+    case "bullet-list":
+    case "numbered-list": {
       const items = Array.isArray(data.items) ? (data.items as unknown[]) : [];
       return items.map((i) => String(i)).join("\n");
     }
+    case "checklist": {
+      const items = Array.isArray(data.items) ? (data.items as unknown[]) : [];
+      return items
+        .map((i) => {
+          if (i && typeof i === "object") {
+            return String((i as Record<string, unknown>).text ?? "");
+          }
+          return "";
+        })
+        .join("\n");
+    }
+    case "definition":
+      return [data.term, data.definition].filter(Boolean).join(" — ");
+    case "decision":
+      return [data.question, data.decision, data.rationale]
+        .filter(Boolean)
+        .join(" ");
+    case "persona":
+      return [data.name, data.role].filter(Boolean).join(" ");
+    case "user-story":
+      return [data.as, data.want, data.soThat].filter(Boolean).join(" ");
+    case "risk":
+      return [data.risk, data.impact, data.mitigation]
+        .filter(Boolean)
+        .join(" ");
+    case "metric":
+      return [data.name, data.target, data.current].filter(Boolean).join(" ");
+    case "figure":
+      return [data.caption, data.alt].filter(Boolean).join(" ");
+    case "link-card":
+      return [data.title, data.description, data.url].filter(Boolean).join(" ");
     case "hero":
       return [data.title, data.subtitle, data.cta].filter(Boolean).join(" ");
     case "card-grid": {

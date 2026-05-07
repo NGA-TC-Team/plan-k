@@ -1,6 +1,6 @@
 import { createProjectApi, expect, test } from "./fixtures";
 
-test("docs text block under a section round-trips through the intent log", async ({
+test("docs paragraph block under a section round-trips through the intent log", async ({
   request,
   cleanup,
 }) => {
@@ -34,7 +34,7 @@ test("docs text block under a section round-trips through the intent log", async
         block: {
           id: blockId,
           parentId: sectionId,
-          kind: "text",
+          kind: "paragraph",
           data: { markdown: "# Hello from e2e" },
           context: "docs",
         },

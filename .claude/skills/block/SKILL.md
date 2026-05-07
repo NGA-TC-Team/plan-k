@@ -11,11 +11,13 @@ Mutates blocks — the leaf content units inside sections (docs / agent) and scr
 
 Each block lives in exactly one of three contexts. The context is **inferred from the parent at the reducer layer** — you do not supply it in the intent payload (you may, and matching values pass through; mismatched values are rejected with `WRONG_MODE`).
 
-| Context | Parent type | Typical kinds (commit 1 set) |
+| Context | Parent type | Kinds |
 |---|---|---|
-| `docs` | a docs section (any non-`agent-*` section kind) | `text`, `header`, `list` |
-| `app` | a screen, or another app block | `text`, `header`, `list`, `hero`, `card-grid`, `form`, `nav` |
+| `docs` | a docs section (any non-`agent-*` section kind) | `heading`, `paragraph`, `bullet-list`, `numbered-list`, `checklist`, `callout`, `code-block`, `blockquote`, `table`, `figure`, `rule`, `link-card`, `definition`, `decision`, `persona`, `user-story`, `risk`, `metric` |
+| `app` | a screen, or another app block | `page-header`, `hero`, `cta-section`, `card-grid`, `form`, `button`, `input`, `image`, `text`, `list`, `sidebar`, `footer`, `tabs`, `modal`, `banner`, `stat`, `avatar`, `badge`, `divider`, `empty-state`, `nav` (+ mobile-only: `status-bar`, `bottom-nav`, `list-row`, `fab`, `sheet`) |
 | `agent` | an `agent-*` section, or another agent block | `agent-step` |
+
+**Docs kinds are document-writing primitives — distinct from app kinds, no name overlap.** Pick the kind that matches the prose role (`paragraph` for a body, `heading` for a title, `callout` for a note box, `decision` for an ADR, etc.).
 
 Cross-context placement is rejected: `app` block under a section → `WRONG_MODE`; `docs` block under a screen → same.
 
@@ -41,20 +43,41 @@ POST ${BASE_URL}/api/intents     body: IntentLogEntry → { ok: true, serverVers
 
 `BlockEntity = { id, parentId, kind, data, context? }`. The `context` field is stamped by the reducer; you can omit it.
 
-## Block kinds + default data shape (commit 1 set)
+## Common docs data shapes
 
-| `kind` | `data` shape | Contexts | Use for |
-|---|---|---|---|
-| `text` | `{ markdown: string }` | docs, app | Paragraph / markdown body |
-| `header` | `{ level: 1\|2\|3, text: string }` | docs, app | Heading inside a section/screen |
-| `list` | `{ ordered: boolean, items: string[] }` | docs, app | Bullet / numbered list |
-| `hero` | `{ title, subtitle?, cta? }` | app | Landing hero on a screen |
-| `card-grid` | `{ columns: number, cards: CardSpec[] }` | app | Feature grid |
-| `form` | `{ fields: FieldSpec[] }` | app | Form mockup |
-| `nav` | `{ items: NavItem[] }` | app | Nav bar |
-| `agent-step` | `{ role: "input"\|"tool"\|"llm"\|"output", spec: object }` | agent | Agent scenario step |
+| `kind` | `data` |
+|---|---|
+| `heading` | `{ level: 1\|2\|3, text: string }` |
+| `paragraph` | `{ markdown: string }` |
+| `bullet-list` / `numbered-list` | `{ ordered: boolean, items: string[] }` |
+| `checklist` | `{ items: { text: string, checked: boolean }[] }` |
+| `callout` | `{ variant: "info"\|"warn"\|"error"\|"success", text: string }` |
+| `code-block` | `{ language: string, code: string }` |
+| `blockquote` | `{ text: string, cite: string }` |
+| `table` | `{ columns: string[], rows: string[][] }` |
+| `figure` | `{ src: string, alt: string, caption: string }` |
+| `rule` | `{}` |
+| `link-card` | `{ url, title, description }` |
+| `definition` | `{ term: string, definition: string }` |
+| `decision` | `{ question, options[], decision, rationale }` |
+| `persona` | `{ name, role, needs[], pains[] }` |
+| `user-story` | `{ as, want, soThat, acceptance[] }` |
+| `risk` | `{ risk, impact, mitigation, owner }` |
+| `metric` | `{ name, target, current, status }` |
 
-(More kinds land in a follow-up commit — table, callout, code, persona, button, modal, etc. The recipes below use the commit-1 set.)
+## Common app data shapes
+
+| `kind` | `data` |
+|---|---|
+| `text` | `{ markdown: string }` (display text in a screen) |
+| `list` | `{ ordered: boolean, items: string[] }` |
+| `hero` | `{ title, subtitle, cta }` |
+| `card-grid` | `{ columns: number, cards: CardSpec[] }` |
+| `form` | `{ fields: FieldSpec[] }` |
+| `nav` | `{ items: NavItem[] }` |
+| `button` | `{ label: string, variant: "primary"\|"secondary"\|... }` |
+
+(Real renderers exist for: docs paragraph/heading/bullet-list/numbered-list, app text/list/hero/card-grid/form/nav, agent agent-step. Other kinds render as labeled stubs — fine for plans, exports look basic.)
 
 ## Lamport rules
 
@@ -62,7 +85,7 @@ POST ${BASE_URL}/api/intents     body: IntentLogEntry → { ok: true, serverVers
 - `UPDATE_BLOCK` / `MOVE_BLOCK` / `DELETE_BLOCK`: lamport > `entityMeta[blockId].lamport`. If the block was just created and not yet checkpointed, scan `tailEntries` for the most recent intent that touched it.
 - `STALE_LAMPORT` → re-read plan, bump lamport, retry.
 
-## Recipe — insert a docs text block under a section
+## Recipe — insert a docs paragraph block under a section
 
 ```bash
 PLAN_ID=demo-web
@@ -81,7 +104,7 @@ curl -fs -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
       lamport: $now, createdAt: $now, kind: "primary",
       intent: {
         type: "INSERT_BLOCK", parentId: $parent,
-        block: { id: $block, parentId: $parent, kind: "text", data: { markdown: "## Personas\n\n30대 직장인…" } }
+        block: { id: $block, parentId: $parent, kind: "paragraph", data: { markdown: "## Personas\n\n30대 직장인…" } }
       }
     }')" | jq
 ```

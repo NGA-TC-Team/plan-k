@@ -13,14 +13,14 @@ import { TextEditor } from "./text-editor";
 type ContextRegistry = Partial<Record<BlockKind, BlockRenderer>>;
 
 const docs: ContextRegistry = {
-  text: TextEditor,
-  header: HeaderEditor,
-  list: ListEditor,
+  paragraph: TextEditor,
+  heading: HeaderEditor,
+  "bullet-list": ListEditor,
+  "numbered-list": ListEditor,
 };
 
 const app: ContextRegistry = {
   text: TextEditor,
-  header: HeaderEditor,
   list: ListEditor,
   hero: HeroEditor,
   "card-grid": CardGridEditor,

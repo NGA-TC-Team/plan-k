@@ -52,9 +52,24 @@ describe("defaultDocsTreeFor", () => {
 });
 
 describe("defaultDataFor", () => {
-  it("returns kind-specific shapes", () => {
+  it("returns kind-specific shapes for docs primitives", () => {
+    expect(defaultDataFor("paragraph")).toEqual({ markdown: "" });
+    expect(defaultDataFor("heading")).toEqual({ level: 1, text: "" });
+    expect(defaultDataFor("bullet-list")).toEqual({
+      ordered: false,
+      items: [],
+    });
+    expect(defaultDataFor("numbered-list")).toEqual({
+      ordered: true,
+      items: [],
+    });
+    expect(defaultDataFor("callout")).toEqual({ variant: "info", text: "" });
+    expect(defaultDataFor("code-block")).toEqual({ language: "ts", code: "" });
+    expect(defaultDataFor("rule")).toEqual({});
+  });
+
+  it("returns kind-specific shapes for app primitives", () => {
     expect(defaultDataFor("text")).toEqual({ markdown: "" });
-    expect(defaultDataFor("header")).toEqual({ level: 1, text: "" });
     expect(defaultDataFor("list")).toEqual({ ordered: false, items: [] });
     expect(defaultDataFor("hero")).toEqual({
       title: "",

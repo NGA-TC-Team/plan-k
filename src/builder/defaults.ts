@@ -89,18 +89,40 @@ export type BlockKindSpec = {
 };
 
 export const BLOCK_KIND_REGISTRY: BlockKindSpec[] = [
-  // ────────── docs ──────────
-  { context: "docs", kind: "header", label: "Heading", group: "Text" },
-  { context: "docs", kind: "text", label: "Text", group: "Text" },
-  { context: "docs", kind: "quote", label: "Quote", group: "Text" },
-  { context: "docs", kind: "callout", label: "Callout", group: "Text" },
-  { context: "docs", kind: "code", label: "Code", group: "Text" },
-  { context: "docs", kind: "list", label: "List", group: "Lists" },
+  // ────────── docs (document writing primitives — distinct from app) ──────────
+  { context: "docs", kind: "heading", label: "Heading", group: "Prose" },
+  { context: "docs", kind: "paragraph", label: "Paragraph", group: "Prose" },
+  { context: "docs", kind: "blockquote", label: "Blockquote", group: "Prose" },
+  { context: "docs", kind: "callout", label: "Callout", group: "Prose" },
+  { context: "docs", kind: "code-block", label: "Code block", group: "Prose" },
+  {
+    context: "docs",
+    kind: "bullet-list",
+    label: "Bullet list",
+    group: "Lists",
+  },
+  {
+    context: "docs",
+    kind: "numbered-list",
+    label: "Numbered list",
+    group: "Lists",
+  },
   { context: "docs", kind: "checklist", label: "Checklist", group: "Lists" },
   { context: "docs", kind: "table", label: "Table", group: "Structure" },
-  { context: "docs", kind: "divider", label: "Divider", group: "Structure" },
-  { context: "docs", kind: "image", label: "Image", group: "Media" },
+  {
+    context: "docs",
+    kind: "rule",
+    label: "Horizontal rule",
+    group: "Structure",
+  },
+  { context: "docs", kind: "figure", label: "Figure", group: "Media" },
   { context: "docs", kind: "link-card", label: "Link card", group: "Media" },
+  {
+    context: "docs",
+    kind: "definition",
+    label: "Definition",
+    group: "Reference",
+  },
   { context: "docs", kind: "decision", label: "Decision (ADR)", group: "Spec" },
   { context: "docs", kind: "persona", label: "Persona", group: "Spec" },
   { context: "docs", kind: "user-story", label: "User story", group: "Spec" },
@@ -199,28 +221,33 @@ export function blockKindsForContext(
 
 export function defaultDataFor(blockKind: BlockKind): Record<string, unknown> {
   switch (blockKind) {
-    case "text":
-      return { markdown: "" };
-    case "header":
+    // docs
+    case "heading":
       return { level: 1, text: "" };
-    case "list":
-      return { ordered: false, items: [] };
-    case "checklist":
-      return { items: [] as { text: string; checked: boolean }[] };
+    case "paragraph":
+      return { markdown: "" };
+    case "blockquote":
+      return { text: "", cite: "" };
     case "callout":
       return { variant: "info", text: "" };
-    case "code":
+    case "code-block":
       return { language: "ts", code: "" };
-    case "quote":
-      return { text: "", cite: "" };
+    case "bullet-list":
+      return { ordered: false, items: [] };
+    case "numbered-list":
+      return { ordered: true, items: [] };
+    case "checklist":
+      return { items: [] as { text: string; checked: boolean }[] };
     case "table":
       return { columns: ["", ""], rows: [["", ""]] };
-    case "image":
-      return { src: "", alt: "", caption: "" };
-    case "divider":
+    case "rule":
       return {};
+    case "figure":
+      return { src: "", alt: "", caption: "" };
     case "link-card":
       return { url: "", title: "", description: "" };
+    case "definition":
+      return { term: "", definition: "" };
     case "decision":
       return { question: "", options: [], decision: "", rationale: "" };
     case "persona":
@@ -275,6 +302,14 @@ export function defaultDataFor(blockKind: BlockKind): Record<string, unknown> {
       return { title: "", body: "" };
     case "nav":
       return { items: [] };
+    case "text":
+      return { markdown: "" };
+    case "list":
+      return { ordered: false, items: [] };
+    case "image":
+      return { src: "", alt: "", caption: "" };
+    case "divider":
+      return {};
     case "agent-step":
       return { role: "input", spec: {} };
   }
