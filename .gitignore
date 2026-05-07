@@ -51,3 +51,8 @@ next-env.d.ts
 
 # mock dev data (P4 — replaced by SQLite in P5)
 .next-mock-data.json
+
+# playwright
+/playwright-report/
+/test-results/
+/playwright/.cache/
