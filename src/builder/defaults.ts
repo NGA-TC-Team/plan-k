@@ -1,4 +1,5 @@
 import type {
+  BlockContext,
   BlockKind,
   ProjectKind,
   SectionEntity,
@@ -79,27 +80,122 @@ export function defaultDocsTreeFor(kind: ProjectKind): SectionSeedSpec[] {
   }
 }
 
-export const ALL_BLOCK_KINDS: readonly BlockKind[] = [
-  "text",
-  "header",
-  "list",
-  "hero",
-  "card-grid",
-  "form",
-  "nav",
-  "agent-step",
+export type BlockKindSpec = {
+  context: BlockContext;
+  kind: BlockKind;
+  label: string;
+  group: string;
+  platform?: "mobile";
+};
+
+export const BLOCK_KIND_REGISTRY: BlockKindSpec[] = [
+  // ────────── docs ──────────
+  { context: "docs", kind: "header", label: "Heading", group: "Text" },
+  { context: "docs", kind: "text", label: "Text", group: "Text" },
+  { context: "docs", kind: "quote", label: "Quote", group: "Text" },
+  { context: "docs", kind: "callout", label: "Callout", group: "Text" },
+  { context: "docs", kind: "code", label: "Code", group: "Text" },
+  { context: "docs", kind: "list", label: "List", group: "Lists" },
+  { context: "docs", kind: "checklist", label: "Checklist", group: "Lists" },
+  { context: "docs", kind: "table", label: "Table", group: "Structure" },
+  { context: "docs", kind: "divider", label: "Divider", group: "Structure" },
+  { context: "docs", kind: "image", label: "Image", group: "Media" },
+  { context: "docs", kind: "link-card", label: "Link card", group: "Media" },
+  { context: "docs", kind: "decision", label: "Decision (ADR)", group: "Spec" },
+  { context: "docs", kind: "persona", label: "Persona", group: "Spec" },
+  { context: "docs", kind: "user-story", label: "User story", group: "Spec" },
+  { context: "docs", kind: "risk", label: "Risk", group: "Spec" },
+  { context: "docs", kind: "metric", label: "Metric / KPI", group: "Spec" },
+
+  // ────────── app (web/shared) ──────────
+  {
+    context: "app",
+    kind: "page-header",
+    label: "Page header",
+    group: "Layout",
+  },
+  { context: "app", kind: "sidebar", label: "Sidebar", group: "Layout" },
+  { context: "app", kind: "footer", label: "Footer", group: "Layout" },
+  { context: "app", kind: "tabs", label: "Tabs", group: "Layout" },
+  { context: "app", kind: "modal", label: "Modal", group: "Layout" },
+  { context: "app", kind: "divider", label: "Divider", group: "Layout" },
+  { context: "app", kind: "nav", label: "Nav", group: "Navigation" },
+  { context: "app", kind: "hero", label: "Hero", group: "Content" },
+  {
+    context: "app",
+    kind: "cta-section",
+    label: "CTA section",
+    group: "Content",
+  },
+  { context: "app", kind: "card-grid", label: "Card grid", group: "Content" },
+  { context: "app", kind: "text", label: "Text", group: "Content" },
+  { context: "app", kind: "list", label: "List", group: "Content" },
+  { context: "app", kind: "image", label: "Image", group: "Content" },
+  { context: "app", kind: "stat", label: "Stat", group: "Content" },
+  { context: "app", kind: "avatar", label: "Avatar", group: "Content" },
+  { context: "app", kind: "badge", label: "Badge", group: "Content" },
+  { context: "app", kind: "form", label: "Form", group: "Input" },
+  { context: "app", kind: "button", label: "Button", group: "Input" },
+  { context: "app", kind: "input", label: "Input", group: "Input" },
+  { context: "app", kind: "banner", label: "Banner", group: "Feedback" },
+  {
+    context: "app",
+    kind: "empty-state",
+    label: "Empty state",
+    group: "Feedback",
+  },
+
+  // mobile-only
+  {
+    context: "app",
+    kind: "status-bar",
+    label: "Status bar",
+    group: "Mobile",
+    platform: "mobile",
+  },
+  {
+    context: "app",
+    kind: "bottom-nav",
+    label: "Bottom nav",
+    group: "Mobile",
+    platform: "mobile",
+  },
+  {
+    context: "app",
+    kind: "list-row",
+    label: "List row",
+    group: "Mobile",
+    platform: "mobile",
+  },
+  {
+    context: "app",
+    kind: "fab",
+    label: "FAB",
+    group: "Mobile",
+    platform: "mobile",
+  },
+  {
+    context: "app",
+    kind: "sheet",
+    label: "Sheet",
+    group: "Mobile",
+    platform: "mobile",
+  },
+
+  // ────────── agent ──────────
+  { context: "agent", kind: "agent-step", label: "Step", group: "Agent" },
 ];
 
-export const BLOCK_KIND_LABELS: Record<BlockKind, string> = {
-  text: "Text",
-  header: "Heading",
-  list: "List",
-  hero: "Hero",
-  "card-grid": "Card grid",
-  form: "Form",
-  nav: "Nav",
-  "agent-step": "Agent step",
-};
+export function blockKindsForContext(
+  context: BlockContext,
+  platform: "mobile" | "web" = "web",
+): BlockKindSpec[] {
+  return BLOCK_KIND_REGISTRY.filter(
+    (s) =>
+      s.context === context &&
+      (s.platform === undefined || s.platform === platform),
+  );
+}
 
 export function defaultDataFor(blockKind: BlockKind): Record<string, unknown> {
   switch (blockKind) {
@@ -109,12 +205,74 @@ export function defaultDataFor(blockKind: BlockKind): Record<string, unknown> {
       return { level: 1, text: "" };
     case "list":
       return { ordered: false, items: [] };
+    case "checklist":
+      return { items: [] as { text: string; checked: boolean }[] };
+    case "callout":
+      return { variant: "info", text: "" };
+    case "code":
+      return { language: "ts", code: "" };
+    case "quote":
+      return { text: "", cite: "" };
+    case "table":
+      return { columns: ["", ""], rows: [["", ""]] };
+    case "image":
+      return { src: "", alt: "", caption: "" };
+    case "divider":
+      return {};
+    case "link-card":
+      return { url: "", title: "", description: "" };
+    case "decision":
+      return { question: "", options: [], decision: "", rationale: "" };
+    case "persona":
+      return { name: "", role: "", needs: [], pains: [] };
+    case "user-story":
+      return { as: "", want: "", soThat: "", acceptance: [] };
+    case "risk":
+      return { risk: "", impact: "", mitigation: "", owner: "" };
+    case "metric":
+      return { name: "", target: "", current: "", status: "ok" };
+    case "page-header":
+      return { title: "", subtitle: "" };
     case "hero":
       return { title: "", subtitle: "", cta: "" };
+    case "cta-section":
+      return { title: "", body: "", cta: "" };
     case "card-grid":
       return { columns: 3, cards: [] };
     case "form":
       return { fields: [] };
+    case "button":
+      return { label: "Action", variant: "primary" };
+    case "input":
+      return { label: "", placeholder: "", type: "text" };
+    case "sidebar":
+      return { items: [] };
+    case "footer":
+      return { items: [] };
+    case "tabs":
+      return { tabs: [] };
+    case "modal":
+      return { title: "", body: "" };
+    case "banner":
+      return { variant: "info", text: "" };
+    case "stat":
+      return { label: "", value: "" };
+    case "avatar":
+      return { name: "", src: "" };
+    case "badge":
+      return { label: "", variant: "default" };
+    case "empty-state":
+      return { title: "", body: "" };
+    case "status-bar":
+      return { variant: "light" };
+    case "bottom-nav":
+      return { items: [] };
+    case "list-row":
+      return { title: "", subtitle: "", trailing: "" };
+    case "fab":
+      return { label: "+" };
+    case "sheet":
+      return { title: "", body: "" };
     case "nav":
       return { items: [] };
     case "agent-step":

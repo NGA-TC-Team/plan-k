@@ -3,15 +3,57 @@ export type ScreenId = string;
 export type AgentNodeId = string;
 export type AgentEdgeId = string;
 
-export type BlockKind =
+export type DocsBlockKind =
   | "text"
-  | "list"
   | "header"
+  | "list"
+  | "checklist"
+  | "callout"
+  | "code"
+  | "quote"
+  | "table"
+  | "image"
+  | "divider"
+  | "link-card"
+  | "decision"
+  | "persona"
+  | "user-story"
+  | "risk"
+  | "metric";
+
+export type AppBlockKind =
+  | "page-header"
   | "hero"
+  | "cta-section"
   | "card-grid"
   | "form"
-  | "nav"
-  | "agent-step";
+  | "button"
+  | "input"
+  | "image"
+  | "text"
+  | "list"
+  | "sidebar"
+  | "footer"
+  | "tabs"
+  | "modal"
+  | "banner"
+  | "stat"
+  | "avatar"
+  | "badge"
+  | "divider"
+  | "empty-state"
+  // mobile-only
+  | "status-bar"
+  | "bottom-nav"
+  | "list-row"
+  | "fab"
+  | "sheet"
+  // legacy alias kept for the existing nav renderer (commit 3 transition)
+  | "nav";
+
+export type AgentBlockKind = "agent-step";
+
+export type BlockKind = DocsBlockKind | AppBlockKind | AgentBlockKind;
 
 export type BlockContext = "docs" | "app" | "agent";
 

@@ -83,6 +83,16 @@ curl -s "${BASE_URL:-http://localhost:3000}/api/plans/$ID" \
 
 If `null`, the entity has no prior meta — start with lamport `1`.
 
+## Block taxonomy (after the docs/app/agent split)
+
+Each block carries a `context` ("docs" | "app" | "agent") inferred from its parent. The full kind set lives in `BLOCK_KIND_REGISTRY` (server source). Summary:
+
+- **docs** (under a non-`agent-*` section): heading, text, list, checklist, callout, code, quote, table, image, divider, link-card, decision, persona, user-story, risk, metric.
+- **app** (under a screen): page-header, hero, cta-section, card-grid, form, button, input, image, text, list, sidebar, footer, tabs, modal, banner, stat, avatar, badge, divider, empty-state, nav. Mobile-only on `kind: "mobile"` plans: status-bar, bottom-nav, list-row, fab, sheet.
+- **agent** (under an `agent-*` section, e.g. `agent-examples`): step.
+
+Tier A real renderers shipped: text, header, list (docs+app), hero, card-grid, form, nav (app), agent-step. The rest render as labeled stubs until dedicated components land — fine for plans, exports look basic.
+
 ## When to use this skill vs others
 
 - Pure reading / Q&A → this skill alone.
