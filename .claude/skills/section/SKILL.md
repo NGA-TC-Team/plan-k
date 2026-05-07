@@ -119,6 +119,6 @@ curl -s -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
 
 ## What this skill does NOT do
 
-- It does not edit blocks within a section — use the (forthcoming) `block` skill.
+- It does not edit blocks within a section. Sections **do** accept blocks as children — use the `plan-k-block` skill. A docs block (`text`/`header`/`list`/...) goes under a non-`agent-*` section; an agent block (`agent-step`) goes under an `agent-*` section.
 - It does not create new screens — that's the screens path (not yet exposed as a skill).
 - It does not delete a project — use the `project` skill.

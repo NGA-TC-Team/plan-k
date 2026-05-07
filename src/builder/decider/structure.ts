@@ -1,4 +1,5 @@
 import { isStrictlyGreater } from "../lamport";
+import type { BlockContext } from "../types/entity";
 import type { IntentLogEntry } from "../types/intent";
 import type { AppState, DecideOutcome, EntityMeta } from "../types/state";
 
@@ -21,6 +22,11 @@ export function decideStructure(
       ) {
         return { ok: false, reason: "CYCLIC_MOVE" };
       }
+      const desiredContext =
+        intent.block.context ?? inferContextForParent(state, intent.parentId);
+      if (!validateParentForContext(state, intent.parentId, desiredContext)) {
+        return { ok: false, reason: "WRONG_MODE" };
+      }
       const stale = lwwReject(state.entityMeta[intent.block.id], entry);
       if (stale) return stale;
       return { ok: true };
@@ -37,6 +43,11 @@ export function decideStructure(
         isDescendant(state, intent.toParentId, intent.nodeId)
       ) {
         return { ok: false, reason: "CYCLIC_MOVE" };
+      }
+      const block = state.blocks[intent.nodeId];
+      const blockContext = block.context ?? "app";
+      if (!validateParentForContext(state, intent.toParentId, blockContext)) {
+        return { ok: false, reason: "WRONG_MODE" };
       }
       const stale = lwwReject(state.entityMeta[intent.nodeId], entry);
       if (stale) return stale;
@@ -57,7 +68,43 @@ export function decideStructure(
 }
 
 function parentExists(state: AppState, id: string): boolean {
-  return id in state.blocks || id in state.screens;
+  return id in state.blocks || id in state.screens || id in state.sections;
+}
+
+export function inferContextForParent(
+  state: AppState,
+  parentId: string,
+): BlockContext {
+  if (parentId in state.blocks) {
+    return state.blocks[parentId].context ?? "app";
+  }
+  if (parentId in state.sections) {
+    return state.sections[parentId].kind.startsWith("agent-")
+      ? "agent"
+      : "docs";
+  }
+  if (parentId in state.screens) return "app";
+  return "app";
+}
+
+export function validateParentForContext(
+  state: AppState,
+  parentId: string,
+  context: BlockContext,
+): boolean {
+  if (parentId in state.blocks) {
+    return (state.blocks[parentId].context ?? "app") === context;
+  }
+  if (parentId in state.sections) {
+    const isAgent = state.sections[parentId].kind.startsWith("agent-");
+    if (context === "agent") return isAgent;
+    if (context === "docs") return !isAgent;
+    return false;
+  }
+  if (parentId in state.screens) {
+    return context === "app";
+  }
+  return false;
 }
 
 function isDescendant(

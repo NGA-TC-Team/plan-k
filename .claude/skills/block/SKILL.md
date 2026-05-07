@@ -1,16 +1,28 @@
 ---
 name: plan-k-block
-description: Insert, update, move, or delete content blocks (text, list, header, hero, card-grid, form, nav, agent-step) within a plan-k section or screen by constructing IntentLogEntry records and POSTing them to /api/intents. Use when the user says "add a hero block to the homepage", "rewrite the markdown in the overview text block", "make the personas list have these 3 items", or "delete the second card-grid". Always call the `plan-k-plan` skill first to learn the parent's id and the block's existing `lamport`.
+description: Insert, update, move, or delete content blocks inside docs sections, app screens, or agent scenario sections of a plan-k plan by appending IntentLogEntry records to /api/intents. Use when the user says "add a hero block to the homepage screen", "rewrite the markdown in the overview text block", "drop a personas list under the personas section", or "delete the second card-grid". Always call the `plan-k-plan` skill first to learn the parent's id and the block's existing `lamport`.
 ---
 
 # plan-k :: block
 
-Mutates blocks — the leaf content units inside sections and screens. Operates by appending IntentLogEntry records to the plan's intent log; the server applies, persists, and broadcasts via SSE.
+Mutates blocks — the leaf content units inside sections (docs / agent) and screens (app). Operates by appending IntentLogEntry records; the server applies, persists, and broadcasts via SSE.
+
+## Block contexts
+
+Each block lives in exactly one of three contexts. The context is **inferred from the parent at the reducer layer** — you do not supply it in the intent payload (you may, and matching values pass through; mismatched values are rejected with `WRONG_MODE`).
+
+| Context | Parent type | Typical kinds (commit 1 set) |
+|---|---|---|
+| `docs` | a docs section (any non-`agent-*` section kind) | `text`, `header`, `list` |
+| `app` | a screen, or another app block | `text`, `header`, `list`, `hero`, `card-grid`, `form`, `nav` |
+| `agent` | an `agent-*` section, or another agent block | `agent-step` |
+
+Cross-context placement is rejected: `app` block under a section → `WRONG_MODE`; `docs` block under a screen → same.
 
 ## Prerequisite
 
 1. Dev server running.
-2. Read the plan via the `plan-k-plan` skill — you need the `planId`, the `parentId` (a section, screen, or another block id), and any target block's existing `lamport`.
+2. Read the plan via `plan-k-plan` — you need `planId`, the parent id, and target block's `entityMeta.lamport` for UPDATE/MOVE/DELETE.
 
 ## Endpoint
 
@@ -27,36 +39,34 @@ POST ${BASE_URL}/api/intents     body: IntentLogEntry → { ok: true, serverVers
 { type: "DELETE_BLOCK", nodeId: <blockId> }
 ```
 
-`BlockEntity = { id, parentId, kind, data }`.
+`BlockEntity = { id, parentId, kind, data, context? }`. The `context` field is stamped by the reducer; you can omit it.
 
-## Block kinds + default data shape
+## Block kinds + default data shape (commit 1 set)
 
-| `kind` | `data` shape | use for |
-|---|---|---|
-| `text` | `{ markdown: string }` | freeform paragraph / markdown body |
-| `header` | `{ level: 1\|2\|3, text: string }` | section header inside a section |
-| `list` | `{ ordered: boolean, items: string[] }` | bullet / numbered list |
-| `hero` | `{ title, subtitle?, cta? }` | landing-style hero |
-| `card-grid` | `{ columns: number, cards: CardSpec[] }` | feature grid |
-| `form` | `{ fields: FieldSpec[] }` | form mockup |
-| `nav` | `{ items: NavItem[] }` | nav bar items |
-| `agent-step` | `{ role: "input"\|"tool"\|"llm"\|"output", spec: object }` | agent scenario step |
+| `kind` | `data` shape | Contexts | Use for |
+|---|---|---|---|
+| `text` | `{ markdown: string }` | docs, app | Paragraph / markdown body |
+| `header` | `{ level: 1\|2\|3, text: string }` | docs, app | Heading inside a section/screen |
+| `list` | `{ ordered: boolean, items: string[] }` | docs, app | Bullet / numbered list |
+| `hero` | `{ title, subtitle?, cta? }` | app | Landing hero on a screen |
+| `card-grid` | `{ columns: number, cards: CardSpec[] }` | app | Feature grid |
+| `form` | `{ fields: FieldSpec[] }` | app | Form mockup |
+| `nav` | `{ items: NavItem[] }` | app | Nav bar |
+| `agent-step` | `{ role: "input"\|"tool"\|"llm"\|"output", spec: object }` | agent | Agent scenario step |
 
-When in doubt, prefer `text` with markdown — it renders cleanly in both detail and wireframe modes and exports well to PDF.
+(More kinds land in a follow-up commit — table, callout, code, persona, button, modal, etc. The recipes below use the commit-1 set.)
 
 ## Lamport rules
 
-Same as the `plan-k-section` skill:
+- `INSERT_BLOCK` with a brand-new id: any positive lamport (use `Date.now()`).
+- `UPDATE_BLOCK` / `MOVE_BLOCK` / `DELETE_BLOCK`: lamport > `entityMeta[blockId].lamport`. If the block was just created and not yet checkpointed, scan `tailEntries` for the most recent intent that touched it.
+- `STALE_LAMPORT` → re-read plan, bump lamport, retry.
 
-- New `INSERT_BLOCK`: any positive lamport (use `Date.now()`).
-- `UPDATE_BLOCK` / `MOVE_BLOCK` / `DELETE_BLOCK`: lamport must be `> entityMeta[blockId].lamport`. Read it from the plan first; if absent in `snapshot.entityMeta`, scan `tailEntries` for the most recent intent that touched it.
-- On `STALE_LAMPORT`, re-read and retry.
-
-## Recipe — insert a text block under a section
+## Recipe — insert a docs text block under a section
 
 ```bash
 PLAN_ID=demo-web
-PARENT_ID=<section or screen id from `plan-k-plan`>
+PARENT_ID=$(curl -fs "${BASE_URL:-http://localhost:3000}/api/plans/$PLAN_ID" | jq -r '.snapshot.docsRootIds[0]')
 NEW_ID=$(uuidgen)
 ENTRY_ID=$(uuidgen)
 NOW=$(date +%s000)
@@ -70,9 +80,32 @@ curl -fs -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
       id: $id, planId: $plan, origin: "claude:block",
       lamport: $now, createdAt: $now, kind: "primary",
       intent: {
-        type: "INSERT_BLOCK",
-        parentId: $parent,
+        type: "INSERT_BLOCK", parentId: $parent,
         block: { id: $block, parentId: $parent, kind: "text", data: { markdown: "## Personas\n\n30대 직장인…" } }
+      }
+    }')" | jq
+```
+
+## Recipe — insert an app hero block under a screen
+
+```bash
+PLAN_ID=demo-web
+SCREEN_ID=$(curl -fs "${BASE_URL:-http://localhost:3000}/api/plans/$PLAN_ID" \
+  | jq -r '.snapshot.screens | to_entries | .[0].key')
+NEW_ID=$(uuidgen)
+
+curl -fs -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n \
+    --arg id "$(uuidgen)" --arg plan "$PLAN_ID" --arg parent "$SCREEN_ID" --arg block "$NEW_ID" \
+    --argjson now "$(date +%s000)" \
+    '{
+      id: $id, planId: $plan, origin: "claude:block",
+      lamport: $now, createdAt: $now, kind: "primary",
+      intent: {
+        type: "INSERT_BLOCK", parentId: $parent,
+        block: { id: $block, parentId: $parent, kind: "hero",
+                 data: { title: "Welcome", subtitle: "Plan it with Claude", cta: "Get started" } }
       }
     }')" | jq
 ```
@@ -85,42 +118,20 @@ BLOCK_ID=<from plan>
 LAMPORT=$(curl -fs "${BASE_URL}/api/plans/$PLAN_ID" \
   | jq --arg id "$BLOCK_ID" '.snapshot.entityMeta[$id].lamport // 0')
 NEXT=$((LAMPORT + 1))
-NEW_TEXT="새 본문 내용…"
 
 curl -fs -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
   -H 'Content-Type: application/json' \
   -d "$(jq -n \
     --arg id "$(uuidgen)" --arg plan "$PLAN_ID" --arg blk "$BLOCK_ID" \
-    --arg md "$NEW_TEXT" --argjson lamp "$NEXT" --argjson now "$(date +%s000)" \
-    '{
-      id: $id, planId: $plan, origin: "claude:block",
-      lamport: $lamp, createdAt: $now, kind: "primary",
-      intent: { type: "UPDATE_BLOCK", nodeId: $blk, patch: { data: { markdown: $md } } }
-    }')" | jq
-```
-
-`UPDATE_BLOCK` replaces `data` entirely — preserve fields you don't intend to change by reading the existing block first and merging.
-
-## Recipe — fill a list block with N items
-
-```bash
-items=$(printf '"%s",' "30대 직장인" "스타트업 PM" "프리랜서 개발자")
-items="[${items%,}]"
-
-curl -fs -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
-  -H 'Content-Type: application/json' \
-  -d "$(jq -n --argjson items "$items" \
-    --arg id "$(uuidgen)" --arg plan "demo-web" --arg blk "$BLOCK_ID" \
     --argjson lamp "$NEXT" --argjson now "$(date +%s000)" \
     '{
       id: $id, planId: $plan, origin: "claude:block",
       lamport: $lamp, createdAt: $now, kind: "primary",
-      intent: {
-        type: "UPDATE_BLOCK", nodeId: $blk,
-        patch: { data: { ordered: false, items: $items } }
-      }
+      intent: { type: "UPDATE_BLOCK", nodeId: $blk, patch: { data: { markdown: "새 본문 내용…" } } }
     }')" | jq
 ```
+
+`UPDATE_BLOCK` replaces `data` entirely — preserve fields you don't intend to change by reading the existing block first and merging.
 
 ## Failure modes
 
@@ -130,9 +141,10 @@ curl -fs -X POST "${BASE_URL:-http://localhost:3000}/api/intents" \
 | `DUPLICATE_ENTRY` | reused entry `id` | regenerate uuid + retry |
 | `STALE_LAMPORT` | snapshot outdated | re-read plan, bump lamport, retry |
 | `NOT_FOUND` | blockId or parentId doesn't exist | re-read plan |
+| `WRONG_MODE` | block context conflicts with parent (e.g. app block under section) | place under a compatible parent |
 
 ## What this skill does NOT do
 
-- It does not edit section structure (titles, hierarchy) — use `plan-k-section`.
-- It does not handle agent graph nodes/edges — those have their own intent types (`INSERT_AGENT_NODE`, etc.) and aren't a skill yet.
-- It does not export — use `plan-k-export` after editing.
+- Section structure (titles, hierarchy) — use `plan-k-section`.
+- Agent graph nodes/edges — separate intent set, not yet exposed as a skill.
+- Export — use `plan-k-export` after editing.
