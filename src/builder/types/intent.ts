@@ -65,6 +65,7 @@ export type Intent =
       projectId: string;
       patch: { title?: string; summary?: string };
     }
+  | { type: "DELETE_PROJECT"; projectId: string }
   | { type: "INSERT_AGENT_NODE"; node: AgentNode }
   | { type: "DELETE_AGENT_NODE"; nodeId: string }
   | { type: "CONNECT_AGENT_NODES"; edge: AgentEdge }

@@ -77,3 +77,25 @@ describe("decideProjects.UPDATE_PROJECT", () => {
     expect(out).toBeNull();
   });
 });
+
+describe("decideProjects.DELETE_PROJECT", () => {
+  it("accepts when project exists", () => {
+    const state = makeEmptyState({
+      projects: { p1: makeProject("p1") },
+    });
+    const out = decideProjects(
+      state,
+      makeEntry({ type: "DELETE_PROJECT", projectId: "p1" }),
+    );
+    expect(out).toEqual({ ok: true });
+  });
+
+  it("rejects NOT_FOUND when project missing", () => {
+    const state = makeEmptyState();
+    const out = decideProjects(
+      state,
+      makeEntry({ type: "DELETE_PROJECT", projectId: "missing" }),
+    );
+    expect(out).toEqual({ ok: false, reason: "NOT_FOUND" });
+  });
+});

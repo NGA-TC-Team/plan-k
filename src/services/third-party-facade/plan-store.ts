@@ -143,6 +143,18 @@ export async function appendIntent(
     }
   }
 
+  // DELETE_PROJECT cascade: remove the project row and the plan row. The
+  // intents row we just inserted is removed by the FK CASCADE on plans —
+  // intentional, because the log lives inside the doomed plan and there is
+  // no separate audit table.
+  if (entry.intent.type === "DELETE_PROJECT") {
+    const projectId = entry.intent.projectId;
+    db.transaction((tx) => {
+      tx.delete(plans).where(eq(plans.id, projectId)).run();
+      tx.delete(projects).where(eq(projects.id, projectId)).run();
+    });
+  }
+
   return { ok: true, serverVersion: serverSeq };
 }
 

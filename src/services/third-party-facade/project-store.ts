@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { buildSeedSnapshot } from "@/builder/defaults";
 import { defaultIdFactory } from "@/builder/ids";
 import type { ProjectKind, ProjectMeta } from "@/builder/types/entity";
@@ -81,14 +81,4 @@ export async function createProject(
     createdAt: now.getTime(),
     updatedAt: now.getTime(),
   };
-}
-
-export async function deleteProject(id: string): Promise<boolean> {
-  // intents cascade via FK; plans need explicit removal.
-  const result = db.transaction((tx) => {
-    const planResult = tx.delete(plans).where(eq(plans.id, id)).run();
-    const projectResult = tx.delete(projects).where(eq(projects.id, id)).run();
-    return planResult.changes + projectResult.changes;
-  });
-  return result > 0;
 }

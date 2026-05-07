@@ -79,3 +79,38 @@ describe("applyProjects.UPDATE_PROJECT", () => {
     expect(out).toBeNull();
   });
 });
+
+describe("applyProjects.DELETE_PROJECT", () => {
+  it("removes the project and its entityMeta", () => {
+    const state = makeEmptyState({
+      projects: {
+        p1: makeProject("p1"),
+        p2: makeProject("p2", { title: "Keep" }),
+      },
+      entityMeta: {
+        p1: { lamport: 3, origin: "human:a" },
+        p2: { lamport: 4, origin: "human:a" },
+      },
+    });
+    const out = applyProjects(
+      state,
+      makeEntry({ type: "DELETE_PROJECT", projectId: "p1" }),
+    );
+    expect(out?.state.projects.p1).toBeUndefined();
+    expect(out?.state.projects.p2.title).toBe("Keep");
+    expect(out?.state.entityMeta.p1).toBeUndefined();
+    expect(out?.state.entityMeta.p2).toEqual({
+      lamport: 4,
+      origin: "human:a",
+    });
+  });
+
+  it("returns null when project missing", () => {
+    const state = makeEmptyState();
+    const out = applyProjects(
+      state,
+      makeEntry({ type: "DELETE_PROJECT", projectId: "missing" }),
+    );
+    expect(out).toBeNull();
+  });
+});

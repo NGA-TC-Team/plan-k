@@ -75,3 +75,16 @@ describe("invertProjects.UPDATE_PROJECT", () => {
     expect(result).toBeNull();
   });
 });
+
+describe("invertProjects.DELETE_PROJECT", () => {
+  it("returns null — delete is irreversible (plan + log are cascade-deleted)", () => {
+    const state = makeEmptyState({
+      projects: { p1: makeProject("p1") },
+    });
+    const result = invertProjects(
+      makeEntry({ type: "DELETE_PROJECT", projectId: "p1" }),
+      state,
+    );
+    expect(result).toBeNull();
+  });
+});
