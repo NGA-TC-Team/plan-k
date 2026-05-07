@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import type {
   ProjectKind,
@@ -8,6 +14,12 @@ import type {
   SectionEntity,
 } from "@/builder/types/entity";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   useBuilderDispatch,
   useBuilderState,
@@ -225,6 +237,7 @@ function DocsRail() {
               section={section}
               depth={0}
               activeId={currentSectionId}
+              planId={planId}
               subSectionsOf={subSectionsOf}
               onSelect={setCurrentSectionId}
               onAddChild={handleAddChild}
@@ -241,6 +254,7 @@ function SectionTreeNode({
   section,
   depth,
   activeId,
+  planId,
   subSectionsOf,
   onSelect,
   onAddChild,
@@ -249,6 +263,7 @@ function SectionTreeNode({
   section: SectionEntity;
   depth: number;
   activeId: string | null;
+  planId: string | null;
   subSectionsOf: (id: string) => SectionEntity[];
   onSelect: (id: string) => void;
   onAddChild: (parent: SectionEntity) => void;
@@ -303,6 +318,13 @@ function SectionTreeNode({
         >
           <Plus className="size-3" />
         </button>
+        {planId ? (
+          <SectionExportMenu
+            planId={planId}
+            sectionId={section.id}
+            sectionTitle={section.title}
+          />
+        ) : null}
         <button
           type="button"
           onClick={(e) => {
@@ -324,6 +346,7 @@ function SectionTreeNode({
               section={child}
               depth={depth + 1}
               activeId={activeId}
+              planId={planId}
               subSectionsOf={subSectionsOf}
               onSelect={onSelect}
               onAddChild={onAddChild}
@@ -333,6 +356,55 @@ function SectionTreeNode({
         </ul>
       ) : null}
     </li>
+  );
+}
+
+function SectionExportMenu({
+  planId,
+  sectionId,
+  sectionTitle,
+}: {
+  planId: string;
+  sectionId: string;
+  sectionTitle: string;
+}) {
+  const trigger = (kind: "pdf" | "png") => {
+    if (typeof window === "undefined") return;
+    const url = `/api/exports/${kind}?planId=${encodeURIComponent(planId)}&sectionId=${encodeURIComponent(sectionId)}`;
+    window.open(url, "_blank", "noopener");
+  };
+  const openPrint = () => {
+    window.open(
+      `/plan/${encodeURIComponent(planId)}/print?sectionId=${encodeURIComponent(sectionId)}`,
+      "_blank",
+      "noopener",
+    );
+  };
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            aria-label={`Export ${sectionTitle}`}
+            title="Export section"
+            onClick={(e) => e.stopPropagation()}
+            className="size-5 shrink-0 rounded text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
+          >
+            <Download className="size-3" />
+          </button>
+        }
+      />
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem onClick={() => trigger("pdf")}>
+          Export as PDF
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => trigger("png")}>
+          Export as PNG
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={openPrint}>Open print view</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
