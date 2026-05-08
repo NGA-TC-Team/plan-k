@@ -2,6 +2,7 @@
 
 import { GripVertical } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useParams } from "next/navigation";
 import { useContext } from "react";
 import { resolveClickSelection } from "@/builder/selection-click";
 import {
@@ -10,10 +11,16 @@ import {
   spacingFromBlockData,
 } from "@/builder/spacing";
 import { BuilderContext } from "@/components/builder/builder-context";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { useBlock, useBlockChildren } from "@/hooks/builder/use-block.hook";
 import { useBuilderDispatch } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useAiFlashStore, useBlockDragStore } from "@/services/stores";
+import { InlineAiMenu } from "./inline-ai/menu";
 import { InsertSlot } from "./insert-slot";
 import { pickRenderer } from "./renderers";
 
@@ -26,6 +33,8 @@ export function BlockShell({ blockId }: { blockId: string }) {
   const isFlashing = useAiFlashStore((s) => s.flashedIds.has(blockId));
   const dispatch = useBuilderDispatch();
   const storeHook = useContext(BuilderContext);
+  const params = useParams();
+  const planId = typeof params.id === "string" ? params.id : null;
   if (!vm) return null;
 
   const Renderer = pickRenderer(viewMode, vm.context, vm.kind);
@@ -125,8 +134,17 @@ export function BlockShell({ blockId }: { blockId: string }) {
           <GripVertical className="size-3.5" />
         </button>
       ) : null}
-      <Renderer vm={vm} handlers={handlers} />
-      <BlockChildren parentId={vm.id} />
+      <ContextMenu>
+        <ContextMenuTrigger className="contents">
+          <Renderer vm={vm} handlers={handlers} />
+          <BlockChildren parentId={vm.id} />
+        </ContextMenuTrigger>
+        {planId ? (
+          <ContextMenuContent>
+            <InlineAiMenu planId={planId} block={vm} />
+          </ContextMenuContent>
+        ) : null}
+      </ContextMenu>
     </motion.div>
   );
 }
