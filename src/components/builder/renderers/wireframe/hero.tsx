@@ -14,9 +14,7 @@ export const HeroWireframe: BlockRenderer = ({ vm }) => {
       <div className="pt-2">
         <div
           className={`h-9 w-32 rounded-md ${
-            hasCta
-              ? "bg-zinc-700 dark:bg-zinc-300"
-              : "bg-zinc-300 dark:bg-zinc-600"
+            hasCta ? "bg-primary/80" : "bg-surface-3"
           }`}
         />
       </div>

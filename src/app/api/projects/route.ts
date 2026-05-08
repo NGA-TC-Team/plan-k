@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     kind?: string;
     title?: string;
     summary?: string;
+    seed?: boolean;
   };
   if (body.kind !== "web" && body.kind !== "mobile" && body.kind !== "agent") {
     return NextResponse.json(
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     kind: body.kind,
     title,
     summary: body.summary,
+    seed: body.seed,
   });
   return NextResponse.json(project, { status: 201 });
 }

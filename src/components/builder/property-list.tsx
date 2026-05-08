@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { z } from "zod";
 import { manifestFor } from "@/builder/blocks/registry";
 import type { BlockKind } from "@/builder/types/entity";
@@ -28,29 +29,40 @@ export function PropertyList({ kind, data }: Props) {
     return <p className="text-xs text-muted-foreground">No properties.</p>;
   }
 
-  return (
-    <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 text-xs">
-      {keys.map((key) => (
-        <PropertyRow
-          key={key}
-          name={key}
-          value={(data as Record<string, unknown>)[key]}
-        />
-      ))}
-    </dl>
-  );
+  const rows = keys.map((key) => ({
+    label: humanize(key),
+    value: <Value value={(data as Record<string, unknown>)[key]} />,
+  }));
+
+  return <PropertyTable rows={rows} />;
 }
 
-function PropertyRow({ name, value }: { name: string; value: unknown }) {
+export type PropertyRow = { label: string; value: ReactNode };
+
+export function PropertyTable({ rows }: { rows: PropertyRow[] }) {
   return (
-    <>
-      <dt className="font-medium text-muted-foreground capitalize">
-        {humanize(name)}
-      </dt>
-      <dd className="min-w-0 text-foreground">
-        <Value value={value} />
-      </dd>
-    </>
+    <div className="overflow-hidden rounded-md border border-hairline">
+      <table className="w-full border-collapse text-xs">
+        <tbody>
+          {rows.map((row, i) => (
+            <tr
+              key={row.label}
+              className={i === 0 ? "" : "border-t border-hairline"}
+            >
+              <th
+                scope="row"
+                className="w-[35%] whitespace-nowrap bg-surface-1/40 px-3 py-2 text-left align-top font-medium capitalize text-muted-foreground"
+              >
+                {row.label}
+              </th>
+              <td className="min-w-0 px-3 py-2 align-top text-foreground">
+                {row.value}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -79,9 +91,13 @@ function Value({ value }: { value: unknown }) {
       </li>
     ));
     return (
-      <div className="space-y-0.5">
-        <span className="text-muted-foreground">{value.length} items</span>
-        <ul className="ml-3 list-disc">{preview}</ul>
+      <div className="space-y-1">
+        <span className="text-[11px] text-muted-foreground">
+          {value.length} items
+        </span>
+        <ul className="ml-4 list-disc space-y-0.5 marker:text-muted-foreground/60">
+          {preview}
+        </ul>
       </div>
     );
   }

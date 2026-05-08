@@ -62,12 +62,17 @@ export function applyEditing(
       const block = state.blocks[editing.id];
       if (!block) return null;
       const draftData = editing.draft as Record<string, unknown>;
+      // Shallow-merge so per-block metadata not tracked by the editor form
+      // (spacing, interactions, etc.) survives commit. Editors that explicitly
+      // remove array entries are unaffected — those keys are present in the
+      // draft and overwrite cleanly.
+      const mergedData = { ...block.data, ...draftData };
       return {
         state: {
           ...state,
           blocks: {
             ...state.blocks,
-            [editing.id]: { ...block, data: draftData },
+            [editing.id]: { ...block, data: mergedData },
           },
           entityMeta: {
             ...state.entityMeta,

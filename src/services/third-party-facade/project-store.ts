@@ -8,6 +8,8 @@ export type CreateProjectInput = {
   kind: ProjectKind;
   title: string;
   summary?: string;
+  // When false, skip the demo-grade seed content. Default true.
+  seed?: boolean;
 };
 
 export async function listProjects(): Promise<ProjectMeta[]> {
@@ -37,6 +39,7 @@ export async function createProject(
   const snapshot = buildSeedSnapshot(id, input.kind, {
     newId: ids.newEntryId,
     origin: `seed:${id}`,
+    seed: input.seed,
   });
   // Inline the project meta in the seed snapshot so the builder shows the
   // user-supplied title/summary immediately.

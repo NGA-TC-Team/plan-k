@@ -14,12 +14,12 @@ export const FormWireframe: BlockRenderer = ({ vm }) => {
           // biome-ignore lint/suspicious/noArrayIndexKey: placeholder fields
           <div key={i} className="space-y-1">
             <WireBar className="h-1.5 w-1/4" />
-            <div className="h-7 rounded border border-zinc-300 bg-white dark:border-zinc-600 dark:bg-zinc-900" />
+            <div className="h-7 rounded border border-hairline bg-surface-2" />
           </div>
         ))}
       </div>
       <div className="pt-1">
-        <div className="h-8 w-24 rounded-md bg-zinc-700 dark:bg-zinc-300" />
+        <div className="h-8 w-24 rounded-md bg-primary/70" />
       </div>
     </WireBox>
   );

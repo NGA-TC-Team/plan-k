@@ -1,6 +1,7 @@
 import type { BlockContext, BlockKind } from "@/builder/types/entity";
 import type { BlockRenderer } from "../types";
 import { AgentStepEditor } from "./agent-step-editor";
+import { ApiEndpointEditor } from "./api-endpoint-editor";
 import { AvatarEditor } from "./avatar-editor";
 import { BadgeEditor } from "./badge-editor";
 import { BannerEditor } from "./banner-editor";
@@ -11,6 +12,7 @@ import { CalloutEditor } from "./callout-editor";
 import { CardGridEditor } from "./card-grid-editor";
 import { ChecklistEditor } from "./checklist-editor";
 import { CodeBlockEditor } from "./code-block-editor";
+import { ColorSwatchEditor } from "./color-swatch-editor";
 import { CtaSectionEditor } from "./cta-section-editor";
 import { DecisionEditor } from "./decision-editor";
 import { DefinitionEditor } from "./definition-editor";
@@ -24,15 +26,18 @@ import { HeaderEditor } from "./header-editor";
 import { HeroEditor } from "./hero-editor";
 import { ImageEditor } from "./image-editor";
 import { InputEditor } from "./input-editor";
+import { JourneyStepEditor } from "./journey-step-editor";
 import { JsonFallbackEditor } from "./json-fallback-editor";
 import { LinkCardEditor } from "./link-card-editor";
 import { ListEditor } from "./list-editor";
 import { ListRowEditor } from "./list-row-editor";
 import { MetricEditor } from "./metric-editor";
+import { MilestoneEditor } from "./milestone-editor";
 import { ModalEditor } from "./modal-editor";
 import { NavEditor } from "./nav-editor";
 import { PageHeaderEditor } from "./page-header-editor";
 import { PersonaEditor } from "./persona-editor";
+import { ReleaseNoteEditor } from "./release-note-editor";
 import { RiskEditor } from "./risk-editor";
 import { RuleEditor } from "./rule-editor";
 import { SheetEditor } from "./sheet-editor";
@@ -65,6 +70,12 @@ const docs: ContextRegistry = {
   "user-story": UserStoryEditor,
   risk: RiskEditor,
   metric: MetricEditor,
+  milestone: MilestoneEditor,
+  "release-note": ReleaseNoteEditor,
+  "color-swatch": ColorSwatchEditor,
+  "journey-step": JourneyStepEditor,
+  "api-endpoint": ApiEndpointEditor,
+  stat: StatEditor,
 };
 
 const app: ContextRegistry = {
@@ -89,6 +100,7 @@ const app: ContextRegistry = {
   input: InputEditor,
   banner: BannerEditor,
   "empty-state": EmptyStateEditor,
+  table: TableEditor,
   // mobile
   "status-bar": StatusBarEditor,
   "bottom-nav": BottomNavEditor,

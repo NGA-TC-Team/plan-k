@@ -44,7 +44,8 @@ export function EditorShell({
           {title}
         </div>
         {isPending ? (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+          <span className="inline-flex items-center gap-1 rounded-sm bg-ring/15 px-1.5 py-0.5 text-[10px] font-medium text-ring">
+            <span className="size-1 rounded-full bg-ring animate-pulse" />
             Saving…
           </span>
         ) : null}

@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { SpacingDefaults } from "@/builder/spacing";
 import type {
   BlockContext,
   BlockKind,
@@ -37,6 +38,12 @@ export type BlockManifest<T = Record<string, unknown>> = {
    * stringify when omitted.
    */
   summary?: (value: T) => string;
+  /**
+   * Design-tuned padding/margin defaults for this kind. Optional — kinds without
+   * an explicit value fall back to {@link FALLBACK_SPACING_DEFAULTS}. Per-block
+   * overrides live in `BlockEntity.data.spacing` and win over these.
+   */
+  spacingDefaults?: SpacingDefaults;
 };
 
 export type ProjectKindList = ProjectKind[];

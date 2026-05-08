@@ -14,7 +14,7 @@ export const CardGridWireframe: BlockRenderer = ({ vm }) => {
     <WireBox className="space-y-3 px-3 py-3">
       <div className="flex items-center justify-between">
         <KindBadge kind="card grid" />
-        <span className="text-[10px] text-zinc-500">{columns} cols</span>
+        <span className="text-[10px] text-ink-subtle">{columns} cols</span>
       </div>
       <div
         className="grid gap-2"
@@ -24,9 +24,9 @@ export const CardGridWireframe: BlockRenderer = ({ vm }) => {
           <div
             // biome-ignore lint/suspicious/noArrayIndexKey: placeholder cells
             key={i}
-            className="flex h-20 flex-col gap-1 rounded border border-zinc-300 bg-white p-2 dark:border-zinc-600 dark:bg-zinc-900"
+            className="flex h-20 flex-col gap-1 rounded border border-hairline bg-surface-1 p-2"
           >
-            <div className="h-8 rounded bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-8 rounded bg-surface-3" />
             <WireBar className="w-3/4" />
             <WireBar className="h-1.5 w-1/2" />
           </div>

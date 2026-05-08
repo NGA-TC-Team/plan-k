@@ -14,7 +14,7 @@ export const ListWireframe: BlockRenderer = ({ vm }) => {
         {Array.from({ length: count }).map((_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: placeholder rows
           <li key={i} className="flex items-center gap-2">
-            <span className="size-1.5 shrink-0 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+            <span className="size-1.5 shrink-0 rounded-full bg-ink-tertiary" />
             <WireBar className={`${i % 2 === 0 ? "w-3/4" : "w-2/3"}`} />
           </li>
         ))}

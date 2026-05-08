@@ -5,6 +5,7 @@ import type { BlockRenderer } from "../types";
 import { AgentStepDetail } from "./agent-step";
 import { CardGridDetail } from "./card-grid";
 import {
+  ApiEndpointDetail,
   AvatarDetail,
   BadgeDetail,
   BannerDetail,
@@ -14,6 +15,7 @@ import {
   CalloutDetail,
   ChecklistDetail,
   CodeBlockDetail,
+  ColorSwatchDetail,
   CtaSectionDetail,
   DecisionDetail,
   DefinitionDetail,
@@ -24,12 +26,15 @@ import {
   FooterDetail,
   ImageDetail,
   InputDetail,
+  JourneyStepDetail,
   LinkCardDetail,
   ListRowDetail,
   MetricDetail,
+  MilestoneDetail,
   ModalDetail,
   PageHeaderDetail,
   PersonaDetail,
+  ReleaseNoteDetail,
   RiskDetail,
   RuleDetail,
   SheetDetail,
@@ -68,6 +73,12 @@ const realDocs: ContextRegistry = {
   "user-story": UserStoryDetail,
   risk: RiskDetail,
   metric: MetricDetail,
+  milestone: MilestoneDetail,
+  "release-note": ReleaseNoteDetail,
+  "color-swatch": ColorSwatchDetail,
+  "journey-step": JourneyStepDetail,
+  "api-endpoint": ApiEndpointDetail,
+  stat: StatDetail,
 };
 
 const realApp: ContextRegistry = {
@@ -92,6 +103,7 @@ const realApp: ContextRegistry = {
   input: InputDetail,
   banner: BannerDetail,
   "empty-state": EmptyStateDetail,
+  table: TableDetail,
   // mobile
   "status-bar": StatusBarDetail,
   "bottom-nav": BottomNavDetail,

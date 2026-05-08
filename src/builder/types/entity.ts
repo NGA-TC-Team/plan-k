@@ -21,7 +21,14 @@ export type DocsBlockKind =
   | "persona"
   | "user-story"
   | "risk"
-  | "metric";
+  | "metric"
+  // P7 — gap fillers for the new section kinds (roadmap, changelog, design
+  // system, journeys, api). See `app-design-screen-virtual-emerson.md` plan.
+  | "milestone"
+  | "release-note"
+  | "color-swatch"
+  | "journey-step"
+  | "api-endpoint";
 
 export type AppBlockKind =
   | "page-header"
@@ -76,6 +83,7 @@ export type ScreenEntity = {
   title: string;
   route?: string;
   position?: { x: number; y: number };
+  status?: SectionStatus;
 };
 
 export type ScreenEdgeId = string;
@@ -105,16 +113,48 @@ export type SectionKind =
   | "data"
   | "risks"
   | "metrics"
+  | "roadmap"
+  | "changelog"
+  | "security"
+  | "compliance"
+  | "testing"
+  // web
+  | "journeys"
+  | "design-system"
+  | "accessibility"
+  | "i18n"
+  | "seo"
+  // agent
   | "agent-persona"
   | "agent-tools"
   | "agent-memory"
   | "agent-trigger"
   | "agent-examples"
   | "agent-failure"
+  | "agent-prompt"
+  | "agent-eval"
+  | "agent-knowledge"
+  // mobile
   | "platform"
   | "native-modules"
   | "permissions"
-  | "custom";
+  | "app-store"
+  | "push"
+  | "deep-link"
+  | "offline"
+  | "custom"
+  // backlog kanban — sections of this kind are NOT shown in the Docs rail;
+  // they're rendered as cards in the Backlog board and edited in a Sheet.
+  | "backlog";
+
+export type SectionStatus = "pending" | "in-progress" | "approved" | "rejected";
+
+export const SECTION_STATUS_VALUES: readonly SectionStatus[] = [
+  "pending",
+  "in-progress",
+  "approved",
+  "rejected",
+] as const;
 
 export type SectionEntity = {
   id: SectionId;
@@ -122,6 +162,7 @@ export type SectionEntity = {
   parentId: SectionId | null;
   kind: SectionKind;
   title: string;
+  status?: SectionStatus;
 };
 
 export type AgentNode = {

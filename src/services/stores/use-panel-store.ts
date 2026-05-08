@@ -5,8 +5,8 @@ import { create } from "zustand";
 
 const STORAGE_KEY = "plan-k:builder:panel-width";
 const MIN = 320;
-const MAX = 480;
-const DEFAULT = 360;
+const MAX = 720;
+const DEFAULT = 380;
 
 function clamp(value: number): number {
   if (Number.isNaN(value)) return DEFAULT;

@@ -28,7 +28,7 @@ export const FormDetail: BlockRenderer = ({ vm }) => {
             )}
             {f.required ? <span className="text-red-500"> *</span> : null}
           </div>
-          <div className="rounded border bg-zinc-50 px-2 py-1 text-xs text-muted-foreground dark:bg-zinc-900">
+          <div className="rounded border bg-surface-1 px-2 py-1 text-xs text-muted-foreground">
             type: {f.type ?? "text"}
           </div>
         </div>

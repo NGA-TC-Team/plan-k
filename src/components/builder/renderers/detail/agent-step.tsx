@@ -13,7 +13,7 @@ const ROLE_STYLES: Record<string, string> = {
 export const AgentStepDetail: BlockRenderer = ({ vm }) => {
   const role = ((vm.displayValue.role as string) ?? "input").toLowerCase();
   const spec = vm.displayValue.spec ?? {};
-  const cls = ROLE_STYLES[role] ?? "border-zinc-300 bg-zinc-50";
+  const cls = ROLE_STYLES[role] ?? "border-hairline bg-surface-1";
   return (
     <div className={cn("rounded-md border-2 p-3", cls)}>
       <div className="mb-1 text-xs font-semibold uppercase tracking-wide">

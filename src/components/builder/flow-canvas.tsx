@@ -204,7 +204,7 @@ function EdgeWithDelete({
         onClick={onDelete}
         aria-label="Delete edge"
         title="Delete edge"
-        className="absolute z-10 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-destructive/10 hover:text-destructive hover:opacity-100"
+        className="absolute z-10 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive hover:opacity-100"
         style={{ left: midX, top: midY, opacity: 0.6 }}
       >
         <Unlink className="size-3" />
@@ -321,11 +321,11 @@ function ScreenCard({
         if (e.key === "Enter") onEnter();
       }}
       className={cn(
-        "group absolute select-none rounded-lg border bg-background shadow-sm",
-        "hover:shadow-md",
+        "group absolute select-none rounded-lg border bg-background transition-colors",
+        "hover:border-foreground/30",
         connectMode && !isConnectSource && "ring-1 ring-primary/30",
         isConnectSource && "ring-2 ring-primary",
-        livePos && "cursor-grabbing shadow-lg",
+        livePos && "cursor-grabbing ring-2 ring-ring",
         !livePos && !connectMode && "cursor-grab",
       )}
       style={{
@@ -343,7 +343,7 @@ function ScreenCard({
           onClick={handleDelete}
           aria-label={`Delete ${screen.title}`}
           title="Delete screen"
-          className="ml-2 size-5 shrink-0 rounded text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+          className="ml-2 size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
         >
           <X className="size-3" />
         </button>

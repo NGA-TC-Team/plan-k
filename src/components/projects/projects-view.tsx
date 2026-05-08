@@ -1,46 +1,120 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Bot,
+  ChevronDown,
+  FileText,
+  FolderKanban,
+  type LucideIcon,
+  Monitor,
+  Plus,
+  Smartphone,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import type { ProjectKind } from "@/builder/types/entity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   useCreateProjectMutation,
   useDeleteProjectMutation,
   useProjectsQuery,
 } from "@/data/projects";
 
-const KIND_OPTIONS: { value: ProjectKind; label: string; hint: string }[] = [
+const KIND_ICON: Record<ProjectKind, LucideIcon> = {
+  web: Monitor,
+  mobile: Smartphone,
+  agent: Bot,
+};
+
+type CreateOption = {
+  id: string;
+  kind: ProjectKind;
+  seed: boolean;
+  title: string;
+  summary: string;
+  label: string;
+  hint: string;
+  icon: LucideIcon;
+};
+
+// Templates reuse the demo seeds (Janggu / Jukku / Saetbyeol). Empty options
+// give an unseeded project of the same kind. The dropdown shows both groups
+// so the user can pick a populated starter or a blank canvas in one click.
+const CREATE_OPTIONS: CreateOption[] = [
   {
-    value: "web",
-    label: "Web app",
-    hint: "Multi-screen web plan + browser frame",
+    id: "tmpl-web-janggu",
+    kind: "web",
+    seed: true,
+    title: "Janggu (장구) — 골목상권 운영 SaaS",
+    summary:
+      "배민·쿠팡이츠·요기요 통합 운영 대시보드. 200+ blocks across docs + 7 screens.",
+    label: "Janggu (장구) template",
+    hint: "Web SaaS — full PRD + 7 screens",
+    icon: Monitor,
   },
   {
-    value: "mobile",
-    label: "Mobile app",
-    hint: "Mobile plan with device frame + screen flow",
+    id: "tmpl-mobile-jukku",
+    kind: "mobile",
+    seed: true,
+    title: "Jukku (죽구) — 페어 습관 트래커",
+    summary:
+      "친구 한 명과 21일 페어링하는 습관 트래커. 200 blocks + 7 mobile screens.",
+    label: "Jukku (죽구) template",
+    hint: "Mobile B2C — onboarding → today → detail",
+    icon: Smartphone,
   },
   {
-    value: "agent",
-    label: "AI agent",
-    hint: "Scenario sections + node graph",
+    id: "tmpl-agent-saetbyeol",
+    kind: "agent",
+    seed: true,
+    title: "Saetbyeol (샛별) — CS 트리아지 에이전트",
+    summary:
+      "새벽배송 CS 인박스 트리아지 에이전트. Tools + memory + 7-node scenario graph.",
+    label: "Saetbyeol (샛별) template",
+    hint: "Agent — tools spec + memory + sample interactions",
+    icon: Bot,
+  },
+  {
+    id: "empty-web",
+    kind: "web",
+    seed: false,
+    title: "Untitled web project",
+    summary: "",
+    label: "Empty — Web app",
+    hint: "빈 docs 트리 + 빈 Home 화면",
+    icon: Monitor,
+  },
+  {
+    id: "empty-mobile",
+    kind: "mobile",
+    seed: false,
+    title: "Untitled mobile project",
+    summary: "",
+    label: "Empty — Mobile app",
+    hint: "빈 docs 트리 + 빈 Main 화면",
+    icon: Smartphone,
+  },
+  {
+    id: "empty-agent",
+    kind: "agent",
+    seed: false,
+    title: "Untitled agent project",
+    summary: "",
+    label: "Empty — AI agent",
+    hint: "빈 docs 트리, 노드/엣지 없음",
+    icon: Bot,
   },
 ];
 
@@ -52,12 +126,15 @@ export function ProjectsView() {
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-12">
       <header className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <FolderKanban className="size-6" />
+            <span>Projects</span>
+          </h1>
           <p className="text-sm text-muted-foreground">
             Plans you've started in this workspace.
           </p>
         </div>
-        <CreateProjectDialog />
+        <CreateProjectMenu />
       </header>
 
       <section>
@@ -83,8 +160,12 @@ export function ProjectsView() {
             >
               <Link href={`/plan/${project.id}`} className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="uppercase">
-                    {project.kind}
+                  <Badge variant="secondary" className="uppercase gap-1">
+                    {(() => {
+                      const Icon = KIND_ICON[project.kind] ?? Monitor;
+                      return <Icon className="size-3" />;
+                    })()}
+                    <span>{project.kind}</span>
                   </Badge>
                   <div className="truncate font-medium">{project.title}</div>
                 </div>
@@ -121,136 +202,103 @@ export function ProjectsView() {
       </section>
 
       <section className="text-xs text-muted-foreground">
-        <Link href="/" className="underline-offset-2 hover:underline">
-          ← back to home
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+        >
+          <ArrowLeft className="size-3" />
+          <span>back to home</span>
         </Link>
       </section>
     </main>
   );
 }
 
-function CreateProjectDialog() {
+function CreateProjectMenu() {
   const router = useRouter();
   const createMutation = useCreateProjectMutation();
-  const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<ProjectKind>("web");
-  const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
 
-  const reset = () => {
-    setKind("web");
-    setTitle("");
-    setSummary("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = title.trim();
-    if (!trimmed) return;
+  const handleCreate = async (option: CreateOption) => {
     const project = await createMutation.mutateAsync({
-      kind,
-      title: trimmed,
-      summary: summary.trim() || undefined,
+      kind: option.kind,
+      title: option.title,
+      summary: option.summary || undefined,
+      seed: option.seed,
     });
-    setOpen(false);
-    reset();
     router.push(`/plan/${project.id}`);
   };
 
+  const templates = CREATE_OPTIONS.filter((o) => o.seed);
+  const empties = CREATE_OPTIONS.filter((o) => !o.seed);
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) reset();
-      }}
-    >
-      <DialogTrigger
+    <DropdownMenu>
+      <DropdownMenuTrigger
         render={
-          <Button type="button">
-            <span>New project</span>
+          <Button type="button" disabled={createMutation.isPending}>
+            <Plus className="size-4" />
+            <span>
+              {createMutation.isPending ? "Creating…" : "New project"}
+            </span>
+            <ChevronDown className="size-3.5 opacity-70" />
           </Button>
         }
       />
-      <DialogContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>New project</DialogTitle>
-            <DialogDescription>
-              Pick a kind and give it a title. A starter plan will be seeded
-              automatically.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <Label>Kind</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {KIND_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setKind(opt.value)}
-                  className={`rounded-md border p-3 text-left text-sm transition-colors ${
-                    kind === opt.value
-                      ? "border-primary bg-primary/5"
-                      : "hover:bg-accent"
-                  }`}
-                >
-                  <div className="font-medium">{opt.label}</div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {opt.hint}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="project-title">Title</Label>
-            <Input
-              id="project-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="My new app"
-              required
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="project-summary">Summary (optional)</Label>
-            <Textarea
-              id="project-summary"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="One-line description"
-              rows={2}
-            />
-          </div>
-
-          {createMutation.isError ? (
-            <div className="text-sm text-destructive">
+      <DropdownMenuContent align="end" className="w-80">
+        <DropdownMenuLabel className="flex items-center gap-1.5">
+          <Sparkles className="size-3.5 text-muted-foreground" />
+          <span>Templates (seeded with demo content)</span>
+        </DropdownMenuLabel>
+        {templates.map((opt) => {
+          const Icon = opt.icon;
+          return (
+            <DropdownMenuItem
+              key={opt.id}
+              onClick={() => handleCreate(opt)}
+              className="flex-col items-start gap-0.5 py-2"
+            >
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Icon className="size-3.5" />
+                <span>{opt.label}</span>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {opt.hint}
+              </div>
+            </DropdownMenuItem>
+          );
+        })}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="flex items-center gap-1.5">
+          <FileText className="size-3.5 text-muted-foreground" />
+          <span>Empty — start from scratch</span>
+        </DropdownMenuLabel>
+        {empties.map((opt) => {
+          const Icon = opt.icon;
+          return (
+            <DropdownMenuItem
+              key={opt.id}
+              onClick={() => handleCreate(opt)}
+              className="flex-col items-start gap-0.5 py-2"
+            >
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Icon className="size-3.5" />
+                <span>{opt.label}</span>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {opt.hint}
+              </div>
+            </DropdownMenuItem>
+          );
+        })}
+        {createMutation.isError ? (
+          <>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-xs text-destructive">
               {String(createMutation.error)}
             </div>
-          ) : null}
-
-          <DialogFooter>
-            <DialogClose
-              render={
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              }
-            />
-            <Button
-              type="submit"
-              disabled={createMutation.isPending || !title.trim()}
-            >
-              {createMutation.isPending ? "Creating…" : "Create + open"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -17,7 +17,7 @@ export const SwitchField = forwardRef<HTMLInputElement, Props>(
         ref={ref}
         type="checkbox"
         className={cn(
-          "size-4 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          "size-4 rounded-sm border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           className,
         )}
         {...props}

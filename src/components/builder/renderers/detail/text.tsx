@@ -1,5 +1,6 @@
 "use client";
 
+import { MarkdownView } from "@/components/builder/markdown/markdown-view";
 import type { BlockRenderer } from "../types";
 
 export const TextDetail: BlockRenderer = ({ vm }) => {
@@ -11,9 +12,5 @@ export const TextDetail: BlockRenderer = ({ vm }) => {
       </div>
     );
   }
-  return (
-    <div className="whitespace-pre-wrap py-2 text-sm leading-relaxed">
-      {markdown}
-    </div>
-  );
+  return <MarkdownView>{markdown}</MarkdownView>;
 };

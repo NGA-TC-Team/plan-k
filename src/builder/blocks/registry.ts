@@ -365,6 +365,142 @@ const metricManifest = manifest({
   summary: (v) => `${v.name || "Metric"}: ${v.current}/${v.target}${v.unit}`,
 });
 
+// ── P7: gap fillers for new section kinds ──
+
+const milestoneManifest = manifest({
+  context: "docs",
+  kind: "milestone",
+  label: "Milestone",
+  group: "Spec",
+  shortcut: "V",
+  schema: z.object({
+    date: z.string().default(""),
+    title: z.string().default(""),
+    status: z
+      .enum(["planned", "in-progress", "shipped", "delayed"])
+      .default("planned"),
+    scope: z.string().default(""),
+    exitCriteria: z.string().default(""),
+  }),
+  defaults: {
+    date: "",
+    title: "",
+    status: "planned" as const,
+    scope: "",
+    exitCriteria: "",
+  },
+  summary: (v) =>
+    `[${v.status}] ${v.title || "Milestone"}${v.date ? ` · ${v.date}` : ""}`,
+});
+
+const releaseNoteManifest = manifest({
+  context: "docs",
+  kind: "release-note",
+  label: "Release note",
+  group: "Spec",
+  shortcut: "W",
+  schema: z.object({
+    version: z.string().default(""),
+    date: z.string().default(""),
+    highlights: z.string().default(""),
+    added: z.array(z.string()).default([]),
+    changed: z.array(z.string()).default([]),
+    fixed: z.array(z.string()).default([]),
+    removed: z.array(z.string()).default([]),
+  }),
+  defaults: {
+    version: "",
+    date: "",
+    highlights: "",
+    added: [] as string[],
+    changed: [] as string[],
+    fixed: [] as string[],
+    removed: [] as string[],
+  },
+  summary: (v) =>
+    `${v.version || "Release"}${v.date ? ` (${v.date})` : ""} · +${v.added.length}/~${v.changed.length}/!${v.fixed.length}/-${v.removed.length}`,
+});
+
+const colorSwatchManifest = manifest({
+  context: "docs",
+  kind: "color-swatch",
+  label: "Color swatch",
+  group: "Media",
+  shortcut: "Y",
+  schema: z.object({
+    name: z.string().default(""),
+    hex: z
+      .string()
+      .regex(/^#?[0-9a-fA-F]{3,8}$/, "Must be a hex color")
+      .or(z.literal(""))
+      .default(""),
+    role: z.string().default(""),
+    contrastNote: z.string().default(""),
+  }),
+  defaults: { name: "", hex: "", role: "", contrastNote: "" },
+  summary: (v) => `${v.name || "Color"}${v.hex ? ` ${v.hex}` : ""}`,
+});
+
+const journeyStepManifest = manifest({
+  context: "docs",
+  kind: "journey-step",
+  label: "Journey step",
+  group: "Spec",
+  shortcut: "J",
+  schema: z.object({
+    step: z.number().int().min(1).default(1),
+    persona: z.string().default(""),
+    action: z.string().default(""),
+    system: z.string().default(""),
+    outcome: z.string().default(""),
+    painPoint: z.string().default(""),
+  }),
+  defaults: {
+    step: 1,
+    persona: "",
+    action: "",
+    system: "",
+    outcome: "",
+    painPoint: "",
+  },
+  summary: (v) =>
+    `Step ${v.step}${v.persona ? ` · ${v.persona}` : ""}: ${(v.action || "").slice(0, 40)}`,
+});
+
+const apiEndpointManifest = manifest({
+  context: "docs",
+  kind: "api-endpoint",
+  label: "API endpoint",
+  group: "Reference",
+  shortcut: "A",
+  schema: z.object({
+    method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).default("GET"),
+    path: z.string().default(""),
+    summary: z.string().default(""),
+    auth: z.string().default(""),
+    request: z.string().default(""),
+    response: z.string().default(""),
+    errors: z
+      .array(
+        z.object({
+          status: z.number().int().min(100).max(599).default(400),
+          reason: z.string().default(""),
+        }),
+      )
+      .default([]),
+  }),
+  defaults: {
+    method: "GET" as const,
+    path: "",
+    summary: "",
+    auth: "",
+    request: "",
+    response: "",
+    errors: [] as { status: number; reason: string }[],
+  },
+  summary: (v) => `${v.method} ${v.path || "/"}`,
+});
+
 // ────────────────────────────── app (web/shared) ──────────────────────────────
 
 const pageHeaderManifest = manifest({
@@ -971,6 +1107,11 @@ export const blockManifests = {
   "user-story": userStoryManifest,
   risk: riskManifest,
   metric: metricManifest,
+  milestone: milestoneManifest,
+  "release-note": releaseNoteManifest,
+  "color-swatch": colorSwatchManifest,
+  "journey-step": journeyStepManifest,
+  "api-endpoint": apiEndpointManifest,
   // app
   "page-header": pageHeaderManifest,
   sidebar: sidebarManifest,

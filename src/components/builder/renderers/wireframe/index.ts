@@ -24,6 +24,7 @@ import {
   SidebarWireframe,
   StatusBarWireframe,
   StatWireframe,
+  TableWireframe,
   TabsWireframe,
 } from "./extra";
 import { FormWireframe } from "./form";
@@ -40,6 +41,8 @@ const realDocs: ContextRegistry = {
   heading: HeaderWireframe,
   "bullet-list": ListWireframe,
   "numbered-list": ListWireframe,
+  table: TableWireframe,
+  stat: StatWireframe,
 };
 
 const realApp: ContextRegistry = {
@@ -64,6 +67,7 @@ const realApp: ContextRegistry = {
   input: InputWireframe,
   banner: BannerWireframe,
   "empty-state": EmptyStateWireframe,
+  table: TableWireframe,
   // mobile
   "status-bar": StatusBarWireframe,
   "bottom-nav": BottomNavWireframe,

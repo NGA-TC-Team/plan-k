@@ -1,23 +1,44 @@
 "use client";
 
 import {
+  BookOpen,
   ChevronDown,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Download,
+  FileImage,
+  FileText,
+  GitBranch,
+  ListTree,
+  Monitor,
   Plus,
+  Printer,
+  Smartphone,
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { defaultDataFor, manifestFor } from "@/builder/blocks/registry";
+import {
+  defaultDocsTreeFor,
+  SECTION_INFO,
+  type SectionSeedSpec,
+} from "@/builder/defaults";
 import type {
+  BlockEntity,
   ProjectKind,
   ScreenEntity,
   SectionEntity,
+  SectionStatus,
 } from "@/builder/types/entity";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -25,36 +46,97 @@ import {
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
-import { useBuilderUiStore } from "@/services/stores";
+import { useBacklogStore, useBuilderUiStore } from "@/services/stores";
+import { StatusChipMenu } from "./status-chip";
 
 export function LeftRail() {
   const topMode = useBuilderUiStore((s) => s.topMode);
+  const collapsed = useBuilderUiStore((s) => s.leftRailCollapsed);
+  const toggle = useBuilderUiStore((s) => s.toggleLeftRail);
   const planKind = useBuilderState(
     (s) => Object.values(s.state.plans)[0]?.kind ?? null,
   );
 
-  if (topMode === "docs") {
+  if (collapsed) {
     return (
-      <aside className="flex h-full flex-col border-r">
-        <DocsRail />
+      <aside className="flex h-full flex-col items-center border-r bg-background">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="mt-2 size-7"
+          onClick={toggle}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+        >
+          <ChevronsRight className="size-4" />
+        </Button>
       </aside>
     );
   }
 
   return (
     <aside className="flex h-full flex-col border-r">
-      {planKind === "web" || planKind === "mobile" ? (
-        <ScreensRail kind={planKind} />
+      {topMode === "backlog" ? (
+        <BacklogRail onCollapse={toggle} />
+      ) : topMode === "docs" ? (
+        <DocsRail onCollapse={toggle} />
+      ) : planKind === "web" || planKind === "mobile" ? (
+        <ScreensRail kind={planKind} onCollapse={toggle} />
       ) : planKind === "agent" ? (
-        <AgentRailPlaceholder />
+        <AgentRailPlaceholder onCollapse={toggle} />
       ) : (
-        <EmptyRail />
+        <EmptyRail onCollapse={toggle} />
       )}
     </aside>
   );
 }
 
-function ScreensRail({ kind }: { kind: ProjectKind }) {
+function RailHeaderActions({
+  onAdd,
+  addLabel,
+  onCollapse,
+}: {
+  onAdd?: () => void;
+  addLabel?: string;
+  onCollapse: () => void;
+}) {
+  return (
+    <div className="flex flex-row items-center gap-1">
+      {onAdd ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          onClick={onAdd}
+          aria-label={addLabel}
+          title={addLabel}
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-6"
+        onClick={onCollapse}
+        aria-label="Collapse sidebar"
+        title="Collapse sidebar"
+      >
+        <ChevronsLeft className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+function ScreensRail({
+  kind,
+  onCollapse,
+}: {
+  kind: ProjectKind;
+  onCollapse: () => void;
+}) {
   const planId = useBuilderState(
     (s) => Object.values(s.state.plans)[0]?.id ?? null,
   );
@@ -75,6 +157,7 @@ function ScreensRail({ kind }: { kind: ProjectKind }) {
         kind === "web"
           ? `Screen ${screens.length + 1}`
           : `Screen ${screens.length + 1}`,
+      status: "pending",
     };
     dispatch({ type: "INSERT_SCREEN", screen });
     dispatch({ type: "SWITCH_SCREEN", screenId: screen.id });
@@ -88,23 +171,30 @@ function ScreensRail({ kind }: { kind: ProjectKind }) {
     dispatch({ type: "SWITCH_SCREEN", screenId });
   };
 
+  const changeStatus = (screenId: string, status: SectionStatus) => {
+    dispatch({
+      type: "UPDATE_SCREEN",
+      screenId,
+      patch: { status },
+    });
+  };
+
   return (
     <>
-      <div className="flex items-center justify-between px-3 py-2">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Screens · {kind}
+      <div className="flex items-start justify-between px-3 py-2">
+        <div className="flex items-center gap-1.5 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {kind === "mobile" ? (
+            <Smartphone className="size-3.5" />
+          ) : (
+            <Monitor className="size-3.5" />
+          )}
+          <span>Screens · {kind}</span>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          onClick={addScreen}
-          aria-label="Add screen"
-          title="Add screen"
-        >
-          <Plus className="size-3.5" />
-        </Button>
+        <RailHeaderActions
+          onAdd={addScreen}
+          addLabel="Add screen"
+          onCollapse={onCollapse}
+        />
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 text-sm">
         {screens.length === 0 ? (
@@ -131,9 +221,13 @@ function ScreensRail({ kind }: { kind: ProjectKind }) {
                 >
                   {screen.title}
                 </button>
+                <StatusChipMenu
+                  status={screen.status}
+                  onChange={(next) => changeStatus(screen.id, next)}
+                />
                 <button
                   type="button"
-                  className="size-6 shrink-0 rounded text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+                  className="size-6 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteScreen(screen.id);
@@ -152,16 +246,28 @@ function ScreensRail({ kind }: { kind: ProjectKind }) {
   );
 }
 
-function DocsRail() {
-  const docsRoots = useBuilderState((s) => s.state.docsRootIds);
+function DocsRail({ onCollapse }: { onCollapse: () => void }) {
+  const docsRootsRaw = useBuilderState((s) => s.state.docsRootIds);
   const sections = useBuilderState((s) => s.state.sections);
+  const docsRoots = useMemo(
+    () => docsRootsRaw.filter((id) => sections[id]?.kind !== "backlog"),
+    [docsRootsRaw, sections],
+  );
   const childrenMap = useBuilderState((s) => s.state.children);
   const planId = useBuilderState(
     (s) => Object.values(s.state.plans)[0]?.id ?? null,
   );
+  const planKind = useBuilderState(
+    (s) => Object.values(s.state.plans)[0]?.kind ?? null,
+  );
   const dispatch = useBuilderDispatch();
   const currentSectionId = useBuilderUiStore((s) => s.currentSectionId);
   const setCurrentSectionId = useBuilderUiStore((s) => s.setCurrentSectionId);
+
+  const templates = useMemo<SectionSeedSpec[]>(
+    () => (planKind ? defaultDocsTreeFor(planKind) : []),
+    [planKind],
+  );
 
   const subSectionsOf = (parentId: string): SectionEntity[] => {
     const ids = childrenMap[parentId] ?? [];
@@ -181,9 +287,65 @@ function DocsRail() {
       parentId: null,
       kind: "overview",
       title: `Section ${docsRoots.length + 1}`,
+      status: "pending",
     };
     dispatch({ type: "INSERT_SECTION", section });
     setCurrentSectionId(section.id);
+  };
+
+  /**
+   * Inserts a template section. If the spec carries children (e.g. Policy),
+   * the parent goes in first, then each child as a sub-section. If
+   * SECTION_INFO[kind].starter is defined, those starter blocks are also
+   * dispatched as INSERT_BLOCK under the parent so the user lands on a
+   * pre-scaffolded section rather than an empty canvas.
+   *
+   * The first inserted section becomes the active selection.
+   */
+  const handleAddTemplate = (spec: SectionSeedSpec) => {
+    if (!planId) return;
+    const parent: SectionEntity = {
+      id: crypto.randomUUID(),
+      planId,
+      parentId: null,
+      kind: spec.kind,
+      title: spec.title,
+      status: "pending",
+    };
+    dispatch({ type: "INSERT_SECTION", section: parent });
+    setCurrentSectionId(parent.id);
+    if (spec.children) {
+      for (const child of spec.children) {
+        const sub: SectionEntity = {
+          id: crypto.randomUUID(),
+          planId,
+          parentId: parent.id,
+          kind: child.kind,
+          title: child.title,
+          status: "pending",
+        };
+        dispatch({ type: "INSERT_SECTION", section: sub });
+      }
+    }
+    const starter = SECTION_INFO[spec.kind]?.starter;
+    if (starter) {
+      starter.forEach((s, idx) => {
+        const manifest = manifestFor(s.kind);
+        const block: BlockEntity = {
+          id: crypto.randomUUID(),
+          parentId: parent.id,
+          kind: s.kind,
+          context: manifest.context,
+          data: { ...defaultDataFor(s.kind), ...(s.data ?? {}) },
+        };
+        dispatch({
+          type: "INSERT_BLOCK",
+          parentId: parent.id,
+          block,
+          index: idx,
+        });
+      });
+    }
   };
 
   const handleAddChild = (parent: SectionEntity) => {
@@ -194,6 +356,7 @@ function DocsRail() {
       parentId: parent.id,
       kind: parent.kind,
       title: "Subsection",
+      status: "pending",
     };
     dispatch({ type: "INSERT_SECTION", section });
     setCurrentSectionId(section.id);
@@ -204,23 +367,115 @@ function DocsRail() {
     if (currentSectionId === sectionId) setCurrentSectionId(null);
   };
 
+  const handleStatusChange = (sectionId: string, status: SectionStatus) => {
+    dispatch({
+      type: "UPDATE_SECTION",
+      sectionId,
+      patch: { status },
+    });
+  };
+
   return (
     <>
-      <div className="flex items-center justify-between px-3 py-2">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Docs sections
+      <div className="flex items-start justify-between px-3 py-2">
+        <div className="flex items-center gap-1.5 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <BookOpen className="size-3.5" />
+          <span>Docs sections</span>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          onClick={handleAddRoot}
-          aria-label="Add section"
-          title="Add section"
-        >
-          <Plus className="size-3.5" />
-        </Button>
+        <div className="flex flex-row items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-6"
+                  aria-label="Add section"
+                  title="Add section"
+                >
+                  <Plus className="size-3.5" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent className="w-80" align="end">
+              {templates.length > 0 ? (
+                <>
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {planKind === "agent"
+                        ? "Agent docs · 에이전트 문서"
+                        : planKind === "mobile"
+                          ? "Mobile docs · 모바일 문서"
+                          : "Web docs · 웹 문서"}
+                    </DropdownMenuLabel>
+                    {templates.map((spec) => {
+                      const info = SECTION_INFO[spec.kind];
+                      return (
+                        <DropdownMenuItem
+                          key={spec.kind}
+                          onClick={() => handleAddTemplate(spec)}
+                          title={spec.description}
+                          className="items-start py-1.5"
+                        >
+                          <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{spec.title}</span>
+                              {info?.titleKo ? (
+                                <span className="text-[11px] text-muted-foreground/80">
+                                  {info.titleKo}
+                                </span>
+                              ) : null}
+                              {spec.children?.length ? (
+                                <span className="ml-auto rounded bg-muted px-1 py-0.5 text-[9px] font-mono text-muted-foreground">
+                                  +{spec.children.length}
+                                </span>
+                              ) : null}
+                            </div>
+                            {spec.description ? (
+                              <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                                {spec.description}
+                              </span>
+                            ) : null}
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
+              <DropdownMenuItem
+                onClick={handleAddRoot}
+                title="템플릿 없이 빈 섹션을 추가합니다."
+                className="items-start py-1.5"
+              >
+                <div className="flex flex-1 flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Empty section</span>
+                    <span className="text-[11px] text-muted-foreground/80">
+                      빈 섹션
+                    </span>
+                  </div>
+                  <span className="text-[11px] leading-snug text-muted-foreground">
+                    템플릿 없이 빈 섹션을 추가합니다.
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-6"
+            onClick={onCollapse}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+          >
+            <ChevronsLeft className="size-3.5" />
+          </Button>
+        </div>
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 text-sm">
         {docsRoots.length === 0 ? (
@@ -242,6 +497,7 @@ function DocsRail() {
               onSelect={setCurrentSectionId}
               onAddChild={handleAddChild}
               onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
             />
           );
         })}
@@ -259,6 +515,7 @@ function SectionTreeNode({
   onSelect,
   onAddChild,
   onDelete,
+  onStatusChange,
 }: {
   section: SectionEntity;
   depth: number;
@@ -268,6 +525,7 @@ function SectionTreeNode({
   onSelect: (id: string) => void;
   onAddChild: (parent: SectionEntity) => void;
   onDelete: (id: string) => void;
+  onStatusChange: (id: string, status: SectionStatus) => void;
 }) {
   const children = subSectionsOf(section.id);
   const hasChildren = children.length > 0;
@@ -288,7 +546,7 @@ function SectionTreeNode({
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? "Collapse" : "Expand"}
-            className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent"
+            className="flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent"
           >
             {open ? (
               <ChevronDown className="size-3" />
@@ -306,6 +564,10 @@ function SectionTreeNode({
         >
           {section.title}
         </button>
+        <StatusChipMenu
+          status={section.status}
+          onChange={(next) => onStatusChange(section.id, next)}
+        />
         <button
           type="button"
           onClick={(e) => {
@@ -314,7 +576,7 @@ function SectionTreeNode({
           }}
           aria-label={`Add child to ${section.title}`}
           title="Add subsection"
-          className="size-5 shrink-0 rounded text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
+          className="size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
         >
           <Plus className="size-3" />
         </button>
@@ -333,7 +595,7 @@ function SectionTreeNode({
           }}
           aria-label={`Delete ${section.title}`}
           title="Delete section"
-          className="size-5 shrink-0 rounded text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+          className="size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
         >
           <Trash2 className="size-3" />
         </button>
@@ -351,6 +613,7 @@ function SectionTreeNode({
               onSelect={onSelect}
               onAddChild={onAddChild}
               onDelete={onDelete}
+              onStatusChange={onStatusChange}
             />
           ))}
         </ul>
@@ -389,7 +652,7 @@ function SectionExportMenu({
             aria-label={`Export ${sectionTitle}`}
             title="Export section"
             onClick={(e) => e.stopPropagation()}
-            className="size-5 shrink-0 rounded text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
+            className="size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
           >
             <Download className="size-3" />
           </button>
@@ -397,18 +660,23 @@ function SectionExportMenu({
       />
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuItem onClick={() => trigger("pdf")}>
-          Export as PDF
+          <FileText className="size-3.5" />
+          <span>Export as PDF</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => trigger("png")}>
-          Export as PNG
+          <FileImage className="size-3.5" />
+          <span>Export as PNG</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={openPrint}>Open print view</DropdownMenuItem>
+        <DropdownMenuItem onClick={openPrint}>
+          <Printer className="size-3.5" />
+          <span>Open print view</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function AgentRailPlaceholder() {
+function AgentRailPlaceholder({ onCollapse }: { onCollapse: () => void }) {
   const agentTab = useBuilderState((s) => s.state.agentTab);
   const docsRoots = useBuilderState((s) => s.state.docsRootIds);
   const sections = useBuilderState((s) => s.state.sections);
@@ -418,33 +686,38 @@ function AgentRailPlaceholder() {
 
   return (
     <>
-      <div className="flex items-center gap-1 px-3 py-2">
-        <button
-          type="button"
-          onClick={() =>
-            dispatch({ type: "SWITCH_AGENT_TAB", tab: "scenario" })
-          }
-          className={cn(
-            "flex-1 rounded px-2 py-1 text-xs font-medium",
-            agentTab === "scenario"
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-accent/50",
-          )}
-        >
-          Scenario
-        </button>
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "SWITCH_AGENT_TAB", tab: "graph" })}
-          className={cn(
-            "flex-1 rounded px-2 py-1 text-xs font-medium",
-            agentTab === "graph"
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-accent/50",
-          )}
-        >
-          Graph
-        </button>
+      <div className="flex items-start justify-between px-3 py-2">
+        <div className="flex flex-1 items-center gap-1">
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({ type: "SWITCH_AGENT_TAB", tab: "scenario" })
+            }
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium",
+              agentTab === "scenario"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-accent/50",
+            )}
+          >
+            <ListTree className="size-3.5" />
+            <span>Scenario</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "SWITCH_AGENT_TAB", tab: "graph" })}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium",
+              agentTab === "graph"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-accent/50",
+            )}
+          >
+            <GitBranch className="size-3.5" />
+            <span>Graph</span>
+          </button>
+        </div>
+        <RailHeaderActions onCollapse={onCollapse} />
       </div>
       {agentTab === "scenario" ? (
         <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 text-sm">
@@ -483,8 +756,88 @@ function AgentRailPlaceholder() {
   );
 }
 
-function EmptyRail() {
+function BacklogRail({ onCollapse }: { onCollapse: () => void }) {
+  const planId = useBuilderState(
+    (s) => Object.values(s.state.plans)[0]?.id ?? null,
+  );
+  const sectionsMap = useBuilderState((s) => s.state.sections);
+  const dispatch = useBuilderDispatch();
+  const setOpenSheet = useBacklogStore((s) => s.setOpenSheet);
+  const registerNew = useBacklogStore((s) => s.registerNew);
+
+  const counts = useMemo(() => {
+    const out: Record<SectionStatus, number> = {
+      pending: 0,
+      "in-progress": 0,
+      approved: 0,
+      rejected: 0,
+    };
+    for (const sec of Object.values(sectionsMap)) {
+      if (sec.planId !== planId || sec.kind !== "backlog") continue;
+      out[sec.status ?? "pending"] += 1;
+    }
+    return out;
+  }, [sectionsMap, planId]);
+
+  const total =
+    counts.pending + counts["in-progress"] + counts.approved + counts.rejected;
+
   return (
-    <div className="p-4 text-xs text-muted-foreground">No plan loaded.</div>
+    <>
+      <div className="flex items-start justify-between px-3 py-2">
+        <div className="flex items-center gap-1.5 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span>Backlog · {total}</span>
+        </div>
+        <RailHeaderActions
+          onAdd={
+            planId
+              ? () => {
+                  const section: SectionEntity = {
+                    id: crypto.randomUUID(),
+                    planId,
+                    parentId: null,
+                    kind: "backlog",
+                    title: "Untitled",
+                    status: "pending",
+                  };
+                  dispatch({ type: "INSERT_SECTION", section });
+                  registerNew(planId, section.id, "pending");
+                  setOpenSheet(section.id);
+                }
+              : undefined
+          }
+          addLabel="Add backlog"
+          onCollapse={onCollapse}
+        />
+      </div>
+      <ul className="flex-1 space-y-1 overflow-y-auto px-3 pb-3 text-xs">
+        {(["pending", "in-progress", "approved", "rejected"] as const).map(
+          (status) => (
+            <li
+              key={status}
+              className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent/50"
+            >
+              <span className="capitalize text-muted-foreground">
+                {status.replace("-", " ")}
+              </span>
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono">
+                {counts[status]}
+              </span>
+            </li>
+          ),
+        )}
+      </ul>
+    </>
+  );
+}
+
+function EmptyRail({ onCollapse }: { onCollapse: () => void }) {
+  return (
+    <>
+      <div className="flex items-start justify-end px-3 py-2">
+        <RailHeaderActions onCollapse={onCollapse} />
+      </div>
+      <div className="p-4 text-xs text-muted-foreground">No plan loaded.</div>
+    </>
   );
 }

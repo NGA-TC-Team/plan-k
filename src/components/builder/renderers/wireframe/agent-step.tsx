@@ -12,11 +12,11 @@ const ROLE_DOT: Record<string, string> = {
 
 export const AgentStepWireframe: BlockRenderer = ({ vm }) => {
   const role = ((vm.displayValue.role as string) ?? "input") as string;
-  const dot = ROLE_DOT[role] ?? "bg-zinc-400";
+  const dot = ROLE_DOT[role] ?? "bg-ink-tertiary";
   return (
     <WireBox className="flex items-center gap-3 px-3 py-3">
       <span className={`size-3 shrink-0 rounded-full ${dot}`} />
-      <span className="rounded-sm bg-zinc-200 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+      <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-ink-subtle">
         {role}
       </span>
       <div className="flex-1 space-y-1.5">

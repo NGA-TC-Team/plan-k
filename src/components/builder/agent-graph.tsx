@@ -149,7 +149,7 @@ export function AgentGraph() {
                 onClick={() => handleDeleteEdge(edge.id)}
                 aria-label="Disconnect"
                 title="Disconnect"
-                className="absolute z-10 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                className="absolute z-10 flex size-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-muted-foreground transition-opacity hover:bg-destructive/10 hover:text-destructive"
                 style={{ left: midX, top: midY, opacity: 0.6 }}
               >
                 <Unlink className="size-3" />
@@ -169,7 +169,7 @@ export function AgentGraph() {
               role="button"
               tabIndex={0}
               className={cn(
-                "group absolute rounded-md border shadow-sm transition-shadow",
+                "group absolute rounded-md border transition-colors hover:border-foreground/30",
                 ROLE_STYLES[node.role],
                 connectMode && "cursor-crosshair",
                 isSource && "ring-2 ring-primary",
@@ -198,7 +198,7 @@ export function AgentGraph() {
                   }}
                   aria-label={`Delete ${node.label}`}
                   title="Delete node"
-                  className="size-4 rounded text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+                  className="size-4 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
                 >
                   <Trash2 className="size-3" />
                 </button>

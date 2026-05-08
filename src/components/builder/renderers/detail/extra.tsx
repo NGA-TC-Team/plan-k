@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { MarkdownView } from "@/components/builder/markdown/markdown-view";
 import { cn } from "@/lib/utils";
+import { highlightToHtml } from "@/services/third-party-facade/shiki";
 import type { BlockRenderer } from "../types";
+import { CopyButton } from "./_copy-button";
 
 /**
  * One-file home for the long tail of detail renderers added in P6 stage 6.
@@ -29,10 +33,10 @@ export const BlockquoteDetail: BlockRenderer = ({ vm }) => {
   const text = stringValue(vm, "text");
   const cite = stringValue(vm, "cite");
   return (
-    <blockquote className="border-l-4 border-muted-foreground/40 pl-3 text-sm italic">
-      {text || empty("Quote")}
+    <blockquote className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
+      {text ? <MarkdownView compact>{text}</MarkdownView> : empty("Quote")}
       {cite ? (
-        <footer className="mt-1 text-xs not-italic text-muted-foreground">
+        <footer className="mt-1 text-xs not-italic text-muted-foreground/80">
           — {cite}
         </footer>
       ) : null}
@@ -61,7 +65,7 @@ export const CalloutDetail: BlockRenderer = ({ vm }) => {
       )}
     >
       {title ? <div className="mb-1 font-semibold">{title}</div> : null}
-      <div className="whitespace-pre-wrap">{text || empty("Callout")}</div>
+      {text ? <MarkdownView compact>{text}</MarkdownView> : empty("Callout")}
     </div>
   );
 };
@@ -70,16 +74,52 @@ export const CodeBlockDetail: BlockRenderer = ({ vm }) => {
   const language = stringValue(vm, "language") || "text";
   const code = stringValue(vm, "code");
   const filename = stringValue(vm, "filename");
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!code) {
+      setHighlighted(null);
+      return;
+    }
+    let cancelled = false;
+    highlightToHtml(code, language).then((html) => {
+      if (!cancelled) setHighlighted(html);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [code, language]);
+
   return (
-    <div className="overflow-hidden rounded-md border text-xs">
-      {filename ? (
-        <div className="border-b bg-muted px-2 py-1 font-mono text-[10px] text-muted-foreground">
-          {filename} · {language}
-        </div>
-      ) : null}
-      <pre className="overflow-x-auto bg-muted/30 px-2 py-2 font-mono">
-        <code>{code || empty("// empty")}</code>
-      </pre>
+    <div className="group relative overflow-hidden rounded-md border bg-surface-1 text-xs">
+      <div className="flex items-center justify-between border-b bg-muted/60 px-2 py-1">
+        <span className="font-mono text-[10px] text-muted-foreground">
+          {filename ? `${filename} · ${language}` : language}
+        </span>
+        {code ? (
+          <CopyButton
+            text={code}
+            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+          />
+        ) : null}
+      </div>
+      {code ? (
+        highlighted ? (
+          <div
+            className="code-block-shiki overflow-x-auto px-3 py-2 font-mono text-xs [&_pre]:bg-transparent [&_pre]:p-0"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki output is HTML escaped by the highlighter.
+            dangerouslySetInnerHTML={{ __html: highlighted }}
+          />
+        ) : (
+          <pre className="overflow-x-auto bg-muted/30 px-3 py-2 font-mono">
+            <code>{code}</code>
+          </pre>
+        )
+      ) : (
+        <pre className="overflow-x-auto bg-muted/30 px-3 py-2 font-mono">
+          <code>{empty("// empty")}</code>
+        </pre>
+      )}
     </div>
   );
 };
@@ -90,7 +130,7 @@ export const ChecklistDetail: BlockRenderer = ({ vm }) => {
   if (items.length === 0)
     return <div className="py-1 text-sm">{empty("Empty checklist")}</div>;
   return (
-    <ul className="space-y-1 text-sm">
+    <ul className="space-y-1.5 text-sm">
       {items.map((item, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: positional list mirroring source array.
         <li key={i} className="flex items-start gap-2">
@@ -98,10 +138,14 @@ export const ChecklistDetail: BlockRenderer = ({ vm }) => {
             type="checkbox"
             checked={!!item.checked}
             readOnly
-            className="mt-1 h-3.5 w-3.5"
+            className="mt-[3px] size-3.5 rounded border-border"
           />
           <span
-            className={item.checked ? "line-through text-muted-foreground" : ""}
+            className={
+              item.checked
+                ? "leading-relaxed line-through text-muted-foreground"
+                : "leading-relaxed"
+            }
           >
             {item.text || empty("(item)")}
           </span>
@@ -117,13 +161,16 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
   if (columns.length === 0 && rows.length === 0)
     return <div className="py-1 text-sm">{empty("Empty table")}</div>;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b">
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full border-collapse text-sm">
+        <thead className="bg-muted/40">
+          <tr>
             {columns.map((col, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: header positions are stable.
-              <th key={i} className="px-2 py-1 text-left font-medium">
+              <th
+                // biome-ignore lint/suspicious/noArrayIndexKey: header positions are stable.
+                key={i}
+                className="border-b border-border px-3 py-1.5 text-left font-semibold"
+              >
                 {col || empty(`col ${i + 1}`)}
               </th>
             ))}
@@ -132,10 +179,10 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
         <tbody>
           {rows.map((row, ri) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional.
-            <tr key={ri} className="border-b">
+            <tr key={ri} className="border-b border-border last:border-b-0">
               {row.map((cell, ci) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional.
-                <td key={ci} className="px-2 py-1">
+                <td key={ci} className="px-3 py-1.5 align-top">
                   {cell}
                 </td>
               ))}
@@ -225,7 +272,7 @@ export const DefinitionDetail: BlockRenderer = ({ vm }) => (
 const STATUS_TONE: Record<string, string> = {
   proposed: "bg-amber-100 text-amber-800",
   accepted: "bg-emerald-100 text-emerald-800",
-  superseded: "bg-zinc-200 text-zinc-700",
+  superseded: "bg-surface-2 text-ink-subtle",
 };
 
 export const DecisionDetail: BlockRenderer = ({ vm }) => {
@@ -365,7 +412,7 @@ function PersonaList({ title, items }: { title: string; items: string[] }) {
 const PRIORITY_TONE: Record<string, string> = {
   P0: "bg-red-100 text-red-800",
   P1: "bg-amber-100 text-amber-800",
-  P2: "bg-zinc-200 text-zinc-700",
+  P2: "bg-surface-2 text-ink-subtle",
 };
 
 export const UserStoryDetail: BlockRenderer = ({ vm }) => {
@@ -836,7 +883,7 @@ export const AvatarDetail: BlockRenderer = ({ vm }) => {
 };
 
 const BADGE_TONE: Record<string, string> = {
-  default: "bg-zinc-200 text-zinc-800",
+  default: "bg-surface-2 text-ink-muted",
   primary: "bg-primary text-primary-foreground",
   success: "bg-emerald-200 text-emerald-800",
   warn: "bg-amber-200 text-amber-800",
@@ -997,8 +1044,8 @@ export const StatusBarDetail: BlockRenderer = ({ vm }) => {
       className={cn(
         "flex items-center justify-between px-3 py-1 text-[11px]",
         variant === "dark"
-          ? "bg-zinc-900 text-white"
-          : "bg-white text-zinc-900",
+          ? "bg-surface-3 text-ink"
+          : "bg-inverse-canvas text-inverse-ink",
       )}
     >
       <span className="font-medium">{time || "9:41"}</span>
@@ -1119,6 +1166,319 @@ export const SheetDetail: BlockRenderer = ({ vm }) => {
         >
           {primaryCta}
         </button>
+      ) : null}
+    </div>
+  );
+};
+
+// ────────── P7: gap fillers ──────────
+
+const MILESTONE_STATUS: Record<
+  string,
+  { label: string; dot: string; chip: string }
+> = {
+  planned: {
+    label: "Planned",
+    dot: "bg-muted-foreground/40",
+    chip: "bg-muted text-muted-foreground",
+  },
+  "in-progress": {
+    label: "In progress",
+    dot: "bg-amber-500",
+    chip: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100",
+  },
+  shipped: {
+    label: "Shipped",
+    dot: "bg-emerald-500",
+    chip: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100",
+  },
+  delayed: {
+    label: "Delayed",
+    dot: "bg-red-500",
+    chip: "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100",
+  },
+};
+
+export const MilestoneDetail: BlockRenderer = ({ vm }) => {
+  const date = stringValue(vm, "date");
+  const title = stringValue(vm, "title");
+  const status = stringValue(vm, "status") || "planned";
+  const scope = stringValue(vm, "scope");
+  const exitCriteria = stringValue(vm, "exitCriteria");
+  const tone = MILESTONE_STATUS[status] ?? MILESTONE_STATUS.planned;
+  return (
+    <div className="flex gap-3 rounded border p-3 text-sm">
+      <span
+        className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", tone.dot)}
+        aria-hidden
+      />
+      <div className="flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {date ? (
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+              {date}
+            </span>
+          ) : null}
+          <span
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[10px] font-medium",
+              tone.chip,
+            )}
+          >
+            {tone.label}
+          </span>
+          <span className="font-semibold">{title || empty("Milestone")}</span>
+        </div>
+        {scope ? (
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Scope · </span>
+            {scope}
+          </p>
+        ) : null}
+        {exitCriteria ? (
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Done when · </span>
+            {exitCriteria}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+const RELEASE_BUCKETS: Array<{
+  key: "added" | "changed" | "fixed" | "removed";
+  label: string;
+  tone: string;
+}> = [
+  { key: "added", label: "Added", tone: "text-emerald-600" },
+  { key: "changed", label: "Changed", tone: "text-amber-600" },
+  { key: "fixed", label: "Fixed", tone: "text-blue-600" },
+  { key: "removed", label: "Removed", tone: "text-red-600" },
+];
+
+export const ReleaseNoteDetail: BlockRenderer = ({ vm }) => {
+  const version = stringValue(vm, "version");
+  const date = stringValue(vm, "date");
+  const highlights = stringValue(vm, "highlights");
+  const data = vm.displayValue;
+  return (
+    <div className="rounded border p-4 text-sm">
+      <header className="mb-3 flex flex-wrap items-baseline gap-2 border-b pb-2">
+        <span className="font-mono text-base font-semibold">
+          {version || empty("v0.0.0")}
+        </span>
+        {date ? (
+          <span className="text-xs text-muted-foreground">{date}</span>
+        ) : null}
+      </header>
+      {highlights ? (
+        <p className="mb-3 text-xs text-muted-foreground">{highlights}</p>
+      ) : null}
+      <div className="grid gap-3 md:grid-cols-2">
+        {RELEASE_BUCKETS.map((b) => {
+          const items = (data[b.key] as string[]) ?? [];
+          return (
+            <div key={b.key}>
+              <div
+                className={cn(
+                  "mb-1 text-[10px] font-semibold uppercase tracking-wide",
+                  b.tone,
+                )}
+              >
+                {b.label} ({items.length})
+              </div>
+              {items.length === 0 ? (
+                <div className="text-xs text-muted-foreground/70">—</div>
+              ) : (
+                <ul className="space-y-0.5 text-xs">
+                  {items.map((item, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: positional list.
+                    <li key={i} className="flex gap-1">
+                      <span className={cn("font-bold", b.tone)}>·</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const ColorSwatchDetail: BlockRenderer = ({ vm }) => {
+  const name = stringValue(vm, "name");
+  const hexRaw = stringValue(vm, "hex");
+  const hex = hexRaw && !hexRaw.startsWith("#") ? `#${hexRaw}` : hexRaw;
+  const role = stringValue(vm, "role");
+  const contrastNote = stringValue(vm, "contrastNote");
+  return (
+    <div className="flex items-stretch gap-3 rounded border p-3 text-sm">
+      <div
+        className="size-16 shrink-0 rounded border"
+        style={hex ? { backgroundColor: hex } : undefined}
+        aria-hidden
+      />
+      <div className="flex-1 space-y-1">
+        <div className="flex items-baseline gap-2">
+          <span className="font-semibold">{name || empty("Swatch")}</span>
+          {hex ? (
+            <span className="font-mono text-xs text-muted-foreground">
+              {hex}
+            </span>
+          ) : null}
+        </div>
+        {role ? <p className="text-xs">{role}</p> : null}
+        {contrastNote ? (
+          <p className="text-xs text-muted-foreground">{contrastNote}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+export const JourneyStepDetail: BlockRenderer = ({ vm }) => {
+  const step = (vm.displayValue.step as number) ?? 1;
+  const persona = stringValue(vm, "persona");
+  const action = stringValue(vm, "action");
+  const system = stringValue(vm, "system");
+  const outcome = stringValue(vm, "outcome");
+  const painPoint = stringValue(vm, "painPoint");
+  return (
+    <div className="rounded border p-3 text-sm">
+      <header className="mb-2 flex items-baseline gap-2 border-b pb-1.5">
+        <span className="rounded bg-foreground px-1.5 py-0.5 font-mono text-[10px] text-background">
+          STEP {step}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {persona || empty("(persona)")}
+        </span>
+      </header>
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
+        <dt className="font-medium text-foreground">Action</dt>
+        <dd className="text-muted-foreground">{action || empty("—")}</dd>
+        <dt className="font-medium text-foreground">System</dt>
+        <dd className="text-muted-foreground">{system || empty("—")}</dd>
+        <dt className="font-medium text-foreground">Outcome</dt>
+        <dd className="text-muted-foreground">{outcome || empty("—")}</dd>
+        {painPoint ? (
+          <>
+            <dt className="font-medium text-red-600">Pain</dt>
+            <dd className="text-muted-foreground">{painPoint}</dd>
+          </>
+        ) : null}
+      </dl>
+    </div>
+  );
+};
+
+const METHOD_TONE: Record<string, string> = {
+  GET: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100",
+  POST: "bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100",
+  PUT: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100",
+  PATCH:
+    "bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-100",
+  DELETE: "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100",
+};
+
+function HighlightedJson({ code }: { code: string }) {
+  const [html, setHtml] = useState<string | null>(null);
+  useEffect(() => {
+    if (!code) {
+      setHtml(null);
+      return;
+    }
+    let cancelled = false;
+    highlightToHtml(code, "json").then((h) => {
+      if (!cancelled) setHtml(h);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [code]);
+  if (!code) return <div className="text-[11px] text-muted-foreground">—</div>;
+  if (html) {
+    return (
+      <div
+        className="overflow-x-auto rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] [&_pre]:bg-transparent [&_pre]:p-0"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki output.
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+  return (
+    <pre className="overflow-x-auto rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px]">
+      <code>{code}</code>
+    </pre>
+  );
+}
+
+export const ApiEndpointDetail: BlockRenderer = ({ vm }) => {
+  const method = stringValue(vm, "method") || "GET";
+  const path = stringValue(vm, "path");
+  const summary = stringValue(vm, "summary");
+  const auth = stringValue(vm, "auth");
+  const request = stringValue(vm, "request");
+  const response = stringValue(vm, "response");
+  const errors =
+    (vm.displayValue.errors as { status: number; reason: string }[]) ?? [];
+  return (
+    <div className="rounded border text-sm">
+      <header className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold",
+            METHOD_TONE[method] ?? METHOD_TONE.GET,
+          )}
+        >
+          {method}
+        </span>
+        <code className="font-mono text-sm">{path || empty("/path")}</code>
+        {auth ? (
+          <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            🔒 {auth}
+          </span>
+        ) : null}
+      </header>
+      {summary ? (
+        <p className="border-b px-3 py-2 text-xs text-muted-foreground">
+          {summary}
+        </p>
+      ) : null}
+      <div className="grid gap-3 p-3 md:grid-cols-2">
+        <div>
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Request
+          </div>
+          <HighlightedJson code={request} />
+        </div>
+        <div>
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Response
+          </div>
+          <HighlightedJson code={response} />
+        </div>
+      </div>
+      {errors.length > 0 ? (
+        <div className="border-t px-3 py-2">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Errors
+          </div>
+          <ul className="space-y-0.5 text-xs">
+            {errors.map((e, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional list.
+              <li key={i} className="flex gap-2">
+                <span className="font-mono font-semibold text-red-600">
+                  {e.status}
+                </span>
+                <span className="text-muted-foreground">{e.reason || "—"}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </div>
   );
