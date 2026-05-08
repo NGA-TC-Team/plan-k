@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineAiDrawer } from "@/components/builder/inline-ai/staging-drawer";
 import { CommandPalette } from "@/components/command-palette/palette";
 import { KeymapSheet } from "@/components/help/keymap-sheet";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts.hook";
@@ -12,6 +13,7 @@ export function GlobalOverlays() {
     <>
       <KeymapSheet />
       <CommandPalette />
+      <InlineAiDrawer />
     </>
   );
 }

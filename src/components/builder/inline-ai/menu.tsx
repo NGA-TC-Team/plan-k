@@ -13,6 +13,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
+import { useInlineAiStore } from "@/services/stores";
 import { request } from "@/services/third-party-facade";
 import {
   INLINE_ACTIONS,
@@ -31,6 +32,8 @@ type Props = {
 export function InlineAiMenu({ planId, block }: Props) {
   const groups = groupActions(block);
   const anyAvailable = groups.some((g) => g.actions.length > 0);
+  const addSession = useInlineAiStore((s) => s.addSession);
+  const setOpen = useInlineAiStore((s) => s.setOpen);
   if (!anyAvailable) return null;
 
   const onPick = async (actionId: InlineActionId) => {
@@ -49,10 +52,14 @@ export function InlineAiMenu({ planId, block }: Props) {
         toast.error(`Action failed: ${res.reason ?? "unknown"}`, { id: t });
         return;
       }
-      // Drawer wiring lands in PR-3; for now we hand the user the
-      // session id so the existing chat staging strip can show the
-      // result if they navigate to it.
-      toast.success("Action started — review in chat panel", { id: t });
+      addSession(res.sessionId);
+      toast.success("Action sent", {
+        id: t,
+        action: {
+          label: "Review",
+          onClick: () => setOpen(true),
+        },
+      });
     } catch (err) {
       toast.error(
         `Action failed: ${err instanceof Error ? err.message : String(err)}`,

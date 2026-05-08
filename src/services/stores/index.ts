@@ -24,6 +24,7 @@ export {
   type StagedIntent,
   useChatStore,
 } from "./chat-store";
+export { useInlineAiStore } from "./inline-ai.store";
 export { useInsertMruStore } from "./insert-mru.store";
 export { type SaveStatus, useSaveStatusStore } from "./save-status.store";
 export { useSearchHighlightStore } from "./search-highlight.store";
