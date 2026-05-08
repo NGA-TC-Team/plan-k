@@ -15,6 +15,7 @@
     "plan:export": "bun run scripts/plan-export.ts",
     "plan:import": "bun run scripts/plan-import.ts",
     "plan:rebuild-refs": "bun run scripts/plan-rebuild-refs.ts",
+    "plan:orphans": "bun run scripts/plan-orphans.ts",
     "test:e2e": "next build && playwright test",
     "test:e2e:ui": "next build && playwright test --ui"
   },
