@@ -88,6 +88,34 @@ export const intentsArchive = sqliteTable(
   (t) => [index("intents_archive_plan_seq_idx").on(t.planId, t.serverSeq)],
 );
 
+// Derived ref graph between entities. Source of truth is the intent log;
+// rows here are recomputed from block.data text by the server-side
+// syncRefsForIntent hook. `id` is `${srcId}::${kind}::${dstId}` so the
+// same edge collapses to one row regardless of how many times text is
+// resaved (idempotent upsert via INSERT OR IGNORE).
+export const refs = sqliteTable(
+  "refs",
+  {
+    id: text("id").primaryKey(),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+    srcId: text("src_id").notNull(),
+    dstId: text("dst_id").notNull(),
+    kind: text("kind", {
+      enum: ["mention", "embed", "depends-on", "trace"],
+    }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    index("refs_plan_dst_idx").on(t.planId, t.dstId),
+    index("refs_plan_src_idx").on(t.planId, t.srcId),
+    uniqueIndex("refs_unique_idx").on(t.srcId, t.dstId, t.kind),
+  ],
+);
+
 // ─── Chat ─────────────────────────────────────────────────────────────────
 // One row per chat session. Sessions are scoped to a single plan so the
 // Claude Code subprocess has a tight context window. `expiresAt` is a
@@ -205,6 +233,8 @@ export type IntentRow = typeof intents.$inferSelect;
 export type NewIntentRow = typeof intents.$inferInsert;
 export type IntentArchiveRow = typeof intentsArchive.$inferSelect;
 export type NewIntentArchiveRow = typeof intentsArchive.$inferInsert;
+export type RefRow = typeof refs.$inferSelect;
+export type NewRefRow = typeof refs.$inferInsert;
 export type ChatSessionRow = typeof chatSessions.$inferSelect;
 export type NewChatSessionRow = typeof chatSessions.$inferInsert;
 export type ChatMessageRow = typeof chatMessages.$inferSelect;

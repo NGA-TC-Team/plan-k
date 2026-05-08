@@ -20,8 +20,11 @@ export {
   type NewIntentRow,
   type NewPlanRow,
   type NewProjectRow,
+  type NewRefRow,
   type PlanRow,
   type ProjectRow,
   plans,
   projects,
+  type RefRow,
+  refs,
 } from "./schema";
