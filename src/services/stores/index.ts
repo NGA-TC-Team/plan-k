@@ -26,6 +26,7 @@ export {
 } from "./chat-store";
 export { useInsertMruStore } from "./insert-mru.store";
 export { type SaveStatus, useSaveStatusStore } from "./save-status.store";
+export { useSearchHighlightStore } from "./search-highlight.store";
 export { type Theme, useThemeStore } from "./theme-store";
 export { useUiStore } from "./ui-store";
 export {
