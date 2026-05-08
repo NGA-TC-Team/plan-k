@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { exportToPdf } from "@/services/third-party-facade/exporter";
-import { getPlan } from "@/services/third-party-facade/plan-store";
+import {
+  getPlan,
+  isPlanLoadError,
+} from "@/services/third-party-facade/plan-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,6 +22,12 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { ok: false, reason: "PLAN_NOT_FOUND" },
       { status: 404 },
+    );
+  }
+  if (isPlanLoadError(plan)) {
+    return NextResponse.json(
+      { ok: false, reason: plan.error, detail: plan },
+      { status: 409 },
     );
   }
   const sectionId = url.searchParams.get("sectionId") ?? undefined;

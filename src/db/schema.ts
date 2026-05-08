@@ -85,9 +85,7 @@ export const intentsArchive = sqliteTable(
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
   },
-  (t) => [
-    index("intents_archive_plan_seq_idx").on(t.planId, t.serverSeq),
-  ],
+  (t) => [index("intents_archive_plan_seq_idx").on(t.planId, t.serverSeq)],
 );
 
 // ─── Chat ─────────────────────────────────────────────────────────────────

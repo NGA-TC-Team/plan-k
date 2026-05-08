@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { PrintView } from "@/components/print/print-view";
-import { getPlan } from "@/services/third-party-facade/plan-store";
+import {
+  getPlan,
+  isPlanLoadError,
+} from "@/services/third-party-facade/plan-store";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +22,7 @@ export default async function PrintPage({
     : sectionParam;
   const plan = await getPlan(id);
   if (!plan) notFound();
+  if (isPlanLoadError(plan)) notFound();
   return (
     <PrintView
       snapshot={plan.snapshot}

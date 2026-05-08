@@ -3,14 +3,31 @@ import { buildSeedSnapshot } from "@/builder/defaults";
 import { defaultIdFactory } from "@/builder/ids";
 import type { ProjectKind } from "@/builder/types/entity";
 import type { IntentLogEntry } from "@/builder/types/intent";
-import { type AppState, SCHEMA_VERSION } from "@/builder/types/state";
+import type { AppState } from "@/builder/types/state";
 import { db, intents, plans, projects } from "@/db";
+import { MigrationError, migrateSnapshot } from "@/db/migrate";
 import { planStream } from "./plan-stream";
 
 export type PlanRecord = {
   snapshot: AppState;
   tailEntries: IntentLogEntry[];
 };
+
+export type PlanLoadError = {
+  error: "MIGRATION_FAILED";
+  planId: string;
+  fromVersion: number;
+  toVersion: number;
+  message: string;
+};
+
+export type PlanLoadResult = PlanRecord | PlanLoadError | null;
+
+export function isPlanLoadError(
+  result: PlanLoadResult,
+): result is PlanLoadError {
+  return result !== null && "error" in result;
+}
 
 const SEED_KINDS: Record<string, ProjectKind> = {
   demo: "web",
@@ -49,35 +66,42 @@ function rowToTailEntry(row: {
   };
 }
 
-let didWarnSchemaWipe = false;
-
-export async function getPlan(planId: string): Promise<PlanRecord | null> {
+export async function getPlan(planId: string): Promise<PlanLoadResult> {
   const existing = db.select().from(plans).where(eq(plans.id, planId)).get();
   if (existing) {
-    const snapshot = JSON.parse(existing.snapshot) as AppState;
-    if (snapshot.schemaVersion !== SCHEMA_VERSION) {
-      // Pre-refactor data — drop and either reseed (for SEED_KINDS) or
-      // return null. Intents cascade-delete via FK.
-      db.delete(plans).where(eq(plans.id, planId)).run();
-      if (!didWarnSchemaWipe) {
-        didWarnSchemaWipe = true;
-        console.warn(
-          `[plan-store] schema migrated to v${SCHEMA_VERSION}; dropped pre-refactor plan rows.`,
-        );
+    const raw = JSON.parse(existing.snapshot) as unknown;
+    let snapshot: AppState;
+    try {
+      snapshot = migrateSnapshot(raw);
+    } catch (err) {
+      if (err instanceof MigrationError) {
+        return {
+          error: "MIGRATION_FAILED",
+          planId,
+          fromVersion: err.fromVersion,
+          toVersion: err.toVersion,
+          message: err.message,
+        };
       }
-      // Fall through to seed/return-null path below.
-    } else {
-      const tailRows = db
-        .select()
-        .from(intents)
-        .where(eq(intents.planId, planId))
-        .orderBy(asc(intents.serverSeq))
-        .all();
-      return {
-        snapshot,
-        tailEntries: tailRows.map(rowToTailEntry),
-      };
+      throw err;
     }
+    // Persist the migrated snapshot so future loads skip the work.
+    if (snapshot !== raw) {
+      db.update(plans)
+        .set({ snapshot: JSON.stringify(snapshot) })
+        .where(eq(plans.id, planId))
+        .run();
+    }
+    const tailRows = db
+      .select()
+      .from(intents)
+      .where(eq(intents.planId, planId))
+      .orderBy(asc(intents.serverSeq))
+      .all();
+    return {
+      snapshot,
+      tailEntries: tailRows.map(rowToTailEntry),
+    };
   }
 
   const kind = SEED_KINDS[planId];
