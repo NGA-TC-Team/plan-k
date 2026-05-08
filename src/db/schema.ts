@@ -28,6 +28,10 @@ export const plans = sqliteTable("plans", {
   id: text("id").primaryKey(),
   kind: text("kind", { enum: ["web", "mobile", "agent"] }).notNull(),
   snapshot: text("snapshot").notNull(),
+  // Highest `intents.serverSeq` already folded into `snapshot`. Hydration
+  // fetches only entries with serverSeq > snapshotSeq. 0 means snapshot is
+  // the seed and no compaction has run yet.
+  snapshotSeq: integer("snapshot_seq").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),
@@ -56,6 +60,33 @@ export const intents = sqliteTable(
   (t) => [
     index("intents_plan_seq_idx").on(t.planId, t.serverSeq),
     uniqueIndex("intents_plan_seq_uniq").on(t.planId, t.serverSeq),
+  ],
+);
+
+// Mirror of `intents` for entries that have been folded into a plan's
+// snapshot. Compaction copies rows here and deletes them from `intents`,
+// so live hydration only scans the active tail. `archivedAt` records when
+// the row left the active log; future prune jobs key off it.
+export const intentsArchive = sqliteTable(
+  "intents_archive",
+  {
+    id: text("id").primaryKey(),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+    serverSeq: integer("server_seq").notNull(),
+    lamport: integer("lamport").notNull(),
+    origin: text("origin").notNull(),
+    kind: text("kind", { enum: ["primary", "inverse"] }).notNull(),
+    parentEntryId: text("parent_entry_id"),
+    intent: text("intent").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    index("intents_archive_plan_seq_idx").on(t.planId, t.serverSeq),
   ],
 );
 
@@ -174,6 +205,8 @@ export type PlanRow = typeof plans.$inferSelect;
 export type NewPlanRow = typeof plans.$inferInsert;
 export type IntentRow = typeof intents.$inferSelect;
 export type NewIntentRow = typeof intents.$inferInsert;
+export type IntentArchiveRow = typeof intentsArchive.$inferSelect;
+export type NewIntentArchiveRow = typeof intentsArchive.$inferInsert;
 export type ChatSessionRow = typeof chatSessions.$inferSelect;
 export type NewChatSessionRow = typeof chatSessions.$inferInsert;
 export type ChatMessageRow = typeof chatMessages.$inferSelect;
