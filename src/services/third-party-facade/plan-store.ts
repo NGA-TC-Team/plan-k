@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { buildSeedSnapshot } from "@/builder/defaults";
 import { defaultIdFactory } from "@/builder/ids";
 import type { ProjectKind } from "@/builder/types/entity";
@@ -6,6 +6,7 @@ import type { IntentLogEntry } from "@/builder/types/intent";
 import type { AppState } from "@/builder/types/state";
 import { db, intents, plans, projects } from "@/db";
 import { MigrationError, migrateSnapshot } from "@/db/migrate";
+import { maybeCompact } from "./plan-compaction";
 import { planStream } from "./plan-stream";
 
 export type PlanRecord = {
@@ -92,10 +93,18 @@ export async function getPlan(planId: string): Promise<PlanLoadResult> {
         .where(eq(plans.id, planId))
         .run();
     }
+    // Hydration only replays entries that postdate the folded snapshot.
+    // For uncompacted plans snapshotSeq is 0 so this is equivalent to
+    // fetching the full log.
     const tailRows = db
       .select()
       .from(intents)
-      .where(eq(intents.planId, planId))
+      .where(
+        and(
+          eq(intents.planId, planId),
+          gt(intents.serverSeq, existing.snapshotSeq),
+        ),
+      )
       .orderBy(asc(intents.serverSeq))
       .all();
     return {
@@ -208,10 +217,15 @@ export async function appendIntent(
   // not re-apply its own intent.
   planStream.emit(entry);
 
+  // Best-effort compaction. No-op when the active log is below threshold;
+  // failures log + swallow so the append response is unaffected.
+  maybeCompact(entry.planId);
+
   return { ok: true, serverVersion: serverSeq };
 }
 
 export async function resetForTests(): Promise<void> {
   db.delete(intents).run();
   db.delete(plans).run();
+  db.delete(projects).run();
 }
