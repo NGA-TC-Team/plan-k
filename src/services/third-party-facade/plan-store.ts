@@ -134,9 +134,16 @@ export async function appendIntent(
     throw err;
   }
 
+  const touchedAt = new Date();
   db.update(plans)
-    .set({ updatedAt: new Date() })
+    .set({ updatedAt: touchedAt })
     .where(eq(plans.id, entry.planId))
+    .run();
+  // Mirror to project meta so the Home/Projects list shows last-edited time
+  // for any kind of edit, not just UPDATE_PROJECT.
+  db.update(projects)
+    .set({ updatedAt: touchedAt })
+    .where(eq(projects.id, entry.planId))
     .run();
 
   // Project meta lives in two places — the plan snapshot (so the builder shows

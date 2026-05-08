@@ -5,8 +5,16 @@ export function invertSelection(
   entry: IntentLogEntry,
   prevState: AppState,
 ): Intent | null {
-  if (entry.intent.type !== "SELECT_NODE") return null;
-  const prevNodeId =
-    prevState.selection.kind === "node" ? prevState.selection.id : null;
+  if (
+    entry.intent.type !== "SELECT_NODE" &&
+    entry.intent.type !== "SELECT_NODES"
+  ) {
+    return null;
+  }
+  const prev = prevState.selection;
+  if (prev.kind === "multi") {
+    return { type: "SELECT_NODES", ids: [...prev.ids] };
+  }
+  const prevNodeId = prev.kind === "node" ? prev.id : null;
   return { type: "SELECT_NODE", nodeId: prevNodeId };
 }

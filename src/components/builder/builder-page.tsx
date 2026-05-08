@@ -1,18 +1,29 @@
 "use client";
 
 import { AnimatePresence } from "motion/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 import type { ProjectKind, ScreenEntity } from "@/builder/types/entity";
 import { useBuilderShortcuts } from "@/hooks/builder/use-builder-shortcuts.hook";
-import { useBuilderState } from "@/hooks/builder/use-builder-store.hook";
-import { useBuilderUiStore } from "@/services/stores";
+import {
+  useBuilderDispatch,
+  useBuilderState,
+} from "@/hooks/builder/use-builder-store.hook";
+import { useMarquee } from "@/hooks/builder/use-marquee.hook";
+import { cn } from "@/lib/utils";
+import {
+  useBuilderUiStore,
+  useChatStore,
+  usePanelStore,
+} from "@/services/stores";
 import { AgentGraph } from "./agent-graph";
+import { BacklogBoard } from "./backlog-board";
 import { BlockShell } from "./block-shell";
 import { BuilderProvider } from "./builder-provider";
 import { FlowCanvas } from "./flow-canvas";
 import { BrowserFrame, MobileFrame } from "./frames";
 import { InsertSlot } from "./insert-slot";
 import { LeftRail } from "./left-rail";
+import { MarqueeOverlay } from "./marquee-overlay";
 import { SidePanel } from "./side-panel";
 import { TopBar } from "./top-bar";
 
@@ -28,12 +39,31 @@ export function BuilderPage({ planId }: { planId: string }) {
 
 function BuilderShell() {
   useBuilderShortcuts();
+  const runState = useChatStore((s) => s.runState);
+  const aiActive = runState !== "idle";
+  const leftCollapsed = useBuilderUiStore((s) => s.leftRailCollapsed);
+  const rightWidth = usePanelStore((s) => s.width);
+  const leftWidth = leftCollapsed ? 36 : 260;
   return (
     <div className="grid h-screen grid-rows-[auto_1fr]">
       <TopBar />
-      <div className="grid grid-cols-[260px_1fr_340px] overflow-hidden">
+      <div
+        className="grid overflow-hidden"
+        style={{
+          gridTemplateColumns: `${leftWidth}px 1fr ${rightWidth}px`,
+        }}
+      >
         <LeftRail />
-        <Canvas />
+        <div
+          data-ai-active={aiActive ? "true" : undefined}
+          data-ai-state={runState}
+          className={cn(
+            "canvas-shell relative min-h-0 overflow-hidden",
+            aiActive && "ai-active",
+          )}
+        >
+          <Canvas />
+        </div>
         <SidePanel />
       </div>
     </div>
@@ -47,6 +77,10 @@ function Canvas() {
   const canvasMode = useBuilderUiStore((s) => s.canvasMode);
   const topMode = useBuilderUiStore((s) => s.topMode);
   const agentTab = useBuilderState((s) => s.state.agentTab);
+
+  if (topMode === "backlog") {
+    return <BacklogBoard />;
+  }
 
   if (topMode === "docs") {
     return <SectionCanvas />;
@@ -73,10 +107,13 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
     screenId ? (s.state.children[screenId] ?? EMPTY_IDS) : EMPTY_IDS,
   );
   const viewMode = useBuilderState((s) => s.state.viewMode);
+  const dispatch = useBuilderDispatch();
+  const rootRef = useRef<HTMLElement | null>(null);
+  const marquee = useMarquee(rootRef, dispatch);
 
   if (!screen) {
     return (
-      <main className="overflow-auto p-6 text-sm text-muted-foreground">
+      <main className="h-full overflow-auto p-6 text-sm text-muted-foreground">
         No screen selected — open a Web/Mobile demo to see the builder canvas.
       </main>
     );
@@ -101,7 +138,13 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
   );
 
   return (
-    <main className="overflow-auto p-6">
+    <main
+      ref={rootRef}
+      className="h-full overflow-auto p-6"
+      onPointerDown={marquee.handlers.onPointerDown}
+      onPointerMove={marquee.handlers.onPointerMove}
+      onPointerUp={marquee.handlers.onPointerUp}
+    >
       <div className="mb-4 flex items-center justify-between">
         <div className="text-sm">
           <span className="font-medium">{screen.title}</span>
@@ -113,6 +156,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
       <ScreenFrame kind={planKind} screen={screen}>
         {blockTree}
       </ScreenFrame>
+      <MarqueeOverlay box={marquee.box} />
     </main>
   );
 }
@@ -127,17 +171,26 @@ function SectionCanvas() {
     sectionId ? (s.state.children[sectionId] ?? EMPTY_IDS) : EMPTY_IDS,
   );
   const childBlockIds = allChildIds.filter((id) => Boolean(blocks[id]));
+  const dispatch = useBuilderDispatch();
+  const rootRef = useRef<HTMLElement | null>(null);
+  const marquee = useMarquee(rootRef, dispatch);
 
   if (!section) {
     return (
-      <main className="overflow-auto p-6 text-sm text-muted-foreground">
+      <main className="h-full overflow-auto p-6 text-sm text-muted-foreground">
         Select a section in the left rail to start writing.
       </main>
     );
   }
 
   return (
-    <main className="overflow-auto p-6">
+    <main
+      ref={rootRef}
+      className="h-full overflow-auto p-6"
+      onPointerDown={marquee.handlers.onPointerDown}
+      onPointerMove={marquee.handlers.onPointerMove}
+      onPointerUp={marquee.handlers.onPointerUp}
+    >
       <div className="mb-4 text-sm">
         <span className="font-medium">{section.title}</span>
         <span className="ml-2 text-xs text-muted-foreground">
@@ -159,6 +212,7 @@ function SectionCanvas() {
           variant="trailing"
         />
       </div>
+      <MarqueeOverlay box={marquee.box} />
     </main>
   );
 }

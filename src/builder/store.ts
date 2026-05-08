@@ -39,7 +39,14 @@ export type StepOpts = {
   skipPending?: boolean;
 };
 
-export type StepResult = { state: AppState; commands: Command[] };
+export type StepResult = {
+  state: AppState;
+  commands: Command[];
+  // Populated only for user-action intents — the batch path needs them so
+  // it can reverse-compose its children's inverses into a single composite.
+  entry?: IntentLogEntry;
+  inverse?: Intent | null;
+};
 
 export function createInitialState(origin: OriginId): AppState {
   return {
@@ -83,6 +90,7 @@ const NON_USER_INTENTS = new Set<Intent["type"]>([
   "CHANGE_DRAFT",
   "CANCEL_EDIT",
   "SELECT_NODE",
+  "SELECT_NODES",
 ]);
 
 function isUserAction(type: Intent["type"]): boolean {
@@ -110,6 +118,10 @@ export function step(
       ...opts,
       skipHistory: true,
     });
+  }
+
+  if (intent.type === "BATCH") {
+    return applyBatch(state, intent.intents, ctx, opts);
   }
 
   const ticked = tick(state.lamport);
@@ -153,8 +165,9 @@ function applyEntry(
   let nextState = transition.state;
   let commands: Command[] = [...transition.commands];
 
+  let inverse: Intent | null = null;
   if (isUserAction(entry.intent.type)) {
-    const inverse = invert(entry, prevState);
+    inverse = invert(entry, prevState);
     if (!opts.skipHistory) {
       nextState = recordHistory(
         nextState,
@@ -183,7 +196,66 @@ function applyEntry(
     commands = [...commands, ...innerResult.commands];
   }
 
-  return { state: nextState, commands };
+  return { state: nextState, commands, entry, inverse };
+}
+
+/**
+ * Run a list of child intents as a single coalesced unit. Each child still
+ * generates its own IntentLogEntry + persistence command, so the server
+ * sees them individually and remote replicas reconstruct the same state.
+ * What changes is history: the whole batch occupies ONE HistoryFrame whose
+ * inverse is itself a BATCH of each child's inverse, reversed. ⌘Z therefore
+ * undoes the whole operation; ⌘⇧Z redoes it.
+ *
+ * Children that fail decision (e.g. NOT_FOUND for a sibling already deleted
+ * earlier in the batch) are silently dropped from the inverse — they didn't
+ * actually mutate state, so no inverse is needed.
+ */
+function applyBatch(
+  state: AppState,
+  children: Intent[],
+  ctx: StepCtx,
+  opts: StepOpts,
+): StepResult {
+  if (children.length === 0) return { state, commands: [] };
+  let cur: AppState = state;
+  const allCommands: Command[] = [];
+  const childInverses: Intent[] = [];
+  for (const child of children) {
+    const r = step(cur, child, ctx, { ...opts, skipHistory: true });
+    cur = r.state;
+    allCommands.push(...r.commands);
+    if (r.inverse) childInverses.push(r.inverse);
+  }
+  // Outer entry uses the lamport already advanced by the children. It is
+  // not persisted — only the children are — so its lamport is just for
+  // the history frame's identity.
+  const outerEntry: IntentLogEntry = {
+    id: ctx.newId(),
+    planId: ctx.planId,
+    origin: ctx.origin,
+    lamport: cur.lamport,
+    intent: { type: "BATCH", intents: children },
+    createdAt: ctx.now(),
+    kind: "primary",
+  };
+  const compositeInverse: Intent | null =
+    childInverses.length > 0
+      ? { type: "BATCH", intents: childInverses.slice().reverse() }
+      : null;
+  if (!opts.skipHistory && compositeInverse) {
+    cur = recordHistory(
+      cur,
+      { entry: outerEntry, inverse: compositeInverse },
+      ctx.historyDepth,
+    );
+  }
+  return {
+    state: cur,
+    commands: allCommands,
+    entry: outerEntry,
+    inverse: compositeInverse,
+  };
 }
 
 export type BuilderStore = {

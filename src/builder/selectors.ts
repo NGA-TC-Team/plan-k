@@ -30,7 +30,15 @@ export function selectChildren(
 }
 
 export function selectIsSelected(state: AppState, id: string): boolean {
-  return state.selection.kind === "node" && state.selection.id === id;
+  if (state.selection.kind === "node") return state.selection.id === id;
+  if (state.selection.kind === "multi") return state.selection.ids.includes(id);
+  return false;
+}
+
+export function selectSelectedIds(state: AppState): string[] {
+  if (state.selection.kind === "node") return [state.selection.id];
+  if (state.selection.kind === "multi") return state.selection.ids;
+  return [];
 }
 
 export function selectIsEditingNode(state: AppState, id: string): boolean {

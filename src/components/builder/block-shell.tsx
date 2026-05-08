@@ -1,40 +1,130 @@
 "use client";
 
+import { GripVertical } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useContext } from "react";
+import { resolveClickSelection } from "@/builder/selection-click";
+import {
+  resolveSpacingClass,
+  spacingDefaultsFor,
+  spacingFromBlockData,
+} from "@/builder/spacing";
+import { BuilderContext } from "@/components/builder/builder-context";
 import { useBlock, useBlockChildren } from "@/hooks/builder/use-block.hook";
+import { useBuilderDispatch } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
+import { useAiFlashStore, useBlockDragStore } from "@/services/stores";
 import { InsertSlot } from "./insert-slot";
 import { pickRenderer } from "./renderers";
 
 export function BlockShell({ blockId }: { blockId: string }) {
   const { vm, handlers, viewMode } = useBlock(blockId);
   const reduceMotion = useReducedMotion();
+  const beginDrag = useBlockDragStore((s) => s.begin);
+  const endDrag = useBlockDragStore((s) => s.end);
+  const isDragging = useBlockDragStore((s) => s.draggingId === blockId);
+  const isFlashing = useAiFlashStore((s) => s.flashedIds.has(blockId));
+  const dispatch = useBuilderDispatch();
+  const storeHook = useContext(BuilderContext);
   if (!vm) return null;
 
   const Renderer = pickRenderer(viewMode, vm.context, vm.kind);
+  const spacingClass =
+    vm.context === "app" || vm.context === "docs"
+      ? resolveSpacingClass(
+          spacingFromBlockData(vm.displayValue),
+          spacingDefaultsFor(vm.kind),
+        )
+      : "";
+  const draggable = vm.context === "app" || vm.context === "docs";
 
   return (
     <motion.div
       layout={reduceMotion ? false : "position"}
       initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-      animate={reduceMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+      animate={
+        reduceMotion
+          ? { opacity: 1, y: 0 }
+          : isFlashing
+            ? {
+                opacity: [1, 0.7, 1],
+                filter: ["blur(0px)", "blur(6px)", "blur(0px)"],
+                y: 0,
+              }
+            : { opacity: 1, y: 0, filter: "blur(0px)" }
+      }
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-      transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
+      transition={{
+        duration: reduceMotion ? 0 : isFlashing ? 0.55 : 0.18,
+        ease: "easeOut",
+      }}
       data-block-id={vm.id}
       className={cn(
-        "rounded-md outline-none",
-        vm.isSelected && "ring-2 ring-blue-500 ring-offset-2",
+        "group/block relative rounded-md outline-none",
+        spacingClass,
+        vm.isSelected && "ring-1 ring-ring/70",
         vm.isPending && "opacity-70",
+        isDragging && "opacity-40",
       )}
       onPointerDown={(e) => {
         e.stopPropagation();
-        handlers.onSelect();
+        const modifier = e.shiftKey
+          ? "shift"
+          : e.metaKey || e.ctrlKey
+            ? "toggle"
+            : "none";
+        if (modifier === "none" || !storeHook) {
+          handlers.onSelect();
+          return;
+        }
+        const intent = resolveClickSelection(
+          storeHook.getState().state,
+          blockId,
+          modifier,
+        );
+        dispatch(intent);
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         handlers.onBeginEdit();
       }}
     >
+      {draggable ? (
+        <button
+          type="button"
+          aria-label="Drag to reorder"
+          draggable
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("application/x-block-id", vm.id);
+            e.dataTransfer.setData("application/x-block-context", vm.context);
+            // Use the block element as the drag image so users see what moves.
+            const host = (e.currentTarget as HTMLElement).closest(
+              "[data-block-id]",
+            ) as HTMLElement | null;
+            if (host) {
+              e.dataTransfer.setDragImage(host, 8, 8);
+            }
+            beginDrag({
+              blockId: vm.id,
+              parentId: vm.parentId,
+              context: vm.context,
+            });
+          }}
+          onDragEnd={() => endDrag()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "absolute -left-6 top-1/2 -translate-y-1/2 hidden h-6 w-5 cursor-grab items-center justify-center rounded text-muted-foreground/60 transition-opacity",
+            "hover:text-foreground active:cursor-grabbing",
+            "group-hover/block:flex",
+            vm.isSelected && "flex",
+          )}
+        >
+          <GripVertical className="size-3.5" />
+        </button>
+      ) : null}
       <Renderer vm={vm} handlers={handlers} />
       <BlockChildren parentId={vm.id} />
     </motion.div>

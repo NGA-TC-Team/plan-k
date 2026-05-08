@@ -29,3 +29,11 @@ export function useBuilderStateShallow<T>(
 export function useBuilderDispatch() {
   return useBuilderState((s) => s.dispatch);
 }
+
+// Returns the builder store hook if mounted inside a BuilderProvider,
+// otherwise null. Useful for global overlays (command palette, keymap)
+// that should compose builder-scoped actions without crashing on routes
+// where the builder is absent.
+export function useOptionalBuilderStore() {
+  return useContext(BuilderContext);
+}

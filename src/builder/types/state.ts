@@ -19,7 +19,10 @@ import type {
 
 export type EntityMeta = { lamport: LamportClock; origin: OriginId };
 
-export type Selection = { kind: "none" } | { kind: "node"; id: string };
+export type Selection =
+  | { kind: "none" }
+  | { kind: "node"; id: string }
+  | { kind: "multi"; ids: string[] };
 
 export type Editing =
   | { kind: "none" }
@@ -32,7 +35,7 @@ export type Editing =
       previousValue: unknown;
     };
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export type AppState = {
   schemaVersion?: number;

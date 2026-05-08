@@ -6,9 +6,16 @@ import { hydrate } from "@/builder/hydrate";
 import { defaultIdFactory } from "@/builder/ids";
 import { createBuilderStore } from "@/builder/store";
 import type { IntentLogEntry } from "@/builder/types/intent";
+import { useChatBindings } from "@/data/chat/use-chat-bindings";
 import { usePersistIntentMutation } from "@/data/plans/mutations";
 import { usePlanQuery } from "@/data/plans/queries";
 import { usePlanStream } from "@/hooks/builder/use-plan-stream.hook";
+import {
+  affectedNodeIdsFor,
+  isAgentOrigin,
+  useAiFlashStore,
+  useSaveStatusStore,
+} from "@/services/stores";
 import { BuilderContext, type BuilderStoreHook } from "./builder-context";
 
 type Props = {
@@ -40,7 +47,21 @@ export function BuilderProvider({ planId, children }: Props) {
       initialState: { ...initialState, origin },
       effects: {
         persistIntent: (entry) => {
-          persistRef.current.mutate(entry);
+          const save = useSaveStatusStore.getState();
+          save.begin();
+          persistRef.current.mutate(entry, {
+            onSuccess: (res) => {
+              if (res && "ok" in res && res.ok === false) {
+                useSaveStatusStore.getState().fail(res.reason);
+              } else {
+                useSaveStatusStore.getState().succeed();
+              }
+            },
+            onError: (err) => {
+              const msg = err instanceof Error ? err.message : String(err);
+              useSaveStatusStore.getState().fail(msg);
+            },
+          });
         },
         emitToast: (level, message) => {
           if (level === "error") toast.error(message);
@@ -55,6 +76,10 @@ export function BuilderProvider({ planId, children }: Props) {
     storeRef.current
       ?.getState()
       .dispatch({ type: "REMOTE_INTENT_RECEIVED", entry });
+    if (entry.kind === "primary" && isAgentOrigin(entry.origin)) {
+      const ids = affectedNodeIdsFor(entry.intent);
+      if (ids.length > 0) useAiFlashStore.getState().flash(ids);
+    }
   }, []);
 
   usePlanStream({
@@ -80,7 +105,15 @@ export function BuilderProvider({ planId, children }: Props) {
 
   return (
     <BuilderContext.Provider value={storeRef.current}>
+      <ChatBindings planId={planId} />
       {children}
     </BuilderContext.Provider>
   );
+}
+
+function ChatBindings({ planId }: { planId: string }) {
+  // Hooks that require BuilderContext live in a child so they only mount
+  // once the store is ready.
+  useChatBindings(planId);
+  return null;
 }

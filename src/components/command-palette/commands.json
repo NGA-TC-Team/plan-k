@@ -1,0 +1,291 @@
+{
+  "$schema": "./commands.schema.json",
+  "groups": {
+    "navigation": "이동",
+    "plan": "플랜 전환",
+    "section": "섹션 / 스크린 점프",
+    "mode": "모드 전환",
+    "view": "뷰 전환",
+    "edit": "편집",
+    "create": "만들기",
+    "export": "내보내기",
+    "panel": "패널",
+    "appearance": "모드 / 외관",
+    "block": "블록 삽입"
+  },
+  "commands": [
+    {
+      "id": "navigate.home",
+      "group": "navigation",
+      "label": "홈으로",
+      "keywords": ["home", "main", "홈", "처음"],
+      "icon": "Home",
+      "action": "navigate",
+      "args": { "to": "/" },
+      "when": "always"
+    },
+    {
+      "id": "navigate.projects",
+      "group": "navigation",
+      "label": "프로젝트 목록",
+      "keywords": ["projects", "list", "프로젝트"],
+      "icon": "FolderKanban",
+      "action": "navigate",
+      "args": { "to": "/projects" },
+      "when": "always"
+    },
+    {
+      "id": "demo.web",
+      "group": "navigation",
+      "label": "데모 열기 · Web (Janggu)",
+      "keywords": ["demo", "web", "janggu", "장구"],
+      "icon": "Monitor",
+      "action": "navigate",
+      "args": { "to": "/plan/demo-web" },
+      "when": "always"
+    },
+    {
+      "id": "demo.mobile",
+      "group": "navigation",
+      "label": "데모 열기 · Mobile (Jukku)",
+      "keywords": ["demo", "mobile", "jukku", "죽구"],
+      "icon": "Smartphone",
+      "action": "navigate",
+      "args": { "to": "/plan/demo-mobile" },
+      "when": "always"
+    },
+    {
+      "id": "demo.agent",
+      "group": "navigation",
+      "label": "데모 열기 · Agent (Saetbyeol)",
+      "keywords": ["demo", "agent", "saetbyeol", "샛별"],
+      "icon": "Bot",
+      "action": "navigate",
+      "args": { "to": "/plan/demo-agent" },
+      "when": "always"
+    },
+
+    {
+      "id": "appearance.theme.toggle",
+      "group": "appearance",
+      "label": "테마 전환",
+      "keywords": ["theme", "dark", "light", "테마", "다크", "라이트"],
+      "icon": "SunMoon",
+      "action": "theme.toggle",
+      "shortcut": [],
+      "when": "always"
+    },
+    {
+      "id": "appearance.theme.dark",
+      "group": "appearance",
+      "label": "다크 테마",
+      "keywords": ["theme", "dark", "다크"],
+      "icon": "Moon",
+      "action": "theme.set",
+      "args": { "theme": "dark" },
+      "when": "always"
+    },
+    {
+      "id": "appearance.theme.light",
+      "group": "appearance",
+      "label": "라이트 테마",
+      "keywords": ["theme", "light", "라이트"],
+      "icon": "Sun",
+      "action": "theme.set",
+      "args": { "theme": "light" },
+      "when": "always"
+    },
+    {
+      "id": "panel.help",
+      "group": "panel",
+      "label": "단축키 도움말 열기",
+      "keywords": ["help", "shortcuts", "도움말", "단축키"],
+      "icon": "Keyboard",
+      "shortcut": ["?"],
+      "action": "help.open",
+      "when": "always"
+    },
+    {
+      "id": "panel.sidebar.toggle",
+      "group": "panel",
+      "label": "좌측 레일 토글",
+      "keywords": ["sidebar", "rail", "left", "사이드바", "레일"],
+      "icon": "PanelLeft",
+      "action": "panel.toggleLeftRail",
+      "when": "builder"
+    },
+
+    {
+      "id": "mode.docs",
+      "group": "mode",
+      "label": "Docs 모드",
+      "keywords": ["docs", "문서"],
+      "icon": "FileText",
+      "action": "builder.setTopMode",
+      "args": { "mode": "docs" },
+      "when": "builder"
+    },
+    {
+      "id": "mode.app",
+      "group": "mode",
+      "label": "App design 모드",
+      "keywords": ["app", "design", "디자인"],
+      "icon": "LayoutDashboard",
+      "action": "builder.setTopMode",
+      "args": { "mode": "app" },
+      "when": "builder"
+    },
+    {
+      "id": "mode.backlog",
+      "group": "mode",
+      "label": "Backlog 모드",
+      "keywords": ["backlog", "todo", "백로그"],
+      "icon": "KanbanSquare",
+      "action": "builder.setTopMode",
+      "args": { "mode": "backlog" },
+      "when": "builder"
+    },
+    {
+      "id": "mode.canvas.screen",
+      "group": "mode",
+      "label": "Canvas · Screen 보기",
+      "keywords": ["canvas", "screen", "스크린"],
+      "icon": "Smartphone",
+      "action": "builder.setCanvasMode",
+      "args": { "mode": "screen" },
+      "when": "builder.app"
+    },
+    {
+      "id": "mode.canvas.flow",
+      "group": "mode",
+      "label": "Canvas · Flow 보기",
+      "keywords": ["canvas", "flow", "플로우"],
+      "icon": "Workflow",
+      "action": "builder.setCanvasMode",
+      "args": { "mode": "flow" },
+      "when": "builder.app"
+    },
+    {
+      "id": "view.detail",
+      "group": "view",
+      "label": "Detail 뷰",
+      "keywords": ["view", "detail", "상세"],
+      "icon": "Eye",
+      "action": "builder.setViewMode",
+      "args": { "mode": "detail" },
+      "when": "builder.app"
+    },
+    {
+      "id": "view.wireframe",
+      "group": "view",
+      "label": "Wireframe 뷰",
+      "keywords": ["view", "wireframe", "와이어"],
+      "icon": "Wrench",
+      "action": "builder.setViewMode",
+      "args": { "mode": "wireframe" },
+      "when": "builder.app"
+    },
+
+    {
+      "id": "edit.undo",
+      "group": "edit",
+      "label": "되돌리기",
+      "keywords": ["undo", "되돌리기"],
+      "icon": "Undo2",
+      "shortcut": ["⌘", "Z"],
+      "action": "builder.undo",
+      "when": "builder.canUndo"
+    },
+    {
+      "id": "edit.redo",
+      "group": "edit",
+      "label": "다시 실행",
+      "keywords": ["redo", "다시"],
+      "icon": "Redo2",
+      "shortcut": ["⌘", "⇧", "Z"],
+      "action": "builder.redo",
+      "when": "builder.canRedo"
+    },
+    {
+      "id": "edit.beginEdit",
+      "group": "edit",
+      "label": "선택 블록 편집",
+      "keywords": ["edit", "begin", "편집"],
+      "icon": "Pencil",
+      "shortcut": ["Enter"],
+      "action": "builder.beginEditSelection",
+      "when": "builder.selected"
+    },
+    {
+      "id": "edit.deleteSelection",
+      "group": "edit",
+      "label": "선택 블록 삭제",
+      "keywords": ["delete", "remove", "삭제"],
+      "icon": "Trash2",
+      "shortcut": ["Delete"],
+      "action": "builder.deleteSelection",
+      "when": "builder.selected"
+    },
+
+    {
+      "id": "create.project.web",
+      "group": "create",
+      "label": "새 프로젝트 · Web",
+      "keywords": ["new", "project", "web", "create", "프로젝트", "새"],
+      "icon": "Monitor",
+      "action": "create.project",
+      "args": { "kind": "web" },
+      "when": "always"
+    },
+    {
+      "id": "create.project.mobile",
+      "group": "create",
+      "label": "새 프로젝트 · Mobile",
+      "keywords": ["new", "project", "mobile", "create"],
+      "icon": "Smartphone",
+      "action": "create.project",
+      "args": { "kind": "mobile" },
+      "when": "always"
+    },
+    {
+      "id": "create.project.agent",
+      "group": "create",
+      "label": "새 프로젝트 · Agent",
+      "keywords": ["new", "project", "agent", "create"],
+      "icon": "Bot",
+      "action": "create.project",
+      "args": { "kind": "agent" },
+      "when": "always"
+    },
+
+    {
+      "id": "export.pdf",
+      "group": "export",
+      "label": "PDF로 내보내기",
+      "keywords": ["export", "pdf", "내보내기"],
+      "icon": "FileText",
+      "action": "export.run",
+      "args": { "format": "pdf" },
+      "when": "builder"
+    },
+    {
+      "id": "export.png",
+      "group": "export",
+      "label": "PNG로 내보내기",
+      "keywords": ["export", "png", "image", "이미지"],
+      "icon": "FileImage",
+      "action": "export.run",
+      "args": { "format": "png" },
+      "when": "builder"
+    },
+    {
+      "id": "export.print",
+      "group": "export",
+      "label": "인쇄 미리보기 열기",
+      "keywords": ["print", "preview", "인쇄"],
+      "icon": "Printer",
+      "action": "export.print",
+      "when": "builder"
+    }
+  ]
+}

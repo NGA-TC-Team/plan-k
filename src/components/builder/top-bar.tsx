@@ -1,10 +1,28 @@
 "use client";
 
-import { Download, Pencil, Redo2, Undo2 } from "lucide-react";
+import {
+  Download,
+  Eye,
+  FileImage,
+  FileText,
+  Home,
+  KanbanSquare,
+  LayoutDashboard,
+  Moon,
+  Pencil,
+  Printer,
+  Redo2,
+  Smartphone,
+  Sun,
+  Undo2,
+  Workflow,
+  Wrench,
+} from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { selectCanRedo, selectCanUndo } from "@/builder/selectors";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -28,7 +46,8 @@ import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
-import { useBuilderUiStore } from "@/services/stores";
+import { useBuilderUiStore, useThemeStore } from "@/services/stores";
+import { SaveStatusChip } from "./save-status-chip";
 
 export function TopBar() {
   const planMeta = useBuilderState((s) => Object.values(s.state.plans)[0]);
@@ -47,6 +66,7 @@ export function TopBar() {
   const showCanvasModeToggle =
     topMode === "app" &&
     (planMeta?.kind === "web" || planMeta?.kind === "mobile");
+  const showViewModeToggle = topMode === "app";
 
   const kind = planMeta?.kind ?? "—";
   const title = project?.title ?? planMeta?.id ?? "Untitled plan";
@@ -54,6 +74,19 @@ export function TopBar() {
   return (
     <header className="flex items-center justify-between gap-4 border-b bg-background px-4 py-2">
       <div className="flex min-w-0 items-center gap-3">
+        <Link
+          href="/"
+          title="plan-k home"
+          aria-label="plan-k home"
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            className: "-ml-2 gap-1.5 px-2 font-semibold tracking-tight",
+          })}
+        >
+          <Home className="size-3.5" />
+          <span>plan-k</span>
+        </Link>
         <Badge variant="secondary" className="uppercase tracking-wide">
           {kind}
         </Badge>
@@ -67,11 +100,14 @@ export function TopBar() {
           ) : (
             <div className="truncate text-sm font-medium">{title}</div>
           )}
-          {planMeta?.id ? (
-            <div className="truncate text-[10px] text-muted-foreground">
-              {planMeta.id}
-            </div>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {planMeta?.id ? (
+              <span className="truncate text-[10px] text-muted-foreground">
+                {planMeta.id}
+              </span>
+            ) : null}
+            <SaveStatusChip />
+          </div>
         </div>
       </div>
 
@@ -79,17 +115,24 @@ export function TopBar() {
         value={[topMode]}
         onValueChange={(values) => {
           const next = values[0];
-          if (next === "docs" || next === "app") setTopMode(next);
+          if (next === "docs" || next === "app" || next === "backlog")
+            setTopMode(next);
         }}
         size="sm"
         variant="outline"
         aria-label="Top mode"
       >
+        <ToggleGroupItem value="backlog" aria-label="Backlog mode">
+          <KanbanSquare className="size-3.5" />
+          <span>Backlog</span>
+        </ToggleGroupItem>
         <ToggleGroupItem value="docs" aria-label="Docs mode">
-          Docs
+          <FileText className="size-3.5" />
+          <span>Docs</span>
         </ToggleGroupItem>
         <ToggleGroupItem value="app" aria-label="App design mode">
-          App design
+          <LayoutDashboard className="size-3.5" />
+          <span>App design</span>
         </ToggleGroupItem>
       </ToggleGroup>
 
@@ -105,25 +148,39 @@ export function TopBar() {
             variant="outline"
             aria-label="Canvas mode"
           >
-            <ToggleGroupItem value="screen">Screen</ToggleGroupItem>
-            <ToggleGroupItem value="flow">Flow</ToggleGroupItem>
+            <ToggleGroupItem value="screen">
+              <Smartphone className="size-3.5" />
+              <span>Screen</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="flow">
+              <Workflow className="size-3.5" />
+              <span>Flow</span>
+            </ToggleGroupItem>
           </ToggleGroup>
         ) : null}
-        <ToggleGroup
-          value={[viewMode]}
-          onValueChange={(values) => {
-            const next = values[0];
-            if (next === "detail" || next === "wireframe") {
-              dispatch({ type: "SWITCH_VIEW_MODE", mode: next });
-            }
-          }}
-          size="sm"
-          variant="outline"
-          aria-label="View mode"
-        >
-          <ToggleGroupItem value="detail">Detail</ToggleGroupItem>
-          <ToggleGroupItem value="wireframe">Wire</ToggleGroupItem>
-        </ToggleGroup>
+        {showViewModeToggle ? (
+          <ToggleGroup
+            value={[viewMode]}
+            onValueChange={(values) => {
+              const next = values[0];
+              if (next === "detail" || next === "wireframe") {
+                dispatch({ type: "SWITCH_VIEW_MODE", mode: next });
+              }
+            }}
+            size="sm"
+            variant="outline"
+            aria-label="View mode"
+          >
+            <ToggleGroupItem value="detail">
+              <Eye className="size-3.5" />
+              <span>Detail</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="wireframe">
+              <Wrench className="size-3.5" />
+              <span>Wire</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+        ) : null}
 
         <div className="flex items-center">
           <Button
@@ -149,6 +206,7 @@ export function TopBar() {
             <Redo2 className="size-4" />
           </Button>
           {planMeta?.id ? <ExportMenu planId={planMeta.id} /> : null}
+          <ThemeToggle />
         </div>
       </div>
     </header>
@@ -203,7 +261,7 @@ function ProjectMetaEditor({
       <button
         type="button"
         onClick={beginEdit}
-        className="group/title flex max-w-full items-center gap-1.5 rounded px-1 -mx-1 py-0.5 text-left hover:bg-accent"
+        className="group/title flex max-w-full items-center gap-1.5 rounded-sm px-1 -mx-1 py-0.5 text-left hover:bg-accent"
         aria-label="Edit project title"
       >
         <span className="truncate text-sm font-medium">{fallbackTitle}</span>
@@ -289,10 +347,12 @@ function ExportMenu({ planId }: { planId: string }) {
       />
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => trigger("pdf")}>
-          Export as PDF
+          <FileText className="size-3.5" />
+          <span>Export as PDF</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => trigger("png")}>
-          Export as PNG
+          <FileImage className="size-3.5" />
+          <span>Export as PNG</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
@@ -303,9 +363,28 @@ function ExportMenu({ planId }: { planId: string }) {
             );
           }}
         >
-          Open print view
+          <Printer className="size-3.5" />
+          <span>Open print view</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function ThemeToggle() {
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const isDark = theme === "dark";
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={isDark ? "Light mode" : "Dark mode"}
+    >
+      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    </Button>
   );
 }

@@ -22,6 +22,7 @@ export type Reason =
 
 export type Intent =
   | { type: "SELECT_NODE"; nodeId: string | null }
+  | { type: "SELECT_NODES"; ids: string[] }
   | { type: "BEGIN_EDIT"; nodeId: string }
   | { type: "CHANGE_DRAFT"; value: unknown }
   | { type: "COMMIT_EDIT" }
@@ -74,7 +75,10 @@ export type Intent =
   | { type: "PERSIST_FAILED"; entryId: EntryId; reason: string }
   | { type: "REMOTE_INTENT_RECEIVED"; entry: IntentLogEntry }
   | { type: "UNDO" }
-  | { type: "REDO" };
+  | { type: "REDO" }
+  // Coalesced batch — children apply in order, the whole group occupies one
+  // history frame so a single ⌘Z undoes the entire operation.
+  | { type: "BATCH"; intents: Intent[] };
 
 export type Command =
   | { type: "PERSIST_INTENT"; entry: IntentLogEntry }
