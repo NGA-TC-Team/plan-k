@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "36e68010-60bf-4a09-a905-0882ab057b14",
-  "prevId": "e25776da-ece6-48b7-a5e5-ca6456f1e274",
+  "id": "7ff26274-a802-4f0b-bf3e-4a96bb0a1f62",
+  "prevId": "36e68010-60bf-4a09-a905-0882ab057b14",
   "tables": {
     "chat_attachments": {
       "name": "chat_attachments",
@@ -244,12 +244,25 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "hidden": {
+          "name": "hidden",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {
         "chat_sessions_plan_idx": {
           "name": "chat_sessions_plan_idx",
           "columns": ["plan_id", "updated_at"],
+          "isUnique": false
+        },
+        "chat_sessions_visible_idx": {
+          "name": "chat_sessions_visible_idx",
+          "columns": ["plan_id", "hidden", "updated_at"],
           "isUnique": false
         }
       },

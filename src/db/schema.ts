@@ -142,8 +142,16 @@ export const chatSessions = sqliteTable(
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    // True for sessions spawned by inline AI actions — kept out of the
+    // chat sidebar so canvas-driven activity doesn't pollute the user's
+    // conversation history. Sweep job still picks them up via
+    // expiresAt.
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
   },
-  (t) => [index("chat_sessions_plan_idx").on(t.planId, t.updatedAt)],
+  (t) => [
+    index("chat_sessions_plan_idx").on(t.planId, t.updatedAt),
+    index("chat_sessions_visible_idx").on(t.planId, t.hidden, t.updatedAt),
+  ],
 );
 
 // One row per turn in a chat session. assistant rows accumulate

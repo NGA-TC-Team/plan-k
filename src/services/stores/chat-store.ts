@@ -57,6 +57,7 @@ export type ChatSession = {
   title: string;
   mode: "auto" | "approval";
   model: ClaudeModel;
+  hidden: boolean;
   createdAt: number;
   updatedAt: number;
   expiresAt: number;

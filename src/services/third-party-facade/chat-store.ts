@@ -13,6 +13,7 @@ import {
 } from "@/db";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const ADHOC_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type MessageRole = "user" | "assistant" | "system" | "tool";
 export type MessageStatus = "pending" | "streaming" | "complete" | "error";
@@ -48,6 +49,7 @@ function rowToSession(row: ChatSessionRow) {
     title: row.title,
     mode: row.mode,
     model: row.model,
+    hidden: row.hidden,
     createdAt: row.createdAt.getTime(),
     updatedAt: row.updatedAt.getTime(),
     expiresAt: row.expiresAt.getTime(),
@@ -99,11 +101,17 @@ export type ChatStagedIntent = ReturnType<typeof rowToStaged>;
 
 // ─── Sessions ────────────────────────────────────────────────────────────
 
-export function listSessionsForPlan(planId: string): ChatSession[] {
+export function listSessionsForPlan(
+  planId: string,
+  opts: { includeHidden?: boolean } = {},
+): ChatSession[] {
+  const filter = opts.includeHidden
+    ? eq(chatSessions.planId, planId)
+    : and(eq(chatSessions.planId, planId), eq(chatSessions.hidden, false));
   const rows = db
     .select()
     .from(chatSessions)
-    .where(eq(chatSessions.planId, planId))
+    .where(filter)
     .orderBy(desc(chatSessions.updatedAt))
     .all();
   return rows.map(rowToSession);
@@ -133,6 +141,44 @@ export function createSession(opts: {
       createdAt: now,
       updatedAt: now,
       expiresAt: new Date(now.getTime() + TTL_MS),
+    })
+    .run();
+  const row = db
+    .select()
+    .from(chatSessions)
+    .where(eq(chatSessions.id, id))
+    .get();
+  return row ? rowToSession(row) : null;
+}
+
+// Inline AI actions create one of these per invocation. Hidden from
+// the chat sidebar, ttl is shorter so the sweep job clears them
+// quickly, and mode is forced to approval so every result lands in
+// the staging strip rather than auto-applying behind the user's back.
+export function createAdhocSession(opts: {
+  planId: string;
+  label: string;
+  model?: ClaudeModel;
+}): ChatSession | null {
+  const planRow = db
+    .select({ id: plans.id })
+    .from(plans)
+    .where(eq(plans.id, opts.planId))
+    .get();
+  if (!planRow) return null;
+  const now = new Date();
+  const id = newId("cs");
+  db.insert(chatSessions)
+    .values({
+      id,
+      planId: opts.planId,
+      title: opts.label.slice(0, 80),
+      mode: "approval",
+      model: opts.model ?? "sonnet",
+      hidden: true,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: new Date(now.getTime() + ADHOC_TTL_MS),
     })
     .run();
   const row = db

@@ -50,6 +50,13 @@
       "when": 1778262000000,
       "tag": "0006_fts5",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1778268742073,
+      "tag": "0007_acoustic_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }
