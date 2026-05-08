@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { extractBlockText } from "@/builder/blocks/extract-text";
 import type { BlockEntity } from "@/builder/types/entity";
 import {
+  buildBulkPrompt,
   findAction,
   type InlineActionId,
 } from "@/components/builder/inline-ai/actions";
@@ -18,16 +19,15 @@ export const runtime = "nodejs";
 
 type RequestBody = {
   planId: string;
-  blockId: string;
+  blockId?: string;
+  blockIds?: string[];
   actionId: InlineActionId;
 };
 
-// Triggers an inline AI action. Loads the block from the plan
-// snapshot, builds the prompt, spins up a hidden ad-hoc chat session
-// in approval mode, and starts the Claude Code run. The actual diff
-// shows up in chatStagedIntents and is reviewed via the staging
-// drawer in PR-3 (or the existing chat panel staging strip in the
-// meantime).
+// Triggers an inline AI action against one or many blocks. Loads each
+// block from the plan snapshot, composes a single prompt that asks the
+// runner to emit one staged intent per block, and starts the run in a
+// hidden ad-hoc chat session running in approval mode.
 export async function POST(req: Request) {
   let body: RequestBody;
   try {
@@ -38,9 +38,20 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (!body?.planId || !body?.blockId || !body?.actionId) {
+  if (!body?.planId || !body?.actionId) {
     return NextResponse.json(
       { ok: false, reason: "MISSING_FIELDS" },
+      { status: 400 },
+    );
+  }
+  const ids = body.blockIds?.length
+    ? body.blockIds
+    : body.blockId
+      ? [body.blockId]
+      : [];
+  if (ids.length === 0) {
+    return NextResponse.json(
+      { ok: false, reason: "MISSING_BLOCK" },
       { status: 400 },
     );
   }
@@ -49,6 +60,12 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { ok: false, reason: "UNKNOWN_ACTION" },
       { status: 400 },
+    );
+  }
+  if (ids.length > 1 && !action.bulkable) {
+    return NextResponse.json(
+      { ok: false, reason: "ACTION_NOT_BULKABLE" },
+      { status: 409 },
     );
   }
 
@@ -67,26 +84,35 @@ export async function POST(req: Request) {
   const snapshot = JSON.parse(planRow.snapshot) as {
     blocks?: Record<string, BlockEntity>;
   };
-  const block = snapshot.blocks?.[body.blockId];
-  if (!block) {
-    return NextResponse.json(
-      { ok: false, reason: "BLOCK_NOT_FOUND" },
-      { status: 404 },
-    );
-  }
-  if (!action.available(block)) {
-    return NextResponse.json(
-      { ok: false, reason: "ACTION_NOT_AVAILABLE" },
-      { status: 409 },
-    );
+  const blocks: { block: BlockEntity; blockText: string }[] = [];
+  for (const id of ids) {
+    const block = snapshot.blocks?.[id];
+    if (!block) {
+      return NextResponse.json(
+        { ok: false, reason: "BLOCK_NOT_FOUND", blockId: id },
+        { status: 404 },
+      );
+    }
+    if (!action.available(block)) {
+      return NextResponse.json(
+        { ok: false, reason: "ACTION_NOT_AVAILABLE", blockId: id },
+        { status: 409 },
+      );
+    }
+    blocks.push({ block, blockText: extractBlockText(block) });
   }
 
-  const blockText = extractBlockText(block);
-  const prompt = action.buildPrompt({ block, blockText });
+  const prompt =
+    blocks.length === 1
+      ? action.buildPrompt(blocks[0])
+      : buildBulkPrompt(action, blocks);
+
+  const labelTarget =
+    blocks.length === 1 ? `${blocks[0].block.kind}` : `${blocks.length} blocks`;
 
   const session = createAdhocSession({
     planId: body.planId,
-    label: `Inline ${action.group}: ${action.label} on ${block.kind}`,
+    label: `Inline ${action.group}: ${action.label} on ${labelTarget}`,
   });
   if (!session) {
     return NextResponse.json(
@@ -95,8 +121,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Echo the user message so the staging drawer can show what was
-  // requested alongside the proposed edit.
   appendMessage({
     sessionId: session.id,
     role: "user",
@@ -120,5 +144,6 @@ export async function POST(req: Request) {
     sessionId: session.id,
     runId: handle.runId,
     assistantMessageId: handle.assistantMessageId,
+    blockCount: blocks.length,
   });
 }

@@ -13,6 +13,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
+import { useBuilderStateShallow } from "@/hooks/builder/use-builder-store.hook";
 import { useInlineAiStore } from "@/services/stores";
 import { request } from "@/services/third-party-facade";
 import {
@@ -30,30 +31,44 @@ type Props = {
 // inside an existing <ContextMenu> + <ContextMenuTrigger> wrapper —
 // see BlockShell for the typical mount point.
 export function InlineAiMenu({ planId, block }: Props) {
-  const groups = groupActions(block);
+  // When the user has a multi-selection that includes the
+  // right-clicked block, treat the action as a bulk operation.
+  // Otherwise the right-click only addresses the single block.
+  const multiIds = useBuilderStateShallow((s) =>
+    s.state.selection.kind === "multi" &&
+    s.state.selection.ids.includes(block.id)
+      ? s.state.selection.ids
+      : null,
+  );
+  const isBulk = Boolean(multiIds && multiIds.length > 1);
+  const groups = groupActions(block, isBulk);
   const anyAvailable = groups.some((g) => g.actions.length > 0);
   const addSession = useInlineAiStore((s) => s.addSession);
   const setOpen = useInlineAiStore((s) => s.setOpen);
   if (!anyAvailable) return null;
 
   const onPick = async (actionId: InlineActionId) => {
-    const t = toast.loading("Sending to AI…");
+    const target = isBulk ? { blockIds: multiIds } : { blockId: block.id };
+    const t = toast.loading(
+      isBulk ? `Sending ${multiIds?.length} blocks to AI…` : "Sending to AI…",
+    );
     try {
       const res = await request<{
         ok: boolean;
         sessionId: string;
         reason?: string;
+        blockCount?: number;
       }>({
         method: "POST",
         url: "/inline-ai",
-        data: { planId, blockId: block.id, actionId },
+        data: { planId, ...target, actionId },
       });
       if (!res.ok) {
         toast.error(`Action failed: ${res.reason ?? "unknown"}`, { id: t });
         return;
       }
       addSession(res.sessionId);
-      toast.success("Action sent", {
+      toast.success(`Action sent (${res.blockCount ?? 1} blocks)`, {
         id: t,
         action: {
           label: "Review",
@@ -72,7 +87,9 @@ export function InlineAiMenu({ planId, block }: Props) {
     <ContextMenuSub>
       <ContextMenuSubTrigger>
         <Sparkles className="size-3.5" />
-        <span>AI Actions</span>
+        <span>
+          {isBulk ? `AI Actions (${multiIds?.length})` : "AI Actions"}
+        </span>
       </ContextMenuSubTrigger>
       <ContextMenuPortal>
         <ContextMenuSubContent>
@@ -114,7 +131,7 @@ const GROUP_META: Record<
   generate: { heading: "Generate", icon: Wand2 },
 };
 
-function groupActions(block: BlockEntity) {
+function groupActions(block: BlockEntity, isBulk: boolean) {
   const order: InlineAction["group"][] = [
     "rewrite",
     "translate",
@@ -125,6 +142,8 @@ function groupActions(block: BlockEntity) {
     id,
     heading: GROUP_META[id].heading,
     icon: GROUP_META[id].icon,
-    actions: INLINE_ACTIONS.filter((a) => a.group === id && a.available(block)),
+    actions: INLINE_ACTIONS.filter(
+      (a) => a.group === id && a.available(block) && (!isBulk || a.bulkable),
+    ),
   }));
 }

@@ -27,6 +27,10 @@ export type InlineAction = {
   // Some actions only make sense for blocks with text content. The
   // menu hides the action when this returns false.
   available: (block: BlockEntity) => boolean;
+  // True when the action makes sense applied to N>1 blocks at once.
+  // Generate-children only takes one parent at a time; everything else
+  // is bulk-friendly.
+  bulkable: boolean;
   buildPrompt: (input: { block: BlockEntity; blockText: string }) => string;
 };
 
@@ -60,6 +64,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "rewrite",
     label: "Shorter",
     available: hasText,
+    bulkable: true,
     buildPrompt: rewritePrompt(
       "about half the length while keeping the key point",
     ),
@@ -69,6 +74,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "rewrite",
     label: "Longer",
     available: hasText,
+    bulkable: true,
     buildPrompt: rewritePrompt("about 1.5× the length with concrete detail"),
   },
   {
@@ -76,6 +82,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "rewrite",
     label: "More formal",
     available: hasText,
+    bulkable: true,
     buildPrompt: rewritePrompt("written in formal Korean (존댓말, 문어체)"),
   },
   {
@@ -83,6 +90,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "rewrite",
     label: "More casual",
     available: hasText,
+    bulkable: true,
     buildPrompt: rewritePrompt("written in casual Korean (반말, 구어체)"),
   },
   {
@@ -90,6 +98,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "translate",
     label: "Korean",
     available: hasText,
+    bulkable: true,
     buildPrompt: translatePrompt("ko", "Korean"),
   },
   {
@@ -97,6 +106,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "translate",
     label: "English",
     available: hasText,
+    bulkable: true,
     buildPrompt: translatePrompt("en", "English"),
   },
   {
@@ -104,6 +114,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "translate",
     label: "Japanese",
     available: hasText,
+    bulkable: true,
     buildPrompt: translatePrompt("ja", "Japanese"),
   },
   {
@@ -111,6 +122,7 @@ export const INLINE_ACTIONS: InlineAction[] = [
     group: "critique",
     label: "Critique this block",
     available: hasText,
+    bulkable: true,
     buildPrompt: ({ block, blockText }) =>
       `Read the following ${block.kind} block and write a short critique (max 4 bullets) covering clarity, completeness, and risks. Emit one INSERT_BLOCK staged intent that adds a callout block (variant: "warn") as the next sibling of "${block.id}".
 
@@ -128,10 +140,30 @@ ${blockText}
       const sectionish = ["section", "card-grid"];
       return sectionish.includes(block.kind);
     },
+    bulkable: false,
     buildPrompt: ({ block }) =>
       `Generate 3 detail blocks as children of "${block.id}" appropriate for a ${block.kind}. Emit one INSERT_BLOCK staged intent per child, using the parent's existing context and conventions.`,
   },
 ];
+
+// Composes a single user message that asks the runner to apply
+// `action` to every block in `blocks`. The runner emits one staged
+// intent per block so the user can apply / reject them
+// independently from the staging drawer.
+export function buildBulkPrompt(
+  action: InlineAction,
+  blocks: { block: BlockEntity; blockText: string }[],
+): string {
+  const perBlock = blocks
+    .map(
+      ({ block, blockText }, i) =>
+        `--- block ${i + 1} of ${blocks.length} (id="${block.id}", kind=${block.kind}) ---\n"""\n${blockText}\n"""`,
+    )
+    .join("\n\n");
+  return `Apply the "${action.label}" ${action.group} action to each of the ${blocks.length} blocks below independently. For every block, emit a separate staged intent following the same shape used for single-block runs. Preserve each block's structure.
+
+${perBlock}`;
+}
 
 export function findAction(id: InlineActionId): InlineAction | undefined {
   return INLINE_ACTIONS.find((a) => a.id === id);
