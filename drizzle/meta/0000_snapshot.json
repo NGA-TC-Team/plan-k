@@ -74,18 +74,12 @@
       "indexes": {
         "intents_plan_seq_idx": {
           "name": "intents_plan_seq_idx",
-          "columns": [
-            "plan_id",
-            "server_seq"
-          ],
+          "columns": ["plan_id", "server_seq"],
           "isUnique": false
         },
         "intents_plan_seq_uniq": {
           "name": "intents_plan_seq_uniq",
-          "columns": [
-            "plan_id",
-            "server_seq"
-          ],
+          "columns": ["plan_id", "server_seq"],
           "isUnique": true
         }
       },
@@ -94,12 +88,8 @@
           "name": "intents_plan_id_plans_id_fk",
           "tableFrom": "intents",
           "tableTo": "plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

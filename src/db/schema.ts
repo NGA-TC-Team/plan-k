@@ -59,9 +59,126 @@ export const intents = sqliteTable(
   ],
 );
 
+// ─── Chat ─────────────────────────────────────────────────────────────────
+// One row per chat session. Sessions are scoped to a single plan so the
+// Claude Code subprocess has a tight context window. `expiresAt` is a
+// sliding 30d TTL refreshed on every new message; sweep job hard-deletes
+// expired rows + on-disk uploads.
+export const chatSessions = sqliteTable(
+  "chat_sessions",
+  {
+    id: text("id").primaryKey(),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default("New chat"),
+    mode: text("mode", { enum: ["auto", "approval"] })
+      .notNull()
+      .default("auto"),
+    model: text("model", { enum: ["opus", "sonnet", "haiku"] })
+      .notNull()
+      .default("sonnet"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("chat_sessions_plan_idx").on(t.planId, t.updatedAt)],
+);
+
+// One row per turn in a chat session. assistant rows accumulate
+// streamed deltas into `content`; tool rows record skill/tool calls so the
+// UI timeline can show progress notes.
+export const chatMessages = sqliteTable(
+  "chat_messages",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => chatSessions.id, { onDelete: "cascade" }),
+    role: text("role", {
+      enum: ["user", "assistant", "system", "tool"],
+    }).notNull(),
+    content: text("content").notNull().default(""),
+    mentions: text("mentions").notNull().default("[]"),
+    attachments: text("attachments").notNull().default("[]"),
+    runId: text("run_id"),
+    status: text("status", {
+      enum: ["pending", "streaming", "complete", "error"],
+    })
+      .notNull()
+      .default("complete"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index("chat_messages_session_idx").on(t.sessionId, t.createdAt)],
+);
+
+// One row per uploaded file attached to a chat session. Files live on disk
+// at `storagePath`; the row owns their lifecycle so deleting a session
+// cascades to file removal via the sweep job.
+export const chatAttachments = sqliteTable(
+  "chat_attachments",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => chatSessions.id, { onDelete: "cascade" }),
+    kind: text("kind", {
+      enum: ["image", "doc", "video", "audio", "other"],
+    }).notNull(),
+    mimeType: text("mime_type").notNull(),
+    originalName: text("original_name").notNull(),
+    storagePath: text("storage_path").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index("chat_attachments_session_idx").on(t.sessionId)],
+);
+
+// In approval mode, the subprocess stages an IntentLogEntry instead of
+// POSTing it. The user reviews + applies (forwards to /api/intents) or
+// rejects (drops). `entryJson` holds the full IntentLogEntry payload.
+export const chatStagedIntents = sqliteTable(
+  "chat_staged_intents",
+  {
+    id: text("id").primaryKey(),
+    messageId: text("message_id")
+      .notNull()
+      .references(() => chatMessages.id, { onDelete: "cascade" }),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => chatSessions.id, { onDelete: "cascade" }),
+    entryJson: text("entry_json").notNull(),
+    status: text("status", {
+      enum: ["staged", "applied", "rejected"],
+    })
+      .notNull()
+      .default("staged"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index("chat_staged_session_idx").on(t.sessionId, t.status)],
+);
+
 export type ProjectRow = typeof projects.$inferSelect;
 export type NewProjectRow = typeof projects.$inferInsert;
 export type PlanRow = typeof plans.$inferSelect;
 export type NewPlanRow = typeof plans.$inferInsert;
 export type IntentRow = typeof intents.$inferSelect;
 export type NewIntentRow = typeof intents.$inferInsert;
+export type ChatSessionRow = typeof chatSessions.$inferSelect;
+export type NewChatSessionRow = typeof chatSessions.$inferInsert;
+export type ChatMessageRow = typeof chatMessages.$inferSelect;
+export type NewChatMessageRow = typeof chatMessages.$inferInsert;
+export type ChatAttachmentRow = typeof chatAttachments.$inferSelect;
+export type NewChatAttachmentRow = typeof chatAttachments.$inferInsert;
+export type ChatStagedIntentRow = typeof chatStagedIntents.$inferSelect;
+export type NewChatStagedIntentRow = typeof chatStagedIntents.$inferInsert;
