@@ -28,6 +28,7 @@ import {
   usePanelStore,
   usePanelWidthPersistence,
 } from "@/services/stores";
+import { BacklinksPanel } from "./backlinks-panel";
 import { ChatPane } from "./chat/chat-pane";
 import { PropertyList, PropertyTable } from "./property-list";
 import { pickEditor } from "./renderers/editors";
@@ -192,6 +193,8 @@ function InspectPane({ blockId }: { blockId: string }) {
               />
             </section>
           ) : null}
+
+          <BacklinksPanel dstId={vm.id} />
 
           <section>
             <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

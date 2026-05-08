@@ -8,6 +8,8 @@ export const queryKeys = {
   plans: {
     all: ["plans"] as const,
     detail: (id: string) => [...queryKeys.plans.all, "detail", id] as const,
+    backlinks: (planId: string, dstId: string) =>
+      [...queryKeys.plans.all, "backlinks", planId, dstId] as const,
   },
   projects: {
     all: ["projects"] as const,
