@@ -9,9 +9,22 @@ type State = {
   // applies/rejects every staged intent.
   sessionIds: string[];
   open: boolean;
+  // Quick picker triggered by Cmd+. — opens an action chooser for the
+  // currently-selected block without requiring a right-click. The
+  // block snapshot is captured at trigger time so the picker doesn't
+  // need a live builder-store subscription (it's mounted globally).
+  pickerBlock: {
+    planId: string;
+    id: string;
+    kind: string;
+    parentId: string;
+    data: unknown;
+  } | null;
   addSession: (id: string) => void;
   removeSession: (id: string) => void;
   setOpen: (open: boolean) => void;
+  openPicker: (block: NonNullable<State["pickerBlock"]>) => void;
+  closePicker: () => void;
 };
 
 // Tracks open state and active inline-AI sessions for the
@@ -20,6 +33,7 @@ type State = {
 export const useInlineAiStore = create<State>((set) => ({
   sessionIds: [],
   open: false,
+  pickerBlock: null,
   addSession: (id) =>
     set((s) =>
       s.sessionIds.includes(id) ? s : { sessionIds: [...s.sessionIds, id] },
@@ -30,4 +44,6 @@ export const useInlineAiStore = create<State>((set) => ({
       open: s.sessionIds.length > 1 ? s.open : false,
     })),
   setOpen: (open) => set({ open }),
+  openPicker: (block) => set({ pickerBlock: block }),
+  closePicker: () => set({ pickerBlock: null }),
 }));

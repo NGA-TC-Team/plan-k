@@ -1,5 +1,6 @@
 "use client";
 
+import { InlineAiQuickPicker } from "@/components/builder/inline-ai/quick-picker";
 import { InlineAiDrawer } from "@/components/builder/inline-ai/staging-drawer";
 import { CommandPalette } from "@/components/command-palette/palette";
 import { KeymapSheet } from "@/components/help/keymap-sheet";
@@ -13,6 +14,7 @@ export function GlobalOverlays() {
     <>
       <KeymapSheet />
       <CommandPalette />
+      <InlineAiQuickPicker />
       <InlineAiDrawer />
     </>
   );

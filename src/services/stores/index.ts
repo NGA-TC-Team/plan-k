@@ -1,3 +1,4 @@
+export { useActiveBuilderStore } from "./active-builder.store";
 export {
   affectedNodeIdsFor,
   isAgentOrigin,

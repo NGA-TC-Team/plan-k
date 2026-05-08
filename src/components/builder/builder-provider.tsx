@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { hydrate } from "@/builder/hydrate";
 import { defaultIdFactory } from "@/builder/ids";
@@ -14,6 +14,7 @@ import { usePlanStream } from "@/hooks/builder/use-plan-stream.hook";
 import {
   affectedNodeIdsFor,
   isAgentOrigin,
+  useActiveBuilderStore,
   useAiFlashStore,
   useSaveStatusStore,
 } from "@/services/stores";
@@ -89,6 +90,19 @@ export function BuilderProvider({ planId, children }: Props) {
     origin: originRef.current ?? "",
     onRemoteIntent,
   });
+
+  // Mirror the live store into useActiveBuilderStore so global overlays
+  // (Cmd+. inline AI picker, future shortcut handlers) can reach the
+  // builder without depending on BuilderContext, which doesn't reach
+  // siblings of the route's children.
+  const builderHook = storeRef.current;
+  useEffect(() => {
+    if (!builderHook) return;
+    useActiveBuilderStore.getState().setStore(builderHook);
+    return () => {
+      useActiveBuilderStore.getState().setStore(null);
+    };
+  }, [builderHook]);
 
   if (planQuery.data && isPlanLoadError(planQuery.data)) {
     return <PlanRecoveryDialog detail={planQuery.data} />;
