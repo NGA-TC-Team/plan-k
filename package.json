@@ -12,6 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
+    "plan:export": "bun run scripts/plan-export.ts",
+    "plan:import": "bun run scripts/plan-import.ts",
     "test:e2e": "next build && playwright test",
     "test:e2e:ui": "next build && playwright test --ui"
   },
