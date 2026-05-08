@@ -9,6 +9,7 @@ import type { IntentLogEntry } from "@/builder/types/intent";
 import { useChatBindings } from "@/data/chat/use-chat-bindings";
 import { usePersistIntentMutation } from "@/data/plans/mutations";
 import { usePlanQuery } from "@/data/plans/queries";
+import { isPlanLoadError } from "@/data/plans/types";
 import { usePlanStream } from "@/hooks/builder/use-plan-stream.hook";
 import {
   affectedNodeIdsFor,
@@ -17,6 +18,7 @@ import {
   useSaveStatusStore,
 } from "@/services/stores";
 import { BuilderContext, type BuilderStoreHook } from "./builder-context";
+import { PlanRecoveryDialog } from "./plan-recovery-dialog";
 
 type Props = {
   planId: string;
@@ -33,7 +35,7 @@ export function BuilderProvider({ planId, children }: Props) {
   const storeRef = useRef<BuilderStoreHook | null>(null);
   const originRef = useRef<string | null>(null);
 
-  if (planQuery.data && !storeRef.current) {
+  if (planQuery.data && !isPlanLoadError(planQuery.data) && !storeRef.current) {
     const ids = defaultIdFactory();
     const origin = ids.newOriginId("human");
     originRef.current = origin;
@@ -88,6 +90,9 @@ export function BuilderProvider({ planId, children }: Props) {
     onRemoteIntent,
   });
 
+  if (planQuery.data && isPlanLoadError(planQuery.data)) {
+    return <PlanRecoveryDialog detail={planQuery.data} />;
+  }
   if (planQuery.isLoading || !storeRef.current) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

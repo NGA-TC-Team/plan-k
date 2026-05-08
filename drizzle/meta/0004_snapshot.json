@@ -68,9 +68,7 @@
       "indexes": {
         "chat_attachments_session_idx": {
           "name": "chat_attachments_session_idx",
-          "columns": [
-            "session_id"
-          ],
+          "columns": ["session_id"],
           "isUnique": false
         }
       },
@@ -79,12 +77,8 @@
           "name": "chat_attachments_session_id_chat_sessions_id_fk",
           "tableFrom": "chat_attachments",
           "tableTo": "chat_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -168,10 +162,7 @@
       "indexes": {
         "chat_messages_session_idx": {
           "name": "chat_messages_session_idx",
-          "columns": [
-            "session_id",
-            "created_at"
-          ],
+          "columns": ["session_id", "created_at"],
           "isUnique": false
         }
       },
@@ -180,12 +171,8 @@
           "name": "chat_messages_session_id_chat_sessions_id_fk",
           "tableFrom": "chat_messages",
           "tableTo": "chat_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -262,10 +249,7 @@
       "indexes": {
         "chat_sessions_plan_idx": {
           "name": "chat_sessions_plan_idx",
-          "columns": [
-            "plan_id",
-            "updated_at"
-          ],
+          "columns": ["plan_id", "updated_at"],
           "isUnique": false
         }
       },
@@ -274,12 +258,8 @@
           "name": "chat_sessions_plan_id_plans_id_fk",
           "tableFrom": "chat_sessions",
           "tableTo": "plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -339,10 +319,7 @@
       "indexes": {
         "chat_staged_session_idx": {
           "name": "chat_staged_session_idx",
-          "columns": [
-            "session_id",
-            "status"
-          ],
+          "columns": ["session_id", "status"],
           "isUnique": false
         }
       },
@@ -351,12 +328,8 @@
           "name": "chat_staged_intents_message_id_chat_messages_id_fk",
           "tableFrom": "chat_staged_intents",
           "tableTo": "chat_messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -364,12 +337,8 @@
           "name": "chat_staged_intents_session_id_chat_sessions_id_fk",
           "tableFrom": "chat_staged_intents",
           "tableTo": "chat_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -448,18 +417,12 @@
       "indexes": {
         "intents_plan_seq_idx": {
           "name": "intents_plan_seq_idx",
-          "columns": [
-            "plan_id",
-            "server_seq"
-          ],
+          "columns": ["plan_id", "server_seq"],
           "isUnique": false
         },
         "intents_plan_seq_uniq": {
           "name": "intents_plan_seq_uniq",
-          "columns": [
-            "plan_id",
-            "server_seq"
-          ],
+          "columns": ["plan_id", "server_seq"],
           "isUnique": true
         }
       },
@@ -468,12 +431,8 @@
           "name": "intents_plan_id_plans_id_fk",
           "tableFrom": "intents",
           "tableTo": "plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -560,10 +519,7 @@
       "indexes": {
         "intents_archive_plan_seq_idx": {
           "name": "intents_archive_plan_seq_idx",
-          "columns": [
-            "plan_id",
-            "server_seq"
-          ],
+          "columns": ["plan_id", "server_seq"],
           "isUnique": false
         }
       },
@@ -572,12 +528,8 @@
           "name": "intents_archive_plan_id_plans_id_fk",
           "tableFrom": "intents_archive",
           "tableTo": "plans",
-          "columnsFrom": [
-            "plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
