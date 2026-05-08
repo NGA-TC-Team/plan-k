@@ -7,6 +7,8 @@
 // MATCH so partial-word queries hit. Latin/digit runs go through
 // unchanged so English word boundaries stay intact.
 
+import { extractBlockText } from "@/builder/blocks/extract-text";
+import type { AppState } from "@/builder/types/state";
 import { db } from "./client";
 import { bigramKorean, buildMatchExpr } from "./search-tokens";
 
@@ -78,6 +80,52 @@ export function deleteEntity(entityId: string): void {
 export function deleteByPlan(planId: string): void {
   if (!isFts5Available()) return;
   db.$client.prepare("DELETE FROM entity_search WHERE plan_id = ?").run(planId);
+}
+
+// Full rebuild from a (migrated) snapshot. Wipes the plan's rows and
+// re-INSERTs every project/section/block in one transaction so readers
+// see a consistent view across the swap. Used by the rebuild API and
+// import path. No-op when FTS5 is unavailable.
+export function rebuildSearch(
+  planId: string,
+  snapshot: AppState,
+): { rows: number } {
+  if (!isFts5Available()) return { rows: 0 };
+  let rowCount = 0;
+  const tx = db.$client.transaction(() => {
+    db.$client
+      .prepare("DELETE FROM entity_search WHERE plan_id = ?")
+      .run(planId);
+
+    const insert = db.$client.prepare(
+      "INSERT INTO entity_search (entity_id, plan_id, kind, content) VALUES (?, ?, ?, ?)",
+    );
+
+    const project = snapshot.projects?.[planId];
+    if (project) {
+      const text = [project.title, project.summary].filter(Boolean).join(" ");
+      if (text.trim()) {
+        insert.run(planId, planId, "project", bigramKorean(text));
+        rowCount += 1;
+      }
+    }
+
+    for (const [id, section] of Object.entries(snapshot.sections ?? {})) {
+      const text = section.title;
+      if (!text || !text.trim()) continue;
+      insert.run(id, planId, "section", bigramKorean(text));
+      rowCount += 1;
+    }
+
+    for (const [id, block] of Object.entries(snapshot.blocks ?? {})) {
+      const text = extractBlockText(block);
+      if (!text || !text.trim()) continue;
+      insert.run(id, planId, "block", bigramKorean(text));
+      rowCount += 1;
+    }
+  });
+  tx();
+  return { rows: rowCount };
 }
 
 export type SearchHitRow = {

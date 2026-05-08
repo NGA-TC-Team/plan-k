@@ -9,6 +9,7 @@ import { MigrationError, migrateSnapshot } from "@/db/migrate";
 import { maybeCompact } from "./plan-compaction";
 import { planStream } from "./plan-stream";
 import { syncRefsForIntent } from "./refs-sync";
+import { syncSearchForIntent } from "./search-sync";
 
 export type PlanRecord = {
   snapshot: AppState;
@@ -218,10 +219,11 @@ export async function appendIntent(
   // not re-apply its own intent.
   planStream.emit(entry);
 
-  // Best-effort refs index maintenance — runs in-process before
-  // compaction so the graph reflects the new state by the time the
-  // archive batch is folded in.
+  // Best-effort refs + search index maintenance — runs in-process
+  // before compaction so derived views reflect the new state by the
+  // time the archive batch is folded in.
   syncRefsForIntent(entry);
+  syncSearchForIntent(entry);
 
   // Best-effort compaction. No-op when the active log is below threshold;
   // failures log + swallow so the append response is unaffected.

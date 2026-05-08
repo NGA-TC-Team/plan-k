@@ -4,6 +4,7 @@ import type { ProjectKind } from "@/builder/types/entity";
 import type { AppState } from "@/builder/types/state";
 import { db, intents, intentsArchive, plans, projects } from "@/db";
 import { MigrationError, migrateSnapshot } from "@/db/migrate";
+import { rebuildSearch } from "@/db/search-index";
 import { rebuildRefs } from "@/services/third-party-facade/refs-store";
 
 export const dynamic = "force-dynamic";
@@ -168,9 +169,10 @@ export async function POST(req: Request) {
     }
   });
 
-  // The export dump doesn't carry the refs graph (it's derived); rebuild
-  // from the migrated snapshot so backlinks light up immediately.
+  // The export dump doesn't carry derived indexes (refs graph + FTS5
+  // rows). Rebuild both so backlinks and search work immediately.
   const refsResult = rebuildRefs(targetId, migratedSnapshot as AppState);
+  const searchResult = rebuildSearch(targetId, migratedSnapshot as AppState);
 
   return NextResponse.json({
     ok: true,
@@ -178,6 +180,7 @@ export async function POST(req: Request) {
     importedIntents: body.intents?.length ?? 0,
     importedArchived: body.archived?.length ?? 0,
     rebuiltRefs: refsResult.edges,
+    rebuiltSearch: searchResult.rows,
   });
 }
 
