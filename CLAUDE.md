@@ -88,6 +88,19 @@ src/
 ### Conventions
 
 - **State boundaries**: server state → TanStack Query (`src/data/`); client/UI state → Zustand (`src/services/stores/`); ephemeral local state → component `useState`. Don't put server data in Zustand.
+
+#### Zustand selectors — avoid the "infinite loop" trap
+
+React 19's `useSyncExternalStore` (which Zustand uses under the hood) requires `getSnapshot` to return a **referentially stable** value when the underlying state hasn't changed. Returning a fresh object/array on every read triggers the runtime warning **"The result of getSnapshot should be cached to avoid an infinite loop"** and frequently escalates to **"Maximum update depth exceeded."**
+
+Two failure shapes occur regularly in this codebase — guard against both whenever you write or modify a selector:
+
+1. **Inline `?? []` / `?? {}` fallbacks.** `useStore(s => s.things[id] ?? [])` allocates a new `[]` on every render even when `s.things[id]` is `undefined`. Fix by hoisting a module-level constant: `const EMPTY: never[] = []` and `useStore(s => s.things[id] ?? EMPTY)`.
+2. **Selectors that build a derived object/array.** `useStore(s => ({ a: s.a, b: s.b }))` returns a new object every render. Use the shallow-equal variant — for the chat/UI Zustand stores, wrap with `useShallow` from `zustand/react/shallow`; for the builder store, use the existing `useBuilderStateShallow` helper in `src/hooks/builder/use-builder-store.hook.ts`.
+
+Rule of thumb: a selector is safe **only** if it returns a primitive, a stable function reference, or a value already stored in state. Anything else needs `useShallow`/`useBuilderStateShallow` or a hoisted constant. After adding a new selector, sanity-check by toggling React DevTools "Highlight updates" — a render storm on an idle screen is the symptom.
+
+Do not "fix" the warning by wrapping the selector body in `useMemo`. The selector runs inside `getSnapshot`, which is called outside of React's render phase, so memoization there does not stabilize the reference.
 - **No direct axios imports outside the facade.** Every HTTP call goes through `request<T>()` from `@/services/third-party-facade`. Same pattern when adding new SDKs (e.g. PDF/image export libs, Drizzle client) — wrap once, import the wrapper everywhere else.
 - **Adding a resource**: copy `src/data/users/` to `src/data/<resource>/`, extend `queryKeys` in `query-keys.ts`. Don't invent ad-hoc query key arrays at call sites.
 - **Mutations** must invalidate the relevant `queryKeys.<resource>.all` (and `detail(id)` where applicable). Follow the pattern in `data/users/mutations.ts`.
