@@ -5,7 +5,23 @@ import {
   refRowId,
 } from "@/builder/refs/extract";
 import type { AppState } from "@/builder/types/state";
-import { db, refs } from "@/db";
+// Import schema table objects from schema-only module so that importing this
+// file in bun:test does NOT trigger client.ts (better-sqlite3 binding).
+// The DB handle is accessed lazily via getDb() so mock.module("@/db") applied
+// before the first function call can substitute an in-memory DB for tests.
+import { refs } from "@/db/schema";
+
+// biome-ignore lint/suspicious/noExplicitAny: adapter-agnostic drizzle instance
+type AnyDb = any;
+
+// Lazy DB accessor — resolves to the module-level mock when running under
+// bun:test (registered before the first call), or the production singleton
+// (better-sqlite3) in normal operation. Using require() rather than a static
+// import prevents client.ts from being evaluated at module-load time.
+function getDb(): AnyDb {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (require("@/db") as { db: AnyDb }).db;
+}
 
 // Replace all outgoing refs for `srcId` with the given set. Idempotent —
 // no-op when the next set equals the previous one. Single transaction so
@@ -18,15 +34,15 @@ export function syncRefsForBlock(
   const next = extractRefs(data);
   const nextIds = new Set(next.map((r) => refRowId(srcId, r.kind, r.dstId)));
 
-  db.transaction((tx) => {
+  getDb().transaction((tx: AnyDb) => {
     const existing = tx
       .select({ id: refs.id })
       .from(refs)
       .where(and(eq(refs.planId, planId), eq(refs.srcId, srcId)))
       .all()
-      .map((r) => r.id);
+      .map((r: { id: string }) => r.id);
 
-    const toDelete = existing.filter((id) => !nextIds.has(id));
+    const toDelete = existing.filter((id: string) => !nextIds.has(id));
     if (toDelete.length > 0) {
       tx.delete(refs).where(inArray(refs.id, toDelete)).run();
     }
@@ -50,7 +66,8 @@ export function syncRefsForBlock(
 // deleted. Incoming refs (other entities pointing AT srcId) are left so
 // the UI can render them as broken links.
 export function deleteOutgoingRefs(planId: string, srcId: string): void {
-  db.delete(refs)
+  getDb()
+    .delete(refs)
     .where(and(eq(refs.planId, planId), eq(refs.srcId, srcId)))
     .run();
 }
@@ -67,7 +84,7 @@ export function rebuildRefs(
 } {
   let edgeCount = 0;
   const blockEntries = Object.entries(snapshot.blocks ?? {});
-  db.transaction((tx) => {
+  getDb().transaction((tx: AnyDb) => {
     tx.delete(refs).where(eq(refs.planId, planId)).run();
     const buffer: {
       id: string;
@@ -97,7 +114,7 @@ export function rebuildRefs(
 }
 
 export function getIncomingRefs(planId: string, dstId: string) {
-  return db
+  return getDb()
     .select()
     .from(refs)
     .where(and(eq(refs.planId, planId), eq(refs.dstId, dstId)))
@@ -105,7 +122,7 @@ export function getIncomingRefs(planId: string, dstId: string) {
 }
 
 export function getOutgoingRefs(planId: string, srcId: string) {
-  return db
+  return getDb()
     .select()
     .from(refs)
     .where(and(eq(refs.planId, planId), eq(refs.srcId, srcId)))
