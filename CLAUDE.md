@@ -21,6 +21,7 @@ This Next.js app is **not** a deployable web service. It's a **locally-built pla
 - **`Explore` 서브에이전트 담당 (조사·탐색)**: 코드베이스 탐색, 파일 위치 파악, 심볼/키워드 검색, 컨벤션 확인, "X가 어디에 정의되어 있나 / Y를 참조하는 파일은 어디인가" 류 질문. 메인이 계획을 세우기 전 컨텍스트 수집 단계에서 적극 활용.
 - **`plan-driven-implementer` 담당 (구현)**: 합의된 계획을 받아 실제 파일을 생성·수정. Edit/Write/Bash 등 코드를 변경하는 도구 호출은 이 에이전트가 수행.
 - **`implementation-reviewer` 담당 (검수)**: 구현이 끝난 코드를 설계 부합성·컨벤션·자동 검증(lint/tsc/test/build)·에러 처리 견고성 4축으로 검사하고 등급(APPROVE / APPROVE WITH NITS / REQUEST CHANGES / BLOCK)과 사용자용 보고서를 산출. **수정 권한 없음** — 검토자와 구현자의 분리를 깨뜨리지 않는다.
+- **`dev-chore-runner` 담당 (잡무 실행)**: 판단·설계가 거의 없는 기계적 작업 — git 조회·스테이징·커밋·푸시·브랜치/태그, 의존성 add/remove/install, 보일러플레이트 폴더 스캐폴딩, 파일/폴더 이동·복사·삭제·조회 — 을 위임받아 처리. **결정 권한 없음** — 메인이 정한 커밋 메시지·파일 경로·패키지명을 그대로 실행. Haiku급 저비용 모델이라 메인 컨텍스트 절약 효과가 가장 크다.
 
 ### Explore 위임 규칙
 
@@ -58,16 +59,37 @@ This Next.js app is **not** a deployable web service. It's a **locally-built pla
 - **수정 권한 분리**: 리뷰어는 코드를 수정하지 않는다 (CLAUDE.md/AGENTS.md/`ai-docs/` 오타 한 줄 예외 제외). REQUEST CHANGES 항목을 메인이 직접 패치하지 말고 implementer에 재위임. 리뷰어가 검증한 분리(검토자 ≠ 구현자)를 깨뜨리지 않는다.
 - **메모리**: implementation-reviewer는 자체 agent-memory를 가진다 (`.claude/agent-memory/implementation-reviewer/`). 메인은 이 디렉터리를 직접 편집하지 않는다 — 리뷰어 자율 갱신.
 
+### dev-chore-runner 위임 규칙
+
+- **트리거**: 판단이 거의 없는 기계적 작업이 1건 이상 보이는 모든 시점. 대표 예시:
+  - 커밋·푸시·태그 발사 (메시지·SHA 범위만 메인이 정해서 넘김)
+  - `bun add` / `bun remove` / `bun install` + lockfile 정합성 확인
+  - `src/data/<resource>/` 같은 보일러플레이트 폴더 스캐폴딩 (`users/` 패턴 복제)
+  - `ai-docs/` 정리, 임시 파일 이동·삭제, 디렉터리 트리 출력
+  - `git status` / `git diff --stat` / `git log --oneline` 같은 단순 조회 결과 인용 필요 시
+- **호출 방식**: `Agent` 도구로 `subagent_type: "dev-chore-runner"` 지정. 프롬프트에는 (a) 정확히 실행할 명령 또는 결과물 사양, (b) 사용 가능한 안전 한계 (예: "`git add -A` 금지, 명시한 파일만 stage"), (c) 보고 형식 (실행 명령 + 출력 요약)을 박아 보낸다. 메시지·경로·패키지명을 메인이 미리 결정한 뒤 넘기는 것이 핵심.
+- **위임 vs 직접 실행 분기**:
+  - 1~2개 단순 명령 (예: `git status` 한 번) → 메인이 직접 Bash로.
+  - 다단계 시퀀스 (예: status → diff 검토 후보고 → stage → commit → push)나 결과 출력이 길어질 작업 → 위임. Haiku 비용으로 메인 컨텍스트를 절약한다.
+  - schema/마이그레이션·아키텍처 결정·코드 변경은 위임 대상이 아니다 — 그건 `plan-driven-implementer`.
+- **예외 (위임 금지 영역)**:
+  - 코드 작성·리팩터·로직 수정 (구현자 영역).
+  - 설계·결정·비교 (메인 영역).
+  - 검수·등급 판정 (리뷰어 영역).
+  - CLAUDE.md/AGENTS.md/`ai-docs/` 메모의 *내용 작성* (메인 직접). 단순 *파일 이동/삭제*는 잡무라 위임 가능.
+- **안전 가드**: 위임 프롬프트에 항상 *"`git add -A`/`--no-verify`/`--force`/`reset --hard` 금지, 사용자 명시 승인 없이 main/master force push 금지"*를 포함. dev-chore-runner의 시스템 프롬프트에도 동일 룰이 박혀 있지만 이중 안전망.
+- **검증**: chore-runner는 보통 한 사이클 안에 끝나므로 별도 리뷰어 호출 불요. 단 의존성 추가는 `bunx tsc --noEmit` + `bun run lint` 빠른 검증을 위임 안에서 같이 돌리도록 지시한다.
+
 ### 표준 작업 흐름
 
 1. 요구 접수 → 메인이 DoD 7속성 점검, 빠진 부분은 1~3개 질문.
 2. 컨텍스트 수집 → **`Explore` 위임** (필요시 병렬). 메인은 직접 grep/find을 남발하지 않는다.
 3. 메인이 Explore 결과를 종합해 계획·대안·비목표를 사용자에게 제시, 합의.
-4. 합의된 계획 + Explore가 파악한 경로/컨벤션을 묶어 **`plan-driven-implementer`에 위임**.
+4. 합의된 계획 + Explore가 파악한 경로/컨벤션을 묶어 **`plan-driven-implementer`에 위임**. 의존성 추가나 폴더 스캐폴딩이 사전 작업으로 필요하면 그 단계만 먼저 **`dev-chore-runner`에 분리 위임**.
 5. implementer 완료 보고 수신 → 메인이 변경 범위·특이사항 확인.
 6. **`implementation-reviewer`에 위임** — 등급(APPROVE / APPROVE WITH NITS / REQUEST CHANGES / BLOCK)과 검증 결과 수신.
 7. 결과 분기:
-   - APPROVE / APPROVE WITH NITS → 사용자에게 요약 보고 + 다음 단계(머지·후속 PR·nit 정리) 결정.
+   - APPROVE / APPROVE WITH NITS → 사용자에게 요약 보고 + 다음 단계(머지·후속 PR·nit 정리) 결정. **머지/푸시/태그 발사는 `dev-chore-runner`에 위임** (메시지는 메인이 작성해 넘김).
    - REQUEST CHANGES → 리뷰어 지시문을 그대로 `plan-driven-implementer`에 후속 위임 → 다시 5단계로.
    - BLOCK → 진행 중단, 사용자 의사결정 대기.
 
