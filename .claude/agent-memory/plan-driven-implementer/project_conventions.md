@@ -122,6 +122,16 @@ type: project
 - selector + callback 형태의 2인자 subscribe는 `subscribeWithSelector` 미들웨어 필요.
 - 미들웨어 없이 selector 패턴 쓰려면: 리스너 안에서 prev 값을 클로저로 캐싱해 변경 감지.
 
+## PrintOptionsStore + PrintView Cover/TOC 패턴 (E10 PR-D, 2026-05-10)
+
+- `print-options.store.ts`: persist v1 + no-op migrate. `usePrintOptionsStore.getState()` 로 render 외부(trigger 함수)에서 단발 읽기 — selector 불필요.
+- `PopoverTrigger render={<Button .../>}` + children 아이콘 포함: base-ui Trigger가 render prop Element에 자식을 병합. DropdownMenuTrigger와 동일 패턴.
+- `Switch` base-ui API: `checked` + `onCheckedChange={(v) => setter(v)}`. `onCheckedChange` 첫 인자가 `boolean`.
+- PrintView Cover/TOC props: `Omit<PrintViewProps, "pageNumbers" | "footerText">` 패턴 — PDF-only props를 타입 정의에는 두되 함수 파라미터에서는 제외(Biome noUnusedVariables 방지).
+- Boolean searchParam 파싱: `param !== "false"` (null/missing → defaultVal) 패턴. route handler + print page 양쪽에 동일하게 적용.
+- footerText 길이 클램핑: route handler에서 `slice(0, 200)` 적용.
+- PNG export에 cover/toc 파라미터 전달: full-page screenshot이므로 커버+TOC 포함 전체 페이지 캡처 (적용 결정).
+
 ## VersionsUiStore + Drawer 패턴 (E10 PR-B, 2026-05-10)
 
 - `versions-ui.store.ts`: persist 없는 에페머럴 Zustand 스토어. `create<T>()(...)` 패턴(theme-store 방식). `tagDialogOpen` 플래그도 같은 스토어에 포함해 커맨드팔레트에서 드로어+다이얼로그 동시 오픈 가능.
