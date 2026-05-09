@@ -146,6 +146,15 @@ type: project
 - hook이 null이면(BuilderProvider 외부) `liveState = null` — DiffPanel이 에러 상태 표시.
 - `version.snapshot` JSON 파싱은 `useMemo` 안에서 try/catch 처리 → `{ ok, snapshot | message }` discriminated union.
 
+## Version Export 패턴 (E10 PR-E, 2026-05-10)
+
+- `buildExportParams(planId, opts, extra?)` 헬퍼: `src/components/builder/export-params.ts` 신규 모듈. top-bar와 versions-list-item 공유. extra bag으로 `versionId` 등 추가 파라미터 전달.
+- `parseBoolParam(raw, defaultVal)` 헬퍼: `src/lib/utils.ts`에 추가. pdf/png route + print page 3곳에서 공통 사용.
+- `PrintViewProps.pageNumbers`/`footerText` 제거(B3 (i)): `Omit` wrapper 삭제. PDF-only 관심사는 주석으로만 설명.
+- `PlanVersionRow.createdAt`: `timestamp_ms` 모드 → Drizzle이 `Date` 객체로 반환. `PrintView`에 `versionTaggedAt?: Date`로 전달.
+- Print page version 분기: `versionId` 있으면 `getPlanVersion(id)` → null → notFound(); JSON.parse try/catch → 실패 → console.error + notFound(). Cover는 강제 true.
+- versionNote 400자 truncation: 서버 컴포넌트(print/page.tsx)에서 slice(0,400)+"…" 처리 후 전달.
+
 ## PrintOptionsStore + PrintView Cover/TOC 패턴 (E10 PR-D, 2026-05-10)
 
 - `print-options.store.ts`: persist v1 + no-op migrate. `usePrintOptionsStore.getState()` 로 render 외부(trigger 함수)에서 단발 읽기 — selector 불필요.
