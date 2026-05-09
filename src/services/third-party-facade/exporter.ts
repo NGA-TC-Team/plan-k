@@ -12,6 +12,14 @@ type ExportOptions = {
   sectionId?: string;
   /** Plain title shown in the page header (PDF only). */
   headerTitle?: string;
+  /** Whether to render a cover page (PDF/print only). Defaults to true. */
+  cover?: boolean;
+  /** Whether to render a table of contents page (PDF/print only). Defaults to true. */
+  toc?: boolean;
+  /** Whether to show page numbers in the PDF footer. Defaults to true. */
+  pageNumbers?: boolean;
+  /** Optional label prepended to the footer page-number line. */
+  footerText?: string;
 };
 
 let browserPromise: Promise<Browser> | null = null;
@@ -36,6 +44,12 @@ function printUrl(opts: ExportOptions): string {
     opts.origin,
   );
   if (opts.sectionId) url.searchParams.set("sectionId", opts.sectionId);
+  if (opts.cover !== undefined)
+    url.searchParams.set("cover", String(opts.cover));
+  if (opts.toc !== undefined) url.searchParams.set("toc", String(opts.toc));
+  if (opts.pageNumbers !== undefined)
+    url.searchParams.set("pageNumbers", String(opts.pageNumbers));
+  if (opts.footerText) url.searchParams.set("footerText", opts.footerText);
   return url.toString();
 }
 
@@ -56,13 +70,18 @@ export async function exportToPdf(opts: ExportOptions): Promise<Buffer> {
   try {
     await page.goto(printUrl(opts), { waitUntil: "networkidle0" });
     const headerText = opts.headerTitle ?? opts.planId;
+    const showPageNumbers = opts.pageNumbers !== false;
+    const footerLabel = opts.footerText ? escapeHtml(opts.footerText) : "";
+    const footerTemplate = showPageNumbers
+      ? `<div style="${PDF_HEADER_FOOTER_STYLE}"><span>${footerLabel}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`
+      : `<div style="${PDF_HEADER_FOOTER_STYLE}"></div>`;
     const buffer = await page.pdf({
       format: opts.format ?? "A4",
       printBackground: true,
       displayHeaderFooter: true,
       margin: { top: "20mm", bottom: "16mm", left: "16mm", right: "16mm" },
       headerTemplate: `<div style="${PDF_HEADER_FOOTER_STYLE}"><span>${escapeHtml(headerText)}</span><span></span></div>`,
-      footerTemplate: `<div style="${PDF_HEADER_FOOTER_STYLE}"><span></span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`,
+      footerTemplate,
     });
     return Buffer.from(buffer);
   } finally {

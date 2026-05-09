@@ -31,6 +31,17 @@ export async function GET(req: Request) {
     );
   }
   const sectionId = url.searchParams.get("sectionId") ?? undefined;
+  // Boolean param: any value other than "false" is treated as true (forgiving).
+  const parseBool = (param: string | null, defaultVal: boolean): boolean => {
+    if (param === null) return defaultVal;
+    return param !== "false";
+  };
+  const cover = parseBool(url.searchParams.get("cover"), true);
+  const toc = parseBool(url.searchParams.get("toc"), true);
+  const pageNumbers = parseBool(url.searchParams.get("pageNumbers"), true);
+  const footerTextRaw = url.searchParams.get("footerText") ?? "";
+  // Clamp footerText to 200 chars to avoid oversized header/footer templates.
+  const footerText = footerTextRaw.slice(0, 200);
   const planMeta = Object.values(plan.snapshot.plans)[0];
   const projectMeta = planMeta
     ? plan.snapshot.projects[planMeta.projectId]
@@ -48,6 +59,10 @@ export async function GET(req: Request) {
     planId,
     sectionId,
     headerTitle,
+    cover,
+    toc,
+    pageNumbers,
+    footerText: footerText || undefined,
   });
   return new NextResponse(new Uint8Array(pdf), {
     status: 200,

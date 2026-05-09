@@ -22,13 +22,26 @@ type PrintViewProps = {
   tailEntries: IntentLogEntry[];
   /** When set, only this section's subtree is rendered (no docs index, no screens). */
   sectionId?: string;
+  /** Whether to render a cover page (full-plan export only). Defaults to true. */
+  cover?: boolean;
+  /** Whether to render a table of contents page (full-plan export only). Defaults to true. */
+  toc?: boolean;
+  /**
+   * pageNumbers and footerText are PDF header/footer concerns handled by the
+   * Puppeteer exporter. Declared here for prop symmetry with the exporter API
+   * but not used in the PrintView render.
+   */
+  pageNumbers?: boolean;
+  footerText?: string;
 };
 
 export function PrintView({
   snapshot,
   tailEntries,
   sectionId,
-}: PrintViewProps) {
+  cover = true,
+  toc = true,
+}: Omit<PrintViewProps, "pageNumbers" | "footerText">) {
   const state = hydrate(snapshot, tailEntries);
   const plan = Object.values(state.plans)[0];
   const project = plan ? state.projects[plan.projectId] : undefined;
@@ -48,8 +61,83 @@ export function PrintView({
     ? buildBreadcrumbs(state, focusedSection)
     : [];
 
+  const generatedAt = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="print-page mx-auto max-w-3xl space-y-10 p-8 text-zinc-900 print:max-w-none print:p-0 print:text-black">
+      {/* Cover page — full-plan export only, when cover=true */}
+      {cover && !sectionId ? (
+        <div className="flex min-h-[80vh] flex-col justify-between print:break-after-page">
+          <div />
+          <div className="space-y-4">
+            <div className="text-xs uppercase tracking-widest text-zinc-500">
+              {kind ?? "—"} plan
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight">
+              {project?.title ?? plan?.id ?? "Untitled plan"}
+            </h1>
+            {project?.summary ? (
+              <p className="max-w-prose text-base text-zinc-600">
+                {project.summary}
+              </p>
+            ) : null}
+          </div>
+          <div className="text-xs text-zinc-400">{generatedAt}</div>
+        </div>
+      ) : null}
+
+      {/* Table of contents — full-plan export only, when toc=true */}
+      {toc && !sectionId ? (
+        <div className="space-y-4 print:break-after-page">
+          <h2 className="text-xl font-semibold">Contents</h2>
+          {docsRoots.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-wider text-zinc-500">
+                Docs
+              </p>
+              <ul className="space-y-0.5 text-sm">
+                {docsRoots.map((s) => (
+                  <li key={s.id}>
+                    <a
+                      href={`#section-${s.id}`}
+                      className="text-zinc-700 hover:underline"
+                    >
+                      {s.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {screens.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-wider text-zinc-500">
+                Screens
+              </p>
+              <ul className="space-y-0.5 text-sm">
+                {screens.map((s) => (
+                  <li key={s.id}>
+                    <a
+                      href={`#screen-${s.id}`}
+                      className="text-zinc-700 hover:underline"
+                    >
+                      {s.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {docsRoots.length === 0 && screens.length === 0 ? (
+            <p className="text-xs italic text-zinc-500">(no content)</p>
+          ) : null}
+        </div>
+      ) : null}
+
       <header className="space-y-1 border-b pb-4">
         <div className="text-xs uppercase tracking-wider text-zinc-500">
           {kind ?? "—"} plan
@@ -83,12 +171,9 @@ export function PrintView({
                 Docs
               </h2>
               {docsRoots.map((section) => (
-                <SectionPrintNode
-                  key={section.id}
-                  state={state}
-                  section={section}
-                  depth={0}
-                />
+                <div key={section.id} id={`section-${section.id}`}>
+                  <SectionPrintNode state={state} section={section} depth={0} />
+                </div>
               ))}
             </section>
           ) : null}
@@ -131,6 +216,7 @@ export function PrintView({
                 return (
                   <article
                     key={screen.id}
+                    id={`screen-${screen.id}`}
                     className="space-y-3 break-inside-avoid"
                   >
                     <h3 className="text-base font-medium">{screen.title}</h3>

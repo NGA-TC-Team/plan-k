@@ -27,6 +27,7 @@ export {
 } from "./chat-store";
 export { useInlineAiStore } from "./inline-ai.store";
 export { useInsertMruStore } from "./insert-mru.store";
+export { type PrintOptions, usePrintOptionsStore } from "./print-options.store";
 export { type SaveStatus, useSaveStatusStore } from "./save-status.store";
 export { useSearchHighlightStore } from "./search-highlight.store";
 export { type Theme, type ThemeMode, useThemeStore } from "./theme-store";

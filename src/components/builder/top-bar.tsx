@@ -55,7 +55,9 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useBuilderUiStore, useThemeStore } from "@/services/stores";
+import { usePrintOptionsStore } from "@/services/stores/print-options.store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { PrintOptionsPopover } from "./print-options-popover";
 import { SaveStatusChip } from "./save-status-chip";
 import { VersionsDrawer } from "./versions-drawer";
 
@@ -354,47 +356,65 @@ function ProjectMetaEditor({
 function ExportMenu({ planId }: { planId: string }) {
   const trigger = (kind: "pdf" | "png") => {
     if (typeof window === "undefined") return;
-    const url = `/api/exports/${kind}?planId=${encodeURIComponent(planId)}`;
+    const opts = usePrintOptionsStore.getState();
+    const params = new URLSearchParams({
+      planId,
+      cover: String(opts.cover),
+      toc: String(opts.toc),
+      pageNumbers: String(opts.pageNumbers),
+    });
+    if (opts.footerText) params.set("footerText", opts.footerText);
+    const url = `/api/exports/${kind}?${params.toString()}`;
     window.open(url, "_blank", "noopener");
   };
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Export"
-            title="Export"
+    <>
+      <PrintOptionsPopover />
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Export"
+              title="Export"
+            >
+              <Download className="size-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => trigger("pdf")}>
+            <FileText className="size-3.5" />
+            <span>Export as PDF</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => trigger("png")}>
+            <FileImage className="size-3.5" />
+            <span>Export as PNG</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              const opts = usePrintOptionsStore.getState();
+              const params = new URLSearchParams({
+                cover: String(opts.cover),
+                toc: String(opts.toc),
+                pageNumbers: String(opts.pageNumbers),
+              });
+              if (opts.footerText) params.set("footerText", opts.footerText);
+              window.open(
+                `/plan/${encodeURIComponent(planId)}/print?${params.toString()}`,
+                "_blank",
+                "noopener",
+              );
+            }}
           >
-            <Download className="size-4" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => trigger("pdf")}>
-          <FileText className="size-3.5" />
-          <span>Export as PDF</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => trigger("png")}>
-          <FileImage className="size-3.5" />
-          <span>Export as PNG</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            window.open(
-              `/plan/${encodeURIComponent(planId)}/print`,
-              "_blank",
-              "noopener",
-            );
-          }}
-        >
-          <Printer className="size-3.5" />
-          <span>Open print view</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <Printer className="size-3.5" />
+            <span>Open print view</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }
 

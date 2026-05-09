@@ -7,6 +7,18 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// Boolean searchParam: any value other than "false" is treated as true.
+function spBool(
+  sp: Record<string, string | string[] | undefined>,
+  key: string,
+  defaultVal: boolean,
+): boolean {
+  const raw = sp[key];
+  if (raw === undefined) return defaultVal;
+  const val = Array.isArray(raw) ? raw[0] : raw;
+  return val !== "false";
+}
+
 export default async function PrintPage({
   params,
   searchParams,
@@ -20,6 +32,8 @@ export default async function PrintPage({
   const sectionId = Array.isArray(sectionParam)
     ? sectionParam[0]
     : sectionParam;
+  const cover = spBool(sp, "cover", true);
+  const toc = spBool(sp, "toc", true);
   const plan = await getPlan(id);
   if (!plan) notFound();
   if (isPlanLoadError(plan)) notFound();
@@ -28,6 +42,8 @@ export default async function PrintPage({
       snapshot={plan.snapshot}
       tailEntries={plan.tailEntries}
       sectionId={sectionId}
+      cover={cover}
+      toc={toc}
     />
   );
 }
