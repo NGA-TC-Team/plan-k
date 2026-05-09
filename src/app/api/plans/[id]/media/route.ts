@@ -122,15 +122,6 @@ export async function POST(
     meta = await validateAndClassifyMediaBuffer(buffer, declaredMime);
   } catch (validationErr) {
     const ve = validationErr as MediaValidationError;
-    if (ve?.code === "MIME_MISMATCH") {
-      return NextResponse.json(
-        {
-          error: "Declared MIME type does not match file content",
-          code: "MIME_MISMATCH",
-        },
-        { status: 415 },
-      );
-    }
     if (ve?.code === "UNSUPPORTED_MIME" || ve?.code === "SVG_SCRIPT") {
       return NextResponse.json(
         { error: ve.message, code: "UNSUPPORTED_MIME" },
