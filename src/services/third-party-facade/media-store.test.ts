@@ -33,6 +33,7 @@ function makeTestDb() {
 // ─── Import media-store with test DB ──────────────────────────────────────
 
 import {
+  type CreateMediaFromPathInput,
   classifyMedia,
   deletePlanDir,
   LOCAL_MEDIA_ROOT,
@@ -334,6 +335,180 @@ describe("deletePlanDir", () => {
     await deletePlanDir(planId);
 
     await expect(stat(dir)).rejects.toThrow();
+  });
+});
+
+// ─── createMediaFromPath ──────────────────────────────────────────────────
+
+import { writeFile as writeFileFs } from "node:fs/promises";
+import { UPLOAD_ROOT } from "./chat-uploads";
+
+/**
+ * Creates a temporary file in the chat upload area to simulate a chat
+ * attachment on disk.
+ */
+async function makeSourceFile(
+  sessionId: string,
+  filename: string,
+  content: string | Buffer,
+): Promise<string> {
+  const dir = path.join(UPLOAD_ROOT, sessionId);
+  await mkdir(dir, { recursive: true });
+  const absPath = path.join(dir, filename);
+  await writeFileFs(absPath, content);
+  return absPath;
+}
+
+describe("createMediaFromPath", () => {
+  const db = makeTestDb();
+  const store = makeMediaStore(db);
+  let planId: string;
+  const testSessionId = `sess_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+
+  beforeAll(() => {
+    planId = testPlanId();
+    seedPlan(db, planId);
+  });
+
+  afterAll(async () => {
+    await cleanupDir(planId);
+    // Clean up any remaining source session dir.
+    await rm(path.join(UPLOAD_ROOT, testSessionId), {
+      recursive: true,
+      force: true,
+    });
+  });
+
+  it("moves file to media dir, inserts DB row, sourceChatAttachmentId set", async () => {
+    const srcPath = await makeSourceFile(
+      testSessionId,
+      "photo_promote.png",
+      Buffer.from("fake-png-data"),
+    );
+
+    const input: CreateMediaFromPathInput = {
+      planId,
+      kind: "image",
+      mimeType: "image/png",
+      originalName: "photo_promote.png",
+      sizeBytes: 14, // len("fake-png-data")
+      sourcePath: srcPath,
+      sourceChatAttachmentId: "ca_test123",
+    };
+
+    const row = await store.createMediaFromPath(input);
+
+    // Source file must be gone (moved, not copied).
+    await expect(stat(srcPath)).rejects.toThrow();
+
+    // Dest file must exist at the media dir.
+    const destPath = path.join(LOCAL_MEDIA_ROOT, planId, row.storagePath);
+    const destStat = await stat(destPath);
+    expect(destStat.isFile()).toBe(true);
+
+    // DB row correctness.
+    const fetched = store.getMedia(row.id);
+    expect(fetched).not.toBeNull();
+    expect(fetched?.sourceChatAttachmentId).toBe("ca_test123");
+    expect(fetched?.planId).toBe(planId);
+    expect(fetched?.kind).toBe("image");
+  });
+
+  it("throws and leaves no DB row when source file does not exist", async () => {
+    const missingPath = path.join(
+      UPLOAD_ROOT,
+      testSessionId,
+      "does_not_exist.png",
+    );
+
+    const input: CreateMediaFromPathInput = {
+      planId,
+      kind: "image",
+      mimeType: "image/png",
+      originalName: "does_not_exist.png",
+      sizeBytes: 0,
+      sourcePath: missingPath,
+    };
+
+    await expect(store.createMediaFromPath(input)).rejects.toThrow();
+
+    // No orphan row in DB.
+    const rows = db
+      .select()
+      .from(schema.media)
+      .where(schema.media.planId ? undefined : undefined)
+      .all();
+    // All rows have planId matching our test plan; none should have
+    // storagePath containing "does_not_exist".
+    const orphan = rows.find((r) =>
+      (r as { storagePath: string }).storagePath.includes("does_not_exist"),
+    );
+    expect(orphan).toBeUndefined();
+  });
+
+  it("rolls back file move to original location when DB insert fails", async () => {
+    // Use a fresh DB with plans table but corrupt the media table by closing
+    // the connection inside a mock. Instead, we simulate via a plan that has
+    // NOT been seeded — the FK constraint on planId will cause the insert to
+    // throw.
+    const orphanDb = makeTestDb();
+    const orphanStore = makeMediaStore(orphanDb);
+    // Do NOT seed a plan — any insert referencing unknownPlanId will fail FK.
+    const unknownPlanId = `fk-fail-plan-${Date.now()}`;
+
+    const srcPath = await makeSourceFile(
+      testSessionId,
+      "rollback_test.png",
+      Buffer.from("rollback-content"),
+    );
+
+    const input: CreateMediaFromPathInput = {
+      planId: unknownPlanId,
+      kind: "image",
+      mimeType: "image/png",
+      originalName: "rollback_test.png",
+      sizeBytes: 16,
+      sourcePath: srcPath,
+    };
+
+    await expect(orphanStore.createMediaFromPath(input)).rejects.toThrow();
+
+    // Rollback succeeded: source file must be back at original location.
+    const srcStat = await stat(srcPath);
+    expect(srcStat.isFile()).toBe(true);
+
+    // Cleanup.
+    await rm(srcPath, { force: true });
+  });
+
+  it("throws with FK violation when planId does not exist (no rollback needed — insert throws)", async () => {
+    // Separate DB to isolate from other tests.
+    const isolatedDb = makeTestDb();
+    const isolatedStore = makeMediaStore(isolatedDb);
+    const missingPlanId = `no-such-plan-${Date.now()}`;
+
+    const srcPath = await makeSourceFile(
+      testSessionId,
+      "fk_test.png",
+      Buffer.from("fk-content"),
+    );
+
+    await expect(
+      isolatedStore.createMediaFromPath({
+        planId: missingPlanId,
+        kind: "image",
+        mimeType: "image/png",
+        originalName: "fk_test.png",
+        sizeBytes: 10,
+        sourcePath: srcPath,
+      }),
+    ).rejects.toThrow();
+
+    // Source restored by rollback.
+    await expect(stat(srcPath)).resolves.toBeDefined();
+
+    // Cleanup.
+    await rm(srcPath, { force: true });
   });
 });
 

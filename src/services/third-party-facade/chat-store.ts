@@ -79,6 +79,8 @@ function rowToAttachment(row: ChatAttachmentRow) {
     originalName: row.originalName,
     storagePath: row.storagePath,
     sizeBytes: row.sizeBytes,
+    // null when not yet promoted to the media library (PR-6).
+    mediaId: row.mediaId ?? null,
     createdAt: row.createdAt.getTime(),
   };
 }
@@ -347,6 +349,22 @@ export function getAttachment(id: string): ChatAttachment | null {
     .where(eq(chatAttachments.id, id))
     .get();
   return row ? rowToAttachment(row) : null;
+}
+
+/**
+ * Back-pointer update: set mediaId on a chat attachment after promotion (PR-6).
+ * Passing null clears the back-pointer (used to recover from a race condition
+ * where media was deleted before the back-pointer was written).
+ */
+export function setAttachmentMediaId(
+  id: string,
+  mediaId: string | null,
+): ChatAttachment | null {
+  db.update(chatAttachments)
+    .set({ mediaId })
+    .where(eq(chatAttachments.id, id))
+    .run();
+  return getAttachment(id);
 }
 
 // ─── Staged intents ─────────────────────────────────────────────────────

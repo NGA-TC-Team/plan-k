@@ -37,4 +37,15 @@ export const mediaApi = {
 
   remove: (id: string) =>
     request<void>({ method: "DELETE", url: `/media/${id}` }),
+
+  /**
+   * Promote a chat attachment to the plan's media library.
+   * The server moves the file from the chat upload directory and inserts a
+   * media row. Idempotent: re-calling with the same id returns the existing row.
+   */
+  promoteAttachment: (attachmentId: string) =>
+    request<{ media: MediaItem }>({
+      method: "POST",
+      url: `/chat/attachments/${attachmentId}/promote`,
+    }),
 };

@@ -25,6 +25,8 @@ export type AttachmentRef = {
   mimeType: string;
   originalName: string;
   sizeBytes: number;
+  // Set after the attachment is promoted to the media library (PR-6).
+  mediaId: string | null;
 };
 
 export type ClaudeModel = "opus" | "sonnet" | "haiku";
@@ -133,6 +135,17 @@ type State = {
     sessionId: string,
     stagedId: string,
     status: "applied" | "rejected",
+  ) => void;
+
+  /**
+   * After a successful promote, update the mediaId field of an attachment
+   * inside any message that carries it. This avoids an SSE round-trip and
+   * immediately reflects the "In library" state in the UI.
+   */
+  setAttachmentMediaId: (
+    sessionId: string,
+    attachmentId: string,
+    mediaId: string,
   ) => void;
 
   setComposerText: (text: string) => void;
@@ -360,6 +373,23 @@ export const useChatStore = create<State>()(
             [sessionId]: list.map((x) =>
               x.id === stagedId ? { ...x, status } : x,
             ),
+          },
+        };
+      }),
+
+    setAttachmentMediaId: (sessionId, attachmentId, mediaId) =>
+      set((s) => {
+        const list = s.messagesBySession[sessionId];
+        if (!list) return s;
+        return {
+          messagesBySession: {
+            ...s.messagesBySession,
+            [sessionId]: list.map((msg) => ({
+              ...msg,
+              attachments: msg.attachments.map((a) =>
+                a.id === attachmentId ? { ...a, mediaId } : a,
+              ),
+            })),
           },
         };
       }),

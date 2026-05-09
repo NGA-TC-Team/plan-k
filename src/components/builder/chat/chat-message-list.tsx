@@ -1,12 +1,21 @@
 "use client";
 
-import { Check, ChevronDown, Copy, RefreshCw } from "lucide-react";
+import {
+  BookmarkPlus,
+  Check,
+  ChevronDown,
+  Copy,
+  RefreshCw,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { chatApi } from "@/data/chat/api";
+import { usePromoteAttachmentMutation } from "@/data/media";
 import { formatAbsoluteTime, formatRelativeTime } from "@/lib/relative-time";
 import { cn } from "@/lib/utils";
 import {
+  type AttachmentRef,
   type ChatMessage,
   type StagedIntent,
   useChatStore,
@@ -20,6 +29,7 @@ const BOTTOM_SLACK_PX = 32;
 
 export function ChatMessageList() {
   const sessionId = useChatStore((s) => s.currentSessionId);
+  const planId = useChatStore((s) => s.planId);
   const messages = useChatStore((s) =>
     sessionId
       ? (s.messagesBySession[sessionId] ?? EMPTY_MESSAGES)
@@ -108,6 +118,8 @@ export function ChatMessageList() {
               key={m.id}
               message={m}
               staged={stagedByMessage.get(m.id) ?? []}
+              planId={planId}
+              sessionId={sessionId}
             />
           ))}
           {showTypingIndicator ? <TypingIndicator /> : null}
@@ -142,9 +154,13 @@ function TypingIndicator() {
 function MessageBubble({
   message,
   staged,
+  planId,
+  sessionId,
 }: {
   message: ChatMessage;
   staged: StagedIntent[];
+  planId: string | null;
+  sessionId: string | null;
 }) {
   const isUser = message.role === "user";
   const isTool = message.role === "tool";
@@ -218,12 +234,12 @@ function MessageBubble({
         {message.attachments.length > 0 ? (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {message.attachments.map((a) => (
-              <span
+              <AttachmentBadge
                 key={a.id}
-                className="rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-              >
-                📎 {a.originalName}
-              </span>
+                attachment={a}
+                planId={planId}
+                sessionId={sessionId ?? message.sessionId}
+              />
             ))}
           </div>
         ) : null}
@@ -328,4 +344,76 @@ function summarizeEntry(entry: unknown): string {
     null,
     2,
   ).slice(0, 600)}`;
+}
+
+// ─── Attachment badge with "Use in plan" promote action ──────────────────────
+
+// Human-readable messages for promote error codes.
+const PROMOTE_ERROR_MESSAGES: Record<string, string> = {
+  ATTACHMENT_NOT_FOUND: "첨부 파일을 찾을 수 없습니다.",
+  SESSION_NOT_FOUND: "채팅 세션을 찾을 수 없습니다.",
+  ATTACHMENT_FILE_MISSING: "첨부 파일이 디스크에서 없어졌습니다.",
+  STORAGE_ERROR: "미디어 라이브러리에 저장하는 데 실패했습니다.",
+  BAD_REQUEST: "잘못된 요청입니다.",
+};
+
+function AttachmentBadge({
+  attachment,
+  planId,
+  sessionId,
+}: {
+  attachment: AttachmentRef;
+  planId: string | null;
+  sessionId: string;
+}) {
+  const promote = usePromoteAttachmentMutation(planId ?? "", sessionId);
+
+  const handlePromote = () => {
+    if (!planId) return;
+    promote.mutate(attachment.id, {
+      onError: (err) => {
+        // Try to extract a structured error code from the response.
+        const code =
+          (err as { response?: { data?: { code?: string } } })?.response?.data
+            ?.code ?? "";
+        const message =
+          PROMOTE_ERROR_MESSAGES[code] ??
+          "미디어 라이브러리에 추가하는 데 실패했습니다.";
+        toast.error(message);
+      },
+    });
+  };
+
+  const isPromoted = attachment.mediaId != null;
+  const isPending = promote.isPending;
+
+  return (
+    <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+      <span className="max-w-[120px] truncate">
+        📎 {attachment.originalName}
+      </span>
+      {isPromoted ? (
+        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
+          <Check className="size-2.5" />
+          In library
+        </span>
+      ) : planId ? (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handlePromote}
+          aria-label={`Use ${attachment.originalName} in plan`}
+          title="Use in plan"
+          className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+        >
+          {isPending ? (
+            <span className="size-2.5 animate-spin rounded-full border border-primary border-t-transparent" />
+          ) : (
+            <BookmarkPlus className="size-2.5" />
+          )}
+          Use in plan
+        </button>
+      ) : null}
+    </div>
+  );
 }

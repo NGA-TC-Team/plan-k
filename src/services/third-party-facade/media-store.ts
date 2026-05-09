@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import type { MediaRow, NewMediaRow } from "@/db/schema";
@@ -29,6 +29,25 @@ export type CreateMediaInput = {
   sourceUrl?: string;
   sourceChatAttachmentId?: string;
   // Image dimensions — caller supplies if already extracted (PR-4 / sharp).
+  width?: number;
+  height?: number;
+};
+
+/**
+ * Path-based variant of CreateMediaInput — used when promoting a chat
+ * attachment to the media library (PR-6). The file is moved (renamed) from
+ * the chat directory into the plan media directory atomically.
+ */
+export type CreateMediaFromPathInput = {
+  planId: string;
+  kind: NewMediaRow["kind"];
+  mimeType: string;
+  originalName: string;
+  /** Actual byte count from fs.stat — used as sizeBytes in the DB row. */
+  sizeBytes: number;
+  /** Absolute path of the existing file in the chat upload directory. */
+  sourcePath: string;
+  sourceChatAttachmentId?: string;
   width?: number;
   height?: number;
 };
@@ -241,8 +260,66 @@ export function makeMediaStore(db: AnyDb) {
     return true;
   }
 
+  /**
+   * Move (rename) an existing file from `input.sourcePath` into the plan's
+   * media directory, then insert a DB row. Atomically safe on the same
+   * filesystem (chat uploads and media live under the same repo root).
+   *
+   * Rollback policy:
+   *   - If the DB insert fails, attempt to rename the file back to sourcePath.
+   *   - If the rollback rename also fails the file is left at destPath (orphan)
+   *     to be swept by PR-7; the original error is re-thrown.
+   *   - If the initial rename fails the source file is untouched; throws.
+   */
+  async function createMediaFromPath(
+    input: CreateMediaFromPathInput,
+  ): Promise<MediaRow> {
+    const id = newMediaId();
+    const safeName = sanitizeFilename(input.originalName);
+    const storagePath = `${id}-${safeName}`;
+    const destDir = localMediaDir(input.planId);
+    const absDestPath = path.join(destDir, storagePath);
+
+    await mkdir(destDir, { recursive: true });
+
+    // ── 1. Atomic move ────────────────────────────────────────────────────────
+    await rename(input.sourcePath, absDestPath);
+
+    // ── 2. DB insert ──────────────────────────────────────────────────────────
+    const now = new Date();
+    const row: NewMediaRow = {
+      id,
+      planId: input.planId,
+      kind: input.kind,
+      mimeType: input.mimeType,
+      originalName: input.originalName,
+      storagePath,
+      sizeBytes: input.sizeBytes,
+      width: input.width ?? null,
+      height: input.height ?? null,
+      sourceUrl: null,
+      sourceChatAttachmentId: input.sourceChatAttachmentId ?? null,
+      createdAt: now,
+    };
+
+    try {
+      const [inserted] = db.insert(media).values(row).returning().all();
+      return inserted as MediaRow;
+    } catch (insertErr) {
+      // Rollback: move file back to chat directory.
+      try {
+        await rename(absDestPath, input.sourcePath);
+      } catch {
+        // Rollback failed — orphan at destPath. PR-7 sweep will recover.
+        // Do not swallow the original insert error.
+      }
+      throw insertErr;
+    }
+  }
+
   return {
     createMedia,
+    createMediaFromPath,
     getMedia,
     listByPlan,
     deleteMedia,
@@ -270,6 +347,17 @@ function lazyDb(): AnyDb {
  */
 export async function createMedia(input: CreateMediaInput): Promise<MediaRow> {
   return makeMediaStore(lazyDb()).createMedia(input);
+}
+
+/**
+ * Move (rename) an existing file into the plan media directory and insert a
+ * DB row. Atomic on the same filesystem. Rolls back the rename on DB failure.
+ * Throws if the rename or DB insert fails.
+ */
+export async function createMediaFromPath(
+  input: CreateMediaFromPathInput,
+): Promise<MediaRow> {
+  return makeMediaStore(lazyDb()).createMediaFromPath(input);
 }
 
 /** Look up a single media row by id. Returns null if not found. */
