@@ -8,6 +8,7 @@ import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
+import { useInsertSlot } from "@/hooks/builder/use-insert-slot.hook";
 import { useMarquee } from "@/hooks/builder/use-marquee.hook";
 import { cn } from "@/lib/utils";
 import {
@@ -19,6 +20,7 @@ import { AgentGraph } from "./agent-graph";
 import { BacklogBoard } from "./backlog-board";
 import { BlockShell } from "./block-shell";
 import { BuilderProvider } from "./builder-provider";
+import { EmptyStateCards } from "./empty-state-cards";
 import { FlowCanvas } from "./flow-canvas";
 import { BrowserFrame, MobileFrame } from "./frames";
 import { InsertSlot } from "./insert-slot";
@@ -130,11 +132,34 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
   const dispatch = useBuilderDispatch();
   const rootRef = useRef<HTMLElement | null>(null);
   const marquee = useMarquee(rootRef, dispatch);
+  const insertFirst = useInsertSlot(screen?.id ?? "");
 
   if (!screen) {
     return (
       <main className="h-full overflow-auto p-6 text-sm text-muted-foreground">
         No screen selected — open a Web/Mobile demo to see the builder canvas.
+      </main>
+    );
+  }
+
+  if (childIds.length === 0) {
+    return (
+      <main className="h-full overflow-auto">
+        <div className="p-6 pb-2">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <span className="font-medium">{screen.title}</span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                (0 blocks · {viewMode})
+              </span>
+            </div>
+            <ViewModeOverrideToggle entityId={screen.id} />
+          </div>
+        </div>
+        <EmptyStateCards
+          context="app"
+          onPick={(kind) => insertFirst(kind, 0)}
+        />
       </main>
     );
   }
@@ -195,11 +220,34 @@ function SectionCanvas() {
   const dispatch = useBuilderDispatch();
   const rootRef = useRef<HTMLElement | null>(null);
   const marquee = useMarquee(rootRef, dispatch);
+  const insertFirst = useInsertSlot(section?.id ?? "");
 
   if (!section) {
     return (
       <main className="h-full overflow-auto p-6 text-sm text-muted-foreground">
         Select a section in the left rail to start writing.
+      </main>
+    );
+  }
+
+  if (childBlockIds.length === 0) {
+    return (
+      <main className="h-full overflow-auto">
+        <div className="p-6 pb-2">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <span className="font-medium">{section.title}</span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                (0 blocks)
+              </span>
+            </div>
+            <ViewModeOverrideToggle entityId={section.id} />
+          </div>
+        </div>
+        <EmptyStateCards
+          context="docs"
+          onPick={(kind) => insertFirst(kind, 0)}
+        />
       </main>
     );
   }
