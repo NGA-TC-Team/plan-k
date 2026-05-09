@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useErrorsStore } from "@/services/stores/errors-store";
 import { decide } from "./decider";
 import { wrap } from "./envelope";
 import { defaultIdFactory } from "./ids";
@@ -146,6 +147,16 @@ function applyEntry(
   const prevState = state;
   const decision = decide(state, entry);
   if (!decision.ok) {
+    // Push warn to errors-store. The EMIT_TOAST command below will also call
+    // toast.warning via runner.ts. The dedupe gate in errors-store (same
+    // message within 1000 ms) will suppress the second toast automatically —
+    // no "silent" flag needed.
+    useErrorsStore.getState().push({
+      severity: "warn",
+      source: "reducer",
+      message: decision.reason,
+      context: { intentType: entry.intent.type },
+    });
     return {
       state: {
         ...state,
@@ -274,7 +285,27 @@ export function createBuilderStore(config: StoreConfig) {
   };
   return create<BuilderStore>((set, get) => {
     const dispatch = (intent: Intent): void => {
-      const result = step(get().state, intent, ctx);
+      let result: StepResult;
+      try {
+        result = step(get().state, intent, ctx);
+      } catch (err: unknown) {
+        // Reducer threw unexpectedly. Push to errors-store so the toast
+        // pipeline fires; let lastError mechanism continue via a no-op result.
+        const message = String(
+          (err instanceof Error ? err.message : null) ??
+            err ??
+            "Unknown reducer error",
+        );
+        const detail = err instanceof Error ? (err.stack ?? message) : message;
+        useErrorsStore.getState().push({
+          severity: "error",
+          source: "reducer",
+          message,
+          detail,
+          context: { intentType: intent.type },
+        });
+        return;
+      }
       set({ state: result.state });
       const runnerDeps: RunnerDeps = { dispatch, ...(config.effects ?? {}) };
       for (const cmd of result.commands) {

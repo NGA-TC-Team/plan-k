@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
 import { hydrate } from "@/builder/hydrate";
 import { defaultIdFactory } from "@/builder/ids";
 import { createBuilderStore } from "@/builder/store";
@@ -16,6 +15,7 @@ import {
   isAgentOrigin,
   useActiveBuilderStore,
   useAiFlashStore,
+  useErrorsStore,
   useSaveStatusStore,
 } from "@/services/stores";
 import { BuilderContext, type BuilderStoreHook } from "./builder-context";
@@ -66,10 +66,17 @@ export function BuilderProvider({ planId, children }: Props) {
             },
           });
         },
+        // Route all EMIT_TOAST runner commands through errors-store so the
+        // 1000ms dedupe gate applies uniformly. The decision-failure path also
+        // calls useErrorsStore.push directly (store.ts); because both paths now
+        // go through push(), the dedupe gate suppresses the duplicate toast.
         emitToast: (level, message) => {
-          if (level === "error") toast.error(message);
-          else if (level === "warn") toast.warning(message);
-          else toast.message(message);
+          useErrorsStore.getState().push({
+            severity:
+              level === "error" ? "error" : level === "warn" ? "warn" : "info",
+            source: "reducer",
+            message,
+          });
         },
       },
     });

@@ -25,6 +25,12 @@ export {
   type StagedIntent,
   useChatStore,
 } from "./chat-store";
+export {
+  type AppError,
+  type ErrorSeverity,
+  type ErrorSource,
+  useErrorsStore,
+} from "./errors-store";
 export { useInlineAiStore } from "./inline-ai.store";
 export { useInsertMruStore } from "./insert-mru.store";
 export { type PrintOptions, usePrintOptionsStore } from "./print-options.store";
