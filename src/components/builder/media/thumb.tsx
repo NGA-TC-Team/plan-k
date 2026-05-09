@@ -9,6 +9,8 @@ type Props = {
   media: MediaItem;
   selected?: boolean;
   onClick?: () => void;
+  /** Number of blocks that currently reference this media item. Omit or 0 = no badge. */
+  count?: number;
 };
 
 /**
@@ -17,9 +19,10 @@ type Props = {
  * - image kind  → resolved URL via useMediaUrl + <img>
  * - video/audio/doc/other → lucide fallback icon (no src attempt)
  * - selected → ring-2 ring-primary highlight
+ * - count > 0 → small badge at bottom-right showing number of block usages
  * - title attr → "<originalName> (<KB> KB)"
  */
-export function MediaThumb({ media, selected, onClick }: Props) {
+export function MediaThumb({ media, selected, onClick, count }: Props) {
   const url = useMediaUrl(`media:${media.id}`);
   const kb = Math.round(media.sizeBytes / 1024);
   const titleAttr = `${media.originalName} (${kb} KB)`;
@@ -49,6 +52,14 @@ export function MediaThumb({ media, selected, onClick }: Props) {
       )}
       {selected && (
         <div className="absolute inset-0 bg-primary/10" aria-hidden />
+      )}
+      {typeof count === "number" && count > 0 && (
+        <span
+          title={`Used in ${count} block${count === 1 ? "" : "s"}`}
+          className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium leading-none text-white"
+        >
+          {count}
+        </span>
       )}
     </button>
   );

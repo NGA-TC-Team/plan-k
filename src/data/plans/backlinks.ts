@@ -6,7 +6,7 @@ import { queryKeys } from "../query-keys";
 
 export type BacklinkRow = {
   srcId: string;
-  kind: "mention" | "embed" | "depends-on" | "trace";
+  kind: "mention" | "embed" | "depends-on" | "trace" | "media";
   label: string;
   path: string[];
 };

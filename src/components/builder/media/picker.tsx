@@ -146,6 +146,7 @@ function LibraryTab({
             media={item}
             selected={value === `media:${item.id}`}
             onClick={() => onSelect(`media:${item.id}`)}
+            count={item.useCount}
           />
         ))}
       </div>

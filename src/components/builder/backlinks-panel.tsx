@@ -10,6 +10,7 @@ const KIND_BADGE: Record<string, string> = {
   embed: "[[ ]]",
   "depends-on": ">>",
   trace: "~",
+  media: "img",
 };
 
 type Props = {

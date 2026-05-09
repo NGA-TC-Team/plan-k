@@ -337,6 +337,86 @@ describe("deletePlanDir", () => {
   });
 });
 
+// ─── listByPlan (useCount) ────────────────────────────────────────────────
+
+describe("listByPlan — useCount from refs graph", () => {
+  const db = makeTestDb();
+  const store = makeMediaStore(db);
+  let planId: string;
+
+  beforeAll(() => {
+    planId = testPlanId();
+    seedPlan(db, planId);
+  });
+
+  afterAll(async () => {
+    await cleanupDir(planId);
+  });
+
+  /** Insert a media row directly (no disk write) for count tests. */
+  function seedMedia(id: string, name: string) {
+    db.insert(schema.media)
+      .values({
+        id,
+        planId,
+        kind: "image" as const,
+        mimeType: "image/png",
+        originalName: name,
+        storagePath: `${id}-${name}`,
+        sizeBytes: 1,
+        createdAt: new Date(),
+      })
+      .run();
+  }
+
+  /** Insert a refs row representing a block referencing a media item. */
+  function seedMediaRef(srcBlockId: string, mediaId: string) {
+    const dstId = `media:${mediaId}`;
+    db.insert(schema.refs)
+      .values({
+        id: `${srcBlockId}::media::${dstId}`,
+        planId,
+        srcId: srcBlockId,
+        dstId,
+        kind: "media" as const,
+        createdAt: new Date(),
+      })
+      .run();
+  }
+
+  it("unused media item has useCount = 0", () => {
+    const id = `med_unused_${Date.now()}`;
+    seedMedia(id, "unused.png");
+
+    const rows = store.listByPlan(planId);
+    const row = rows.find((r) => r.id === id);
+    expect(row).toBeDefined();
+    expect(row?.useCount).toBe(0);
+  });
+
+  it("media referenced by two blocks has useCount = 2", () => {
+    const mediaId = `med_shared_${Date.now()}`;
+    seedMedia(mediaId, "shared.png");
+    seedMediaRef(`block_a_${Date.now()}`, mediaId);
+    seedMediaRef(`block_b_${Date.now()}`, mediaId);
+
+    const rows = store.listByPlan(planId);
+    const row = rows.find((r) => r.id === mediaId);
+    expect(row).toBeDefined();
+    expect(row?.useCount).toBe(2);
+  });
+
+  it("media referenced by one block has useCount = 1", () => {
+    const mediaId = `med_single_${Date.now()}`;
+    seedMedia(mediaId, "single.png");
+    seedMediaRef(`block_c_${Date.now()}`, mediaId);
+
+    const rows = store.listByPlan(planId);
+    const row = rows.find((r) => r.id === mediaId);
+    expect(row?.useCount).toBe(1);
+  });
+});
+
 // ─── classifyMedia ────────────────────────────────────────────────────────
 
 describe("classifyMedia", () => {

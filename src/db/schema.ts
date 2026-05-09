@@ -103,7 +103,7 @@ export const refs = sqliteTable(
     srcId: text("src_id").notNull(),
     dstId: text("dst_id").notNull(),
     kind: text("kind", {
-      enum: ["mention", "embed", "depends-on", "trace"],
+      enum: ["mention", "embed", "depends-on", "trace", "media"],
     }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()

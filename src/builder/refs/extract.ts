@@ -6,7 +6,7 @@
 // random `@words` and emails don't get parsed as references. `rest`
 // allows a-z 0-9, dash and underscore — matches defaultIdFactory output.
 
-export type RefKind = "mention" | "embed" | "depends-on" | "trace";
+export type RefKind = "mention" | "embed" | "depends-on" | "trace" | "media";
 
 export type ExtractedRef = {
   kind: RefKind;
@@ -20,6 +20,13 @@ const MENTION_RE = new RegExp(
   `(?<![A-Za-z0-9_])@(${ID_PREFIX}:${ID_REST})`,
   "g",
 );
+
+// Matches a string leaf that is *exactly* "media:<id>" — no surrounding text.
+// Substring matches are intentionally rejected to avoid false positives from
+// prose that happens to contain "media:foo" mid-sentence. collectStrings()
+// already breaks the data tree into individual leaf strings, so testing the
+// full string is both safe and sufficient.
+const MEDIA_REF_RE = /^media:[A-Za-z0-9_-]+$/;
 
 // Walks an arbitrary block.data shape and concatenates every string leaf.
 // Numbers/booleans/null are ignored. Cycles are unreachable in practice
@@ -54,6 +61,14 @@ export function extractRefs(value: unknown): ExtractedRef[] {
   for (const text of collectStrings(value)) {
     pushMatches(text, EMBED_RE, "embed", seen, out);
     pushMatches(text, MENTION_RE, "mention", seen, out);
+    // Media ref: string leaf that is exactly "media:<id>" — full-string match only.
+    if (MEDIA_REF_RE.test(text)) {
+      const key = `media::${text}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push({ kind: "media", dstId: text });
+      }
+    }
   }
   return out;
 }

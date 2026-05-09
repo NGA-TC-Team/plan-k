@@ -83,3 +83,44 @@ describe("refRowId", () => {
     );
   });
 });
+
+describe("extractRefs — media edges", () => {
+  test("exact 'media:<id>' string leaf emits one media edge", () => {
+    const refs = extractRefs({ src: "media:abc-123" });
+    expect(refs).toEqual([{ kind: "media", dstId: "media:abc-123" }]);
+  });
+
+  test("substring 'media:foo' inside prose is rejected", () => {
+    // The string leaf "embedded media:foo not a ref" is NOT equal to /^media:...$/
+    const refs = extractRefs({ body: "embedded media:foo not a ref" });
+    expect(refs).toEqual([]);
+  });
+
+  test("raw URL is not absorbed as a media ref", () => {
+    // Raw URLs have no 'media:' prefix — no edge expected.
+    const refs = extractRefs({ src: "https://example.com/foo.png" });
+    expect(refs).toEqual([]);
+  });
+
+  test("same media ref in multiple fields deduplicates to one edge", () => {
+    const refs = extractRefs({
+      src: "media:img-42",
+      fallback: "media:img-42",
+    });
+    expect(refs).toHaveLength(1);
+    expect(refs[0]).toEqual({ kind: "media", dstId: "media:img-42" });
+  });
+
+  test("media ref alongside embed and mention refs all coexist", () => {
+    const refs = extractRefs({
+      imageRef: "media:img-001",
+      body: "see [[block:blk-1]] and @persona:px",
+    });
+    // Order: embed is found first (in body), then mention, then media (in imageRef)
+    // Note: collectStrings walks object values; order depends on key insertion.
+    // We assert membership rather than order.
+    const kinds = refs.map((r) => r.kind).sort();
+    expect(kinds).toEqual(["embed", "media", "mention"]);
+    expect(refs.find((r) => r.kind === "media")?.dstId).toBe("media:img-001");
+  });
+});

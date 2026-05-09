@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 
 export type BacklinkRow = {
   srcId: string;
-  kind: "mention" | "embed" | "depends-on" | "trace";
+  kind: "mention" | "embed" | "depends-on" | "trace" | "media";
   label: string;
   // Breadcrumb from plan root down to the src entity. Each segment is a
   // human-readable label; the UI renders them with `›` separators.
@@ -73,6 +73,10 @@ function labelFor(snapshot: AppState, id: string): string {
   if (section) return section.title || section.kind;
   const screen = snapshot.screens?.[id];
   if (screen) return screen.title || id;
+  // media dstId has the form "media:<id>". The srcId being looked up here is
+  // the *block* that references the media, not the media itself — so this
+  // branch is reached only if no block/section/screen matches the srcId.
+  // Return the raw id as a minimal fallback rather than breaking the panel.
   return id;
 }
 

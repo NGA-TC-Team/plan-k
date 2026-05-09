@@ -1,12 +1,20 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { MediaRow, NewMediaRow } from "@/db/schema";
 // Import schema objects from the schema-only module so that importing
 // media-store in a bun:test context does NOT load client.ts (better-sqlite3).
 // The production DB handle is accessed lazily via getDb() only when the
 // module-level singleton is actually called.
 import { media } from "@/db/schema";
+
+// ─── Output types ─────────────────────────────────────────────────────────
+
+// MediaRow + computed `useCount` from the refs graph.
+// use_count = number of refs rows where kind='media' and dst_id='media:<id>'
+// for the given plan. Kept as a plain intersection rather than a new nominal
+// type so callers that only need MediaRow fields don't need casting.
+export type MediaRowWithCount = MediaRow & { useCount: number };
 
 // ─── Input types ──────────────────────────────────────────────────────────
 
@@ -161,13 +169,63 @@ export function makeMediaStore(db: AnyDb) {
     return (row as MediaRow) ?? null;
   }
 
-  function listByPlan(planId: string): MediaRow[] {
-    return db
-      .select()
-      .from(media)
-      .where(eq(media.planId, planId))
-      .orderBy(desc(media.createdAt))
-      .all() as MediaRow[];
+  function listByPlan(planId: string): MediaRowWithCount[] {
+    // Raw SQL: LEFT JOIN the refs table to count blocks that reference each
+    // media item (kind='media', dst_id='media:<id>'). The refs_plan_dst_idx
+    // index covers (plan_id, dst_id) so the subquery is O(log n).
+    //
+    // We use db.$client.prepare() to access the underlying bun:sqlite or
+    // better-sqlite3 statement directly, bypassing drizzle's ORM layer which
+    // cannot express this LEFT JOIN + GROUP BY pattern cleanly.
+    //
+    // The AnyDb type covers both adapters:
+    //  - bun:sqlite drizzle: db.$client is a bun:sqlite Database
+    //  - better-sqlite3 drizzle: db.$client is a better-sqlite3 Database
+    // Both expose a `.prepare(sql).all(...args)` interface.
+    const sql = `
+      SELECT
+        m.id,
+        m.plan_id        AS planId,
+        m.kind,
+        m.mime_type      AS mimeType,
+        m.original_name  AS originalName,
+        m.storage_path   AS storagePath,
+        m.size_bytes     AS sizeBytes,
+        m.width,
+        m.height,
+        m.source_url     AS sourceUrl,
+        m.source_chat_attachment_id AS sourceChatAttachmentId,
+        m.created_at     AS createdAt,
+        COALESCE(c.cnt, 0) AS useCount
+      FROM media m
+      LEFT JOIN (
+        SELECT dst_id, COUNT(*) AS cnt
+        FROM refs
+        WHERE plan_id = ? AND kind = 'media'
+        GROUP BY dst_id
+      ) c ON c.dst_id = 'media:' || m.id
+      WHERE m.plan_id = ?
+      ORDER BY m.created_at DESC
+    `;
+    const rows = db.$client.prepare(sql).all(planId, planId) as Array<
+      Record<string, unknown>
+    >;
+    return rows.map((r) => ({
+      id: r.id as string,
+      planId: r.planId as string,
+      kind: r.kind as MediaRow["kind"],
+      mimeType: r.mimeType as string,
+      originalName: r.originalName as string,
+      storagePath: r.storagePath as string,
+      sizeBytes: r.sizeBytes as number,
+      width: (r.width as number | null) ?? null,
+      height: (r.height as number | null) ?? null,
+      sourceUrl: (r.sourceUrl as string | null) ?? null,
+      sourceChatAttachmentId:
+        (r.sourceChatAttachmentId as string | null) ?? null,
+      createdAt: new Date(r.createdAt as number) as unknown as Date,
+      useCount: r.useCount as number,
+    })) as unknown as MediaRowWithCount[];
   }
 
   async function deleteMedia(id: string): Promise<boolean> {
@@ -183,7 +241,12 @@ export function makeMediaStore(db: AnyDb) {
     return true;
   }
 
-  return { createMedia, getMedia, listByPlan, deleteMedia };
+  return {
+    createMedia,
+    getMedia,
+    listByPlan,
+    deleteMedia,
+  };
 }
 
 // ─── Production singletons ────────────────────────────────────────────────
@@ -214,8 +277,8 @@ export function getMedia(id: string): MediaRow | null {
   return makeMediaStore(lazyDb()).getMedia(id);
 }
 
-/** List all media rows for a plan, newest first. */
-export function listByPlan(planId: string): MediaRow[] {
+/** List all media rows for a plan, newest first. Each row includes useCount. */
+export function listByPlan(planId: string): MediaRowWithCount[] {
   return makeMediaStore(lazyDb()).listByPlan(planId);
 }
 
