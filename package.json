@@ -17,6 +17,7 @@
     "plan:rebuild-refs": "bun run scripts/plan-rebuild-refs.ts",
     "plan:rebuild-search": "bun run scripts/plan-rebuild-search.ts",
     "plan:orphans": "bun run scripts/plan-orphans.ts",
+    "plan:migrate-image-refs": "bun run scripts/plan-migrate-image-refs.ts",
     "test:e2e": "next build && playwright test",
     "test:e2e:ui": "next build && playwright test --ui"
   },
