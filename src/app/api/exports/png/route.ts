@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseBoolParam } from "@/lib/utils";
 import { exportToImage } from "@/services/third-party-facade/exporter";
 import {
   getPlan,
@@ -35,14 +36,13 @@ export async function GET(req: Request) {
     ? Number.parseInt(widthParam, 10)
     : undefined;
   const sectionId = url.searchParams.get("sectionId") ?? undefined;
-  // Boolean param: any value other than "false" is treated as true (forgiving).
-  const parseBool = (param: string | null, defaultVal: boolean): boolean => {
-    if (param === null) return defaultVal;
-    return param !== "false";
-  };
-  const cover = parseBool(url.searchParams.get("cover"), true);
-  const toc = parseBool(url.searchParams.get("toc"), true);
-  const pageNumbers = parseBool(url.searchParams.get("pageNumbers"), true);
+  const versionIdRaw = url.searchParams.get("versionId");
+  // Treat empty string as absent — only non-empty versionId triggers version export.
+  const versionId =
+    versionIdRaw && versionIdRaw.length > 0 ? versionIdRaw : undefined;
+  const cover = parseBoolParam(url.searchParams.get("cover"), true);
+  const toc = parseBoolParam(url.searchParams.get("toc"), true);
+  const pageNumbers = parseBoolParam(url.searchParams.get("pageNumbers"), true);
   const footerTextRaw = url.searchParams.get("footerText") ?? "";
   // Clamp footerText to 200 chars to avoid oversized templates.
   const footerText = footerTextRaw.slice(0, 200);
@@ -63,6 +63,7 @@ export async function GET(req: Request) {
     toc,
     pageNumbers,
     footerText: footerText || undefined,
+    versionId,
   });
   return new NextResponse(new Uint8Array(png), {
     status: 200,

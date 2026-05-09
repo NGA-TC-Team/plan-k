@@ -27,12 +27,15 @@ type PrintViewProps = {
   /** Whether to render a table of contents page (full-plan export only). Defaults to true. */
   toc?: boolean;
   /**
-   * pageNumbers and footerText are PDF header/footer concerns handled by the
-   * Puppeteer exporter. Declared here for prop symmetry with the exporter API
-   * but not used in the PrintView render.
+   * Version metadata — only provided when exporting a tagged version.
+   * When present, the cover page shows the version label, note, and tagged-at date.
+   * These props have no effect when cover=false or sectionId is set.
    */
-  pageNumbers?: boolean;
-  footerText?: string;
+  versionLabel?: string;
+  /** Pre-truncated note (≤400 chars). */
+  versionNote?: string;
+  /** The Date object from PlanVersionRow.createdAt (timestamp_ms mode). */
+  versionTaggedAt?: Date;
 };
 
 export function PrintView({
@@ -41,7 +44,10 @@ export function PrintView({
   sectionId,
   cover = true,
   toc = true,
-}: Omit<PrintViewProps, "pageNumbers" | "footerText">) {
+  versionLabel,
+  versionNote,
+  versionTaggedAt,
+}: PrintViewProps) {
   const state = hydrate(snapshot, tailEntries);
   const plan = Object.values(state.plans)[0];
   const project = plan ? state.projects[plan.projectId] : undefined;
@@ -84,6 +90,26 @@ export function PrintView({
               <p className="max-w-prose text-base text-zinc-600">
                 {project.summary}
               </p>
+            ) : null}
+            {versionLabel ? (
+              <div className="mt-4 space-y-1 border-t pt-4">
+                <p className="text-xs uppercase tracking-widest text-zinc-400">
+                  Version
+                </p>
+                <p className="font-mono text-sm font-medium text-zinc-700">
+                  {versionLabel}
+                </p>
+                {versionNote ? (
+                  <p className="max-w-prose text-sm text-zinc-500">
+                    {versionNote}
+                  </p>
+                ) : null}
+                {versionTaggedAt ? (
+                  <p className="text-xs text-zinc-400">
+                    Tagged {versionTaggedAt.toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <div className="text-xs text-zinc-400">{generatedAt}</div>

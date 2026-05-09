@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { useBuilderUiStore, useThemeStore } from "@/services/stores";
 import { usePrintOptionsStore } from "@/services/stores/print-options.store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { buildExportParams } from "./export-params";
 import { PrintOptionsPopover } from "./print-options-popover";
 import { SaveStatusChip } from "./save-status-chip";
 import { VersionsDrawer } from "./versions-drawer";
@@ -357,13 +358,7 @@ function ExportMenu({ planId }: { planId: string }) {
   const trigger = (kind: "pdf" | "png") => {
     if (typeof window === "undefined") return;
     const opts = usePrintOptionsStore.getState();
-    const params = new URLSearchParams({
-      planId,
-      cover: String(opts.cover),
-      toc: String(opts.toc),
-      pageNumbers: String(opts.pageNumbers),
-    });
-    if (opts.footerText) params.set("footerText", opts.footerText);
+    const params = buildExportParams(planId, opts);
     const url = `/api/exports/${kind}?${params.toString()}`;
     window.open(url, "_blank", "noopener");
   };
@@ -396,6 +391,8 @@ function ExportMenu({ planId }: { planId: string }) {
           <DropdownMenuItem
             onClick={() => {
               const opts = usePrintOptionsStore.getState();
+              // Print view: planId is a path param, not a query param.
+              // Build params without planId using the print-specific subset.
               const params = new URLSearchParams({
                 cover: String(opts.cover),
                 toc: String(opts.toc),

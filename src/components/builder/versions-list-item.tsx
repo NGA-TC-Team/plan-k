@@ -1,17 +1,20 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { MoreVertical } from "lucide-react";
+import { FileImage, FileText, MoreVertical } from "lucide-react";
 import { useState } from "react";
+import { buildExportParams } from "@/components/builder/export-params";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { PlanVersionListItem } from "@/data/plan-versions";
 import { useDeletePlanVersionMutation } from "@/data/plan-versions";
+import { usePrintOptionsStore } from "@/services/stores/print-options.store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
 
 type VersionsListItemProps = {
@@ -35,6 +38,21 @@ export function VersionsListItem({ planId, version }: VersionsListItemProps) {
     } catch {
       setDeleteError("Failed to delete. Please try again.");
     }
+  };
+
+  const triggerVersionExport = (kind: "pdf" | "png") => {
+    if (typeof window === "undefined") return;
+    const opts = usePrintOptionsStore.getState();
+    // Cover is forced true server-side for version exports (design spec D7).
+    // We still pass cover from the store; the print page overrides it.
+    const params = buildExportParams(planId, opts, {
+      versionId: version.id,
+    });
+    window.open(
+      `/api/exports/${kind}?${params.toString()}`,
+      "_blank",
+      "noopener",
+    );
   };
 
   return (
@@ -72,6 +90,15 @@ export function VersionsListItem({ planId, version }: VersionsListItemProps) {
           <MoreVertical className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => triggerVersionExport("pdf")}>
+            <FileText className="size-3.5" />
+            Export as PDF
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => triggerVersionExport("png")}>
+            <FileImage className="size-3.5" />
+            Export as PNG
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => useVersionsUiStore.getState().openDiff(version.id)}
           >

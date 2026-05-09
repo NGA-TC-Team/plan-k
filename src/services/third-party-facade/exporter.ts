@@ -20,6 +20,11 @@ type ExportOptions = {
   pageNumbers?: boolean;
   /** Optional label prepended to the footer page-number line. */
   footerText?: string;
+  /**
+   * When set, the print page renders the version snapshot instead of the
+   * current plan state. The print page resolves the snapshot server-side.
+   */
+  versionId?: string;
 };
 
 let browserPromise: Promise<Browser> | null = null;
@@ -50,6 +55,7 @@ function printUrl(opts: ExportOptions): string {
   if (opts.pageNumbers !== undefined)
     url.searchParams.set("pageNumbers", String(opts.pageNumbers));
   if (opts.footerText) url.searchParams.set("footerText", opts.footerText);
+  if (opts.versionId) url.searchParams.set("versionId", opts.versionId);
   return url.toString();
 }
 
