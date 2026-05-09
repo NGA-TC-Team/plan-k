@@ -3,7 +3,6 @@
 import {
   Clock,
   Download,
-  Eye,
   FileImage,
   FileText,
   History,
@@ -19,7 +18,6 @@ import {
   Sun,
   Undo2,
   Workflow,
-  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -68,7 +66,6 @@ export function TopBar() {
   const project = useBuilderState((s) =>
     planMeta ? s.state.projects[planMeta.projectId] : undefined,
   );
-  const viewMode = useBuilderState((s) => s.state.viewMode);
   const canUndo = useBuilderState((s) => selectCanUndo(s.state));
   const canRedo = useBuilderState((s) => selectCanRedo(s.state));
   const dispatch = useBuilderDispatch();
@@ -81,7 +78,6 @@ export function TopBar() {
   const showCanvasModeToggle =
     topMode === "app" &&
     (planMeta?.kind === "web" || planMeta?.kind === "mobile");
-  const showViewModeToggle = topMode === "app";
 
   const kind = planMeta?.kind ?? "—";
   const title = project?.title ?? planMeta?.id ?? "Untitled plan";
@@ -175,29 +171,6 @@ export function TopBar() {
             <ToggleGroupItem value="flow">
               <Workflow className="size-3.5" />
               <span className={zenMode ? "sr-only" : undefined}>Flow</span>
-            </ToggleGroupItem>
-          </ToggleGroup>
-        ) : null}
-        {showViewModeToggle ? (
-          <ToggleGroup
-            value={[viewMode]}
-            onValueChange={(values) => {
-              const next = values[0];
-              if (next === "detail" || next === "wireframe") {
-                dispatch({ type: "SWITCH_VIEW_MODE", mode: next });
-              }
-            }}
-            size="sm"
-            variant="outline"
-            aria-label="View mode"
-          >
-            <ToggleGroupItem value="detail">
-              <Eye className="size-3.5" />
-              <span className={zenMode ? "sr-only" : undefined}>Detail</span>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="wireframe">
-              <Wrench className="size-3.5" />
-              <span className={zenMode ? "sr-only" : undefined}>Wire</span>
             </ToggleGroupItem>
           </ToggleGroup>
         ) : null}

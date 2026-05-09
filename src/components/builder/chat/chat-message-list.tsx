@@ -1,5 +1,6 @@
 "use client";
 
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   BookmarkPlus,
   Check,
@@ -50,6 +51,14 @@ export function ChatMessageList() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 80,
+    overscan: 8,
+    getItemKey: (i) => messages[i].id,
+  });
 
   const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
     const el = scrollRef.current;
@@ -112,18 +121,39 @@ export function ChatMessageList() {
             plan. Tag with @ or click a block in the canvas.
           </div>
         ) : null}
-        <div className="flex flex-col gap-4">
-          {messages.map((m) => (
-            <MessageBubble
-              key={m.id}
-              message={m}
-              staged={stagedByMessage.get(m.id) ?? []}
-              planId={planId}
-              sessionId={sessionId}
-            />
-          ))}
-          {showTypingIndicator ? <TypingIndicator /> : null}
+        {/* Virtualized message list — absolute-positioned rows inside a sized container */}
+        <div
+          style={{ height: `${virtualizer.getTotalSize()}px` }}
+          className="relative w-full"
+        >
+          {virtualizer.getVirtualItems().map((vi) => {
+            const m = messages[vi.index];
+            return (
+              <div
+                key={vi.key}
+                data-index={vi.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${vi.start}px)`,
+                }}
+                className="pb-4"
+              >
+                <MessageBubble
+                  message={m}
+                  staged={stagedByMessage.get(m.id) ?? []}
+                  planId={planId}
+                  sessionId={sessionId}
+                />
+              </div>
+            );
+          })}
         </div>
+        {/* TypingIndicator stays outside the virtual container so it's always visible at the bottom */}
+        {showTypingIndicator ? <TypingIndicator /> : null}
       </div>
       {!isAtBottom ? (
         <button
