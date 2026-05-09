@@ -122,6 +122,35 @@ type: project
 - selector + callback 형태의 2인자 subscribe는 `subscribeWithSelector` 미들웨어 필요.
 - 미들웨어 없이 selector 패턴 쓰려면: 리스너 안에서 prev 값을 클로저로 캐싱해 변경 감지.
 
+## E11 PR-A: errors-store + toast pipeline (2026-05-10)
+
+### errors-store 패턴
+- `src/services/stores/errors-store.ts`: no-persist Zustand. `push()` = read `get()` once → single `set()` → side-effect(toast) 순서.
+- `fireToast()` helper는 `export` — 테스트 mock.module 우선; try/catch로 Sonner 미마운트 상황도 방어.
+- ID: `crypto.randomUUID()` + fallback `Date.now()-Math.random().toString(36).slice(2)`.
+- ring buffer: `[record, ...prev].slice(0, 20)`.
+- dedupe: `head.message === incoming.message && now - head.at < 1000` → toast skip, record는 push.
+
+### toast 모킹 패턴 (bun:test)
+- `mock.module("sonner", () => ({ toast: { error: spy, warning: spy, message: spy } }))` — import 전 최상단 호출.
+- `mock(() => {})` 로 spy 생성, `afterEach`에서 `mockClear()`.
+- 이 프로젝트에서 최초 `mock.module` 사용 사례.
+
+### circular import 가드
+- errors-store → sonner + zustand (axios import 없음).
+- axios.ts → errors-store (단방향, 안전).
+- builder/store.ts → errors-store (단방향, 안전).
+
+### applyEntry decision-failure 이중 토스트
+- `useErrorsStore.push(warn)` 호출 후 `EMIT_TOAST` 커맨드도 반환.
+- runner.ts가 `EMIT_TOAST` → `toast.warning()` 실행할 때 dedupe gate(동일 메시지 1000ms)가 두 번째 toast를 자동 억제.
+- "silent" 플래그 불필요.
+
+### ErrorListenersProvider
+- `useRef(true)` 마운트 플래그로 언마운트 후 state write 방지.
+- `window.addEventListener("error", ...)` + `window.addEventListener("unhandledrejection", ...)`.
+- cleanup에서 `mountedRef.current = false` + removeEventListener.
+
 ## diff 패키지 (E10 PR-C, 2026-05-10)
 
 - `diff` v9 + `@types/diff` v8 installed.
