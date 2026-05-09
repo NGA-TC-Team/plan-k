@@ -10,6 +10,7 @@ import type {
   TopMode,
 } from "@/services/stores/builder-ui.store";
 import type { Theme } from "@/services/stores/theme-store";
+import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
 
 export type BuilderStoreHook = ReturnType<typeof createBuilderStore>;
 
@@ -199,6 +200,20 @@ export const ACTIONS: Record<string, ActionHandler> = {
     );
     const project = await ctx.createProject({ kind, title, seed });
     ctx.router.push(`/plan/${project.id}`);
+  },
+
+  "versions.openHistory": (ctx) => {
+    if (!ctx.builder) return;
+    const planId = Object.values(ctx.builder.getState().state.plans)[0]?.id;
+    if (!planId) return;
+    useVersionsUiStore.getState().openDrawer();
+  },
+  "versions.tagVersion": (ctx) => {
+    if (!ctx.builder) return;
+    const planId = Object.values(ctx.builder.getState().state.plans)[0]?.id;
+    if (!planId) return;
+    useVersionsUiStore.getState().openDrawer();
+    useVersionsUiStore.getState().openTagDialog();
   },
 
   "export.run": (ctx, args) => {

@@ -7,6 +7,7 @@ import {
   FileImage,
   FileText,
   FolderKanban,
+  History,
   Home,
   KanbanSquare,
   Keyboard,
@@ -21,6 +22,7 @@ import {
   Smartphone,
   Sun,
   SunMoon,
+  Tag,
   Trash2,
   Undo2,
   Workflow,
@@ -94,6 +96,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Plus,
   FileImage,
   Printer,
+  History,
+  Tag,
 };
 
 // ──────────────────────────────────────────────────────────────────

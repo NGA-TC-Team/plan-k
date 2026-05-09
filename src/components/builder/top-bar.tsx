@@ -6,6 +6,7 @@ import {
   Eye,
   FileImage,
   FileText,
+  History,
   Home,
   KanbanSquare,
   LayoutDashboard,
@@ -54,7 +55,9 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useBuilderUiStore, useThemeStore } from "@/services/stores";
+import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
 import { SaveStatusChip } from "./save-status-chip";
+import { VersionsDrawer } from "./versions-drawer";
 
 export function TopBar() {
   const planMeta = useBuilderState((s) => Object.values(s.state.plans)[0]);
@@ -218,10 +221,21 @@ export function TopBar() {
           >
             <Redo2 className="size-4" />
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => useVersionsUiStore.getState().openDrawer()}
+            aria-label="Version history"
+            title="Version history"
+          >
+            <History className="size-4" />
+          </Button>
           {planMeta?.id ? <ExportMenu planId={planMeta.id} /> : null}
           <ThemeToggle />
         </div>
       </div>
+      {planMeta?.id ? <VersionsDrawer planId={planMeta.id} /> : null}
     </header>
   );
 }

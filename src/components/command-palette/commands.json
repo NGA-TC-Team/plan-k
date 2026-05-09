@@ -9,6 +9,7 @@
     "edit": "편집",
     "create": "만들기",
     "export": "내보내기",
+    "versions": "버전",
     "panel": "패널",
     "appearance": "모드 / 외관",
     "block": "블록 삽입"
@@ -285,6 +286,24 @@
       "keywords": ["print", "preview", "인쇄"],
       "icon": "Printer",
       "action": "export.print",
+      "when": "builder"
+    },
+    {
+      "id": "versions.openHistory",
+      "group": "versions",
+      "label": "버전 히스토리 열기",
+      "keywords": ["version", "history", "버전", "히스토리"],
+      "icon": "History",
+      "action": "versions.openHistory",
+      "when": "builder"
+    },
+    {
+      "id": "versions.tagVersion",
+      "group": "versions",
+      "label": "현재 버전 태그",
+      "keywords": ["version", "tag", "snapshot", "버전", "태그", "스냅샷"],
+      "icon": "Tag",
+      "action": "versions.tagVersion",
       "when": "builder"
     }
   ]
