@@ -17,7 +17,7 @@ import {
 import { useBacklogStore } from "@/services/stores";
 import { EditableBlock } from "./editable-block";
 import { NotionWriter } from "./notion-writer";
-import { StatusChipMenu } from "./status-chip";
+import { EntityStatusChip } from "./status-chip";
 
 const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
@@ -81,17 +81,7 @@ export function BacklogSheet() {
           <>
             <div className="flex items-center justify-end gap-1 border-b px-4 py-1.5">
               {section ? (
-                <StatusChipMenu
-                  status={section.status}
-                  variant="pill"
-                  onChange={(next) =>
-                    dispatch({
-                      type: "UPDATE_SECTION",
-                      sectionId: section.id,
-                      patch: { status: next },
-                    })
-                  }
-                />
+                <EntityStatusChip entityId={section.id} variant="pill" />
               ) : null}
               <Button
                 type="button"

@@ -1,8 +1,10 @@
 "use client";
 
+import { getEntityStatus } from "@/builder/selectors/entity-status";
 import {
+  ENTITY_STATUS_VALUES,
+  type EntityStatus,
   SECTION_STATUS_VALUES,
-  type SectionStatus,
 } from "@/builder/types/entity";
 import {
   DropdownMenu,
@@ -10,23 +12,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  useBuilderDispatch,
+  useBuilderState,
+} from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 
-const STATUS_LABEL: Record<SectionStatus, string> = {
+const STATUS_LABEL: Record<EntityStatus, string> = {
   pending: "Pending",
   "in-progress": "In progress",
   approved: "Approved",
   rejected: "Rejected",
 };
 
-const STATUS_DOT_CLASS: Record<SectionStatus, string> = {
+const STATUS_DOT_CLASS: Record<EntityStatus, string> = {
   pending: "bg-muted-foreground/40",
   "in-progress": "bg-amber-500",
   approved: "bg-emerald-500",
   rejected: "bg-rose-500",
 };
 
-export function statusOf(status: SectionStatus | undefined): SectionStatus {
+export function statusOf(status: EntityStatus | undefined): EntityStatus {
   return status ?? "pending";
 }
 
@@ -34,7 +40,7 @@ export function StatusDot({
   status,
   className,
 }: {
-  status: SectionStatus | undefined;
+  status: EntityStatus | undefined;
   className?: string;
 }) {
   return (
@@ -49,13 +55,17 @@ export function StatusDot({
   );
 }
 
+/**
+ * Primitive status chip with dropdown. Caller is responsible for dispatch.
+ * Use `EntityStatusChip` when inside a BuilderProvider — it wires dispatch automatically.
+ */
 export function StatusChipMenu({
   status,
   onChange,
   variant = "dot",
 }: {
-  status: SectionStatus | undefined;
-  onChange: (next: SectionStatus) => void;
+  status: EntityStatus | undefined;
+  onChange: (next: EntityStatus) => void;
   variant?: "dot" | "pill";
 }) {
   const current = statusOf(status);
@@ -86,7 +96,7 @@ export function StatusChipMenu({
         }
       />
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        {SECTION_STATUS_VALUES.map((s) => (
+        {ENTITY_STATUS_VALUES.map((s) => (
           <DropdownMenuItem
             key={s}
             onClick={(e) => {
@@ -107,3 +117,34 @@ export function StatusChipMenu({
     </DropdownMenu>
   );
 }
+
+type EntityStatusChipProps = {
+  entityId: string;
+  variant?: "dot" | "pill";
+};
+
+/**
+ * entityMeta + UPDATE_ENTITY_META 흐름을 자동 연결.
+ * backlog board / backlog sheet 양쪽에서 재사용.
+ * BuilderProvider 안에서만 사용 가능.
+ */
+export function EntityStatusChip({ entityId, variant }: EntityStatusChipProps) {
+  const status = useBuilderState((s) => getEntityStatus(s.state, entityId));
+  const dispatch = useBuilderDispatch();
+  return (
+    <StatusChipMenu
+      status={status}
+      onChange={(next) =>
+        dispatch({
+          type: "UPDATE_ENTITY_META",
+          entityId,
+          patch: { status: next },
+        })
+      }
+      variant={variant}
+    />
+  );
+}
+
+// Re-export alias for callers that import SECTION_STATUS_VALUES from this module.
+export { SECTION_STATUS_VALUES };

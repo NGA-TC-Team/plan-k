@@ -30,14 +30,12 @@ const COLUMN_ACCENT: Record<SectionStatus, string> = {
   rejected: "border-rose-500/60",
 };
 
-const statusOf = (s: SectionEntity | undefined): SectionStatus =>
-  s?.status ?? "pending";
-
 export function BacklogBoard() {
   const planId = useBuilderState(
     (s) => Object.values(s.state.plans)[0]?.id ?? null,
   );
   const sectionsMap = useBuilderState((s) => s.state.sections);
+  const entityMetaMap = useBuilderState((s) => s.state.entityMeta);
   const dispatch = useBuilderDispatch();
   const draggingId = useBacklogStore((s) => s.draggingId);
   const setOpenSheet = useBacklogStore((s) => s.setOpenSheet);
@@ -62,10 +60,16 @@ export function BacklogBoard() {
       } as Record<SectionStatus, string[]>;
     return orderedFor(
       planId,
-      (id) => statusOf(sectionsMap[id]),
+      // Route all status reads through getEntityStatus for entityMeta priority.
+      // entityMetaMap is captured so the memo tracks entityMeta changes too.
+      (id) => {
+        const meta = entityMetaMap[id];
+        if (meta?.status !== undefined) return meta.status;
+        return sectionsMap[id]?.status ?? "pending";
+      },
       backlogSections.map((s) => s.id),
     );
-  }, [planId, orderedFor, sectionsMap, backlogSections]);
+  }, [planId, orderedFor, sectionsMap, entityMetaMap, backlogSections]);
 
   if (!planId) {
     return (
@@ -144,6 +148,7 @@ function Column({
   onAdd: () => void;
 }) {
   const dispatch = useBuilderDispatch();
+  const entityMetaMap = useBuilderState((s) => s.state.entityMeta);
   const reorder = useBacklogStore((s) => s.reorder);
   const endDrag = useBacklogStore((s) => s.endDrag);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -159,11 +164,16 @@ function Column({
     if (!id) return;
     const cur = sectionsMap[id];
     if (!cur) return;
-    const fromStatus = statusOf(cur);
+    // Read current status via the unified helper (entityMeta priority).
+    const meta = entityMetaMap[id];
+    const fromStatus: SectionStatus =
+      meta?.status !== undefined
+        ? (meta.status as SectionStatus)
+        : (cur.status ?? "pending");
     if (fromStatus !== status) {
       dispatch({
-        type: "UPDATE_SECTION",
-        sectionId: id,
+        type: "UPDATE_ENTITY_META",
+        entityId: id,
         patch: { status },
       });
     }
