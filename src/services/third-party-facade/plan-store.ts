@@ -6,6 +6,7 @@ import type { IntentLogEntry } from "@/builder/types/intent";
 import type { AppState } from "@/builder/types/state";
 import { db, intents, plans, projects } from "@/db";
 import { MigrationError, migrateSnapshot } from "@/db/migrate";
+import { deletePlanDir } from "./media-store";
 import { maybeCompact } from "./plan-compaction";
 import { planStream } from "./plan-stream";
 import { syncRefsForIntent } from "./refs-sync";
@@ -211,6 +212,16 @@ export async function appendIntent(
     db.transaction((tx) => {
       tx.delete(plans).where(eq(plans.id, projectId)).run();
       tx.delete(projects).where(eq(projects.id, projectId)).run();
+    });
+    // Remove the plan's media directory from disk after the DB transaction
+    // completes. If the rm fails (e.g. permission error) we swallow + warn —
+    // the DB row is gone, so the files are orphaned and the media-sweep job
+    // (E7 PR-7 Unit B) will clean them up on its next 6h cycle.
+    await deletePlanDir(projectId).catch((err) => {
+      console.warn(
+        `[plan-store] deletePlanDir(${projectId}) failed — orphan sweep will reconcile:`,
+        err,
+      );
     });
   }
 
