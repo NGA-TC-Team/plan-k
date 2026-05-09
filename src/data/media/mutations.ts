@@ -15,6 +15,17 @@ export function useUploadMediaMutation(planId: string) {
   });
 }
 
+export function useCreateMediaFromUrlMutation(planId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (url: string) => mediaApi.createFromUrl(planId, url),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.media.list(planId) });
+      qc.invalidateQueries({ queryKey: queryKeys.media.all });
+    },
+  });
+}
+
 export function useDeleteMediaMutation() {
   const qc = useQueryClient();
   return useMutation({

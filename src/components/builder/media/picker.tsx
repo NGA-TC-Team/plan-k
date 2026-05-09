@@ -3,15 +3,20 @@
 import { ImageIcon, Loader2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUploadMediaMutation } from "@/data/media/mutations";
+import {
+  useCreateMediaFromUrlMutation,
+  useUploadMediaMutation,
+} from "@/data/media/mutations";
 import { useMediaListQuery } from "@/data/media/queries";
 import { MediaThumb } from "./thumb";
 
@@ -48,6 +53,7 @@ export function MediaPicker({
           >
             <TabsTrigger value="library">Library</TabsTrigger>
             <TabsTrigger value="upload">Upload</TabsTrigger>
+            <TabsTrigger value="url">URL</TabsTrigger>
           </TabsList>
           <TabsContent value="library" className="min-h-0 flex-1">
             <LibraryTab
@@ -61,6 +67,15 @@ export function MediaPicker({
           </TabsContent>
           <TabsContent value="upload" className="min-h-0 flex-1 p-4">
             <UploadTab
+              planId={planId}
+              onSelect={(ref) => {
+                onSelect(ref);
+                onOpenChange(false);
+              }}
+            />
+          </TabsContent>
+          <TabsContent value="url" className="min-h-0 flex-1 p-4">
+            <UrlTab
               planId={planId}
               onSelect={(ref) => {
                 onSelect(ref);
@@ -138,6 +153,37 @@ function LibraryTab({
   );
 }
 
+// ─── URL error code → user-friendly message ──────────────────────────────────
+
+const URL_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_URL: "URL 형식이 올바르지 않습니다.",
+  UNSUPPORTED_PROTOCOL: "http:// 또는 https:// URL만 지원합니다.",
+  FORBIDDEN_HOST: "내부 네트워크 주소는 허용되지 않습니다.",
+  DNS_FAILURE: "도메인을 확인할 수 없습니다.",
+  FETCH_TIMEOUT: "원격 서버 응답 시간이 초과되었습니다.",
+  FETCH_FAILED: "원격 URL에서 파일을 가져오지 못했습니다.",
+  MEDIA_TOO_LARGE: "파일이 너무 큽니다 (최대 50MB).",
+  UNSUPPORTED_MIME: "지원하지 않는 파일 형식입니다.",
+  STORAGE_ERROR: "파일을 저장하는 중 오류가 발생했습니다.",
+};
+
+function urlErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    // axios wraps HTTP error responses — try to extract the `code` field
+    // from the response data if available.
+    const anyErr = err as {
+      response?: { data?: { code?: string; error?: string } };
+    };
+    const code = anyErr.response?.data?.code;
+    if (code && URL_ERROR_MESSAGES[code]) return URL_ERROR_MESSAGES[code];
+    // Fall back to the raw server message if present.
+    const serverMsg = anyErr.response?.data?.error;
+    if (serverMsg) return serverMsg;
+    return err.message;
+  }
+  return "알 수 없는 오류가 발생했습니다.";
+}
+
 // ─── Upload tab ───────────────────────────────────────────────────────────────
 
 function UploadTab({
@@ -206,6 +252,78 @@ function UploadTab({
           {uploadError}
         </p>
       )}
+    </div>
+  );
+}
+
+// ─── URL tab ──────────────────────────────────────────────────────────────────
+
+function UrlTab({
+  planId,
+  onSelect,
+}: {
+  planId: string;
+  onSelect: (ref: string) => void;
+}) {
+  const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const fromUrl = useCreateMediaFromUrlMutation(planId);
+
+  const handleSubmit = () => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+
+    setUrlError(null);
+    fromUrl.mutate(trimmed, {
+      onSuccess: (res) => {
+        toast.success(`"${res.media.originalName}" 추가됨`);
+        onSelect(`media:${res.media.id}`);
+      },
+      onError: (err) => {
+        setUrlError(urlErrorMessage(err));
+      },
+    });
+  };
+
+  const isDisabled = fromUrl.isPending || url.trim().length === 0;
+
+  return (
+    <div className="flex h-full flex-col gap-4 pt-2">
+      <div className="flex gap-2">
+        <Input
+          type="url"
+          placeholder="https://example.com/image.png"
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            // Clear error on new input so the user gets fresh feedback.
+            if (urlError) setUrlError(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isDisabled) handleSubmit();
+          }}
+          disabled={fromUrl.isPending}
+          className="flex-1"
+        />
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isDisabled}
+          className="shrink-0"
+        >
+          {fromUrl.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : null}
+          {fromUrl.isPending ? "추가 중…" : "Add from URL"}
+        </Button>
+      </div>
+
+      {urlError && <p className="text-sm text-destructive">{urlError}</p>}
+
+      <p className="text-xs text-muted-foreground">
+        이미지 URL을 입력하면 서버에서 다운로드하여 미디어 라이브러리에
+        저장합니다.
+      </p>
     </div>
   );
 }

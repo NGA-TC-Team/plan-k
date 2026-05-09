@@ -24,6 +24,17 @@ export const mediaApi = {
     });
   },
 
+  /**
+   * Fetch a remote URL server-side, validate, and store as a media row.
+   * The server performs SSRF guarding, size capping, and mime sniffing.
+   */
+  createFromUrl: (planId: string, url: string) =>
+    request<{ media: MediaItem }>({
+      method: "POST",
+      url: `/plans/${planId}/media/from-url`,
+      data: { url },
+    }),
+
   remove: (id: string) =>
     request<void>({ method: "DELETE", url: `/media/${id}` }),
 };

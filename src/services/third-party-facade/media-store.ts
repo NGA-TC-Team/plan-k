@@ -237,3 +237,125 @@ export async function deleteMedia(id: string): Promise<boolean> {
 export async function deletePlanDir(planId: string): Promise<void> {
   await rm(localMediaDir(planId), { recursive: true, force: true });
 }
+
+// ─── Shared media validation helper (used by upload route + from-url route) ──
+
+export type ValidatedMediaMeta = {
+  mimeType: string;
+  kind: ReturnType<typeof classifyMedia>;
+  width?: number;
+  height?: number;
+};
+
+export type MediaValidationError =
+  | { code: "UNSUPPORTED_MIME"; message: string }
+  | { code: "MIME_MISMATCH"; message: string }
+  | { code: "SVG_SCRIPT"; message: string };
+
+/**
+ * Inspect a raw buffer and return the authoritative mime type, kind, and
+ * optional image dimensions.
+ *
+ * Validation steps:
+ *  1. Magic-byte sniff via `file-type`.
+ *  2. Allowlist check against ALLOWED_MEDIA_MIMES.
+ *  3. For SVG: `<script` injection guard.
+ *  4. Best-effort raster dimension extraction via `image-size`.
+ *
+ * Throws a `MediaValidationError` (discriminated union, not Error subclass)
+ * so callers can branch on `code` without instanceof checks.
+ *
+ * @param buffer  - Full file buffer (or at least the first 4 KB for sniff).
+ * @param declaredMime - Optional hint from Content-Type header. When `file-type`
+ *                        detects a type it always takes precedence.
+ */
+export async function validateAndClassifyMediaBuffer(
+  buffer: Buffer,
+  declaredMime?: string,
+): Promise<ValidatedMediaMeta> {
+  // ── 1. Magic-byte sniff ──────────────────────────────────────────────────
+  const { fileTypeFromBuffer } = await import("file-type");
+  const slice = buffer.subarray(0, 4096);
+  const detected = await fileTypeFromBuffer(slice);
+
+  // Authority rule: detected type wins; fall back to declaredMime; last resort
+  // is "application/octet-stream" which will fail the allowlist check below.
+  let mimeType = detected?.mime ?? declaredMime ?? "application/octet-stream";
+
+  // If file-type returned a result but it conflicts with the declared type,
+  // that is a MIME_MISMATCH only when declaredMime was explicitly provided and
+  // is not a wildcard. We trust magic bytes unconditionally here — the upstream
+  // caller may rely on this to reject spoofed Content-Type headers.
+  if (detected && declaredMime && detected.mime !== declaredMime) {
+    // For the from-url route the `declaredMime` is the remote Content-Type.
+    // We still use magic bytes as authority (per spec), so just overwrite.
+    mimeType = detected.mime;
+  }
+
+  // ── 2. Allowlist ─────────────────────────────────────────────────────────
+  if (!ALLOWED_MEDIA_MIMES.has(mimeType)) {
+    const err: MediaValidationError = {
+      code: "UNSUPPORTED_MIME",
+      message: `Unsupported media type: ${mimeType}`,
+    };
+    throw err;
+  }
+
+  // ── 3. SVG script guard ──────────────────────────────────────────────────
+  if (mimeType === "image/svg+xml") {
+    const text = buffer.toString("utf-8");
+    if (/<script/i.test(text)) {
+      const err: MediaValidationError = {
+        code: "SVG_SCRIPT",
+        message: "SVG files must not contain <script> elements",
+      };
+      throw err;
+    }
+  }
+
+  const kind = classifyMedia(mimeType);
+
+  // ── 4. Raster dimensions (best-effort) ───────────────────────────────────
+  const RASTER_MIMES = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/avif",
+  ]);
+  let width: number | undefined;
+  let height: number | undefined;
+  if (RASTER_MIMES.has(mimeType)) {
+    try {
+      const { imageSize } = await import("image-size");
+      const dims = imageSize(buffer);
+      if (dims.width && dims.height) {
+        width = dims.width;
+        height = dims.height;
+      }
+    } catch {
+      // best-effort — leave undefined
+    }
+  }
+
+  return { mimeType, kind, width, height };
+}
+
+/**
+ * Mime types permitted for media storage.
+ * Mirrors the ALLOWED_MIMES set in the upload route — kept in sync here
+ * so both routes share one authoritative list.
+ */
+export const ALLOWED_MEDIA_MIMES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/avif",
+  "image/svg+xml",
+  "video/mp4",
+  "video/webm",
+  "audio/mpeg",
+  "audio/wav",
+  "application/pdf",
+]);

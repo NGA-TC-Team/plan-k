@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  classifyMedia,
+  ALLOWED_MEDIA_MIMES,
   createMedia,
   listByPlan,
   MAX_MEDIA_BYTES,
+  type MediaValidationError,
+  validateAndClassifyMediaBuffer,
 } from "@/services/third-party-facade/media-store";
 import {
   getPlan,
@@ -11,98 +13,6 @@ import {
 } from "@/services/third-party-facade/plan-store";
 
 export const runtime = "nodejs";
-
-// ─── Allowlist ────────────────────────────────────────────────────────────────
-// Declared mime types that are permitted for upload. `classifyMedia` returning
-// "other" is an additional gate — only types that map to a known kind AND appear
-// here pass through.
-const ALLOWED_MIMES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/avif",
-  "image/svg+xml",
-  "video/mp4",
-  "video/webm",
-  "audio/mpeg",
-  "audio/wav",
-  "application/pdf",
-]);
-
-// ─── Magic-byte sniff helpers ─────────────────────────────────────────────────
-
-/**
- * Return the detected mime type from the first 4 KB of `buf`, or undefined
- * if `file-type` cannot determine it (e.g. SVG / plain-text formats).
- */
-async function sniffMimeType(buf: Buffer): Promise<string | undefined> {
-  // Dynamic import keeps `file-type` (ESM-only) away from the module evaluation
-  // phase — Next.js server components tolerate this pattern fine.
-  const { fileTypeFromBuffer } = await import("file-type");
-  const slice = buf.subarray(0, 4096);
-  const result = await fileTypeFromBuffer(slice);
-  return result?.mime;
-}
-
-/**
- * Validate that `declared` matches the magic bytes in `buf`.
- *
- * Rules:
- *  - If `file-type` detects a type AND it differs from declared → MIME_MISMATCH.
- *  - If `file-type` returns undefined (e.g. SVG, plain-text) → accept; the
- *    caller's allowlist and SVG script check provide the safety net.
- */
-async function assertMimeMatch(
-  declared: string,
-  buf: Buffer,
-): Promise<"ok" | "MIME_MISMATCH"> {
-  const detected = await sniffMimeType(buf);
-  if (detected && detected !== declared) {
-    return "MIME_MISMATCH";
-  }
-  return "ok";
-}
-
-/**
- * SVG safety check: reject if the decoded text contains a `<script` element
- * (case-insensitive). This prevents stored XSS via crafted SVG uploads when the
- * file is later served with Content-Type: image/svg+xml.
- */
-function svgHasScript(buf: Buffer): boolean {
-  const text = buf.toString("utf-8");
-  return /<script/i.test(text);
-}
-
-// ─── Optional: raster image dimensions ───────────────────────────────────────
-
-async function extractImageDimensions(
-  buf: Buffer,
-  mimeType: string,
-): Promise<{ width: number; height: number } | null> {
-  // Only attempt for raster types — SVG intrinsic size is CSS, not pixel.
-  if (
-    ![
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "image/avif",
-    ].includes(mimeType)
-  ) {
-    return null;
-  }
-  try {
-    const { imageSize } = await import("image-size");
-    const dims = imageSize(buf);
-    if (dims.width && dims.height) {
-      return { width: dims.width, height: dims.height };
-    }
-  } catch {
-    // Best-effort — leave width/height null on any failure.
-  }
-  return null;
-}
 
 // ─── POST /api/plans/[id]/media ───────────────────────────────────────────────
 
@@ -179,11 +89,11 @@ export async function POST(
     );
   }
 
-  // ── 4. Declared mime allowlist ─────────────────────────────────────────────
+  // ── 4. Declared mime pre-check (fast-fail before buffering) ──────────────
+  // The shared validateAndClassifyMediaBuffer will do the authoritative sniff
+  // after buffering, but we can fast-fail here for clearly unsupported types.
   const declaredMime = file.type || "application/octet-stream";
-  const kind = classifyMedia(declaredMime);
-
-  if (kind === "other" || !ALLOWED_MIMES.has(declaredMime)) {
+  if (!ALLOWED_MEDIA_MIMES.has(declaredMime)) {
     return NextResponse.json(
       {
         error: `Unsupported MIME type: ${declaredMime}`,
@@ -206,43 +116,44 @@ export async function POST(
   }
   const buffer = Buffer.from(arrayBuffer);
 
-  // ── 6. Magic-byte MIME sniff ───────────────────────────────────────────────
-  const sniffResult = await assertMimeMatch(declaredMime, buffer);
-  if (sniffResult === "MIME_MISMATCH") {
+  // ── 6–8. Mime sniff + SVG guard + dimension extraction (shared helper) ────
+  let meta: Awaited<ReturnType<typeof validateAndClassifyMediaBuffer>>;
+  try {
+    meta = await validateAndClassifyMediaBuffer(buffer, declaredMime);
+  } catch (validationErr) {
+    const ve = validationErr as MediaValidationError;
+    if (ve?.code === "MIME_MISMATCH") {
+      return NextResponse.json(
+        {
+          error: "Declared MIME type does not match file content",
+          code: "MIME_MISMATCH",
+        },
+        { status: 415 },
+      );
+    }
+    if (ve?.code === "UNSUPPORTED_MIME" || ve?.code === "SVG_SCRIPT") {
+      return NextResponse.json(
+        { error: ve.message, code: "UNSUPPORTED_MIME" },
+        { status: 415 },
+      );
+    }
     return NextResponse.json(
-      {
-        error: "Declared MIME type does not match file content",
-        code: "MIME_MISMATCH",
-      },
-      { status: 415 },
+      { error: "Media validation failed", code: "INTERNAL_ERROR" },
+      { status: 500 },
     );
   }
-
-  // ── 7. SVG script injection check ─────────────────────────────────────────
-  if (declaredMime === "image/svg+xml" && svgHasScript(buffer)) {
-    return NextResponse.json(
-      {
-        error: "SVG files must not contain <script> elements",
-        code: "UNSUPPORTED_MIME",
-      },
-      { status: 415 },
-    );
-  }
-
-  // ── 8. Extract image dimensions (best-effort) ──────────────────────────────
-  const dims = await extractImageDimensions(buffer, declaredMime);
 
   // ── 9. Persist ─────────────────────────────────────────────────────────────
   let row: Awaited<ReturnType<typeof createMedia>>;
   try {
     row = await createMedia({
       planId,
-      kind,
-      mimeType: declaredMime,
+      kind: meta.kind,
+      mimeType: meta.mimeType,
       originalName: file.name || "upload",
       buffer,
-      width: dims?.width,
-      height: dims?.height,
+      width: meta.width,
+      height: meta.height,
     });
   } catch {
     // Do not surface raw error messages — they may contain absolute paths or
