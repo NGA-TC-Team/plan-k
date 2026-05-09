@@ -71,6 +71,19 @@ This Next.js app is **not** a deployable web service. It's a **locally-built pla
    - REQUEST CHANGES → 리뷰어 지시문을 그대로 `plan-driven-implementer`에 후속 위임 → 다시 5단계로.
    - BLOCK → 진행 중단, 사용자 의사결정 대기.
 
+### 완료 보고 형식 (메인 → 사용자)
+
+PR/페이즈 단위 작업이 끝나 사용자에게 보고할 때, 다음 4개 섹션을 항상 포함한다. 누락하면 사용자가 "이제 뭐 해야 해?"를 다시 물어야 하고, 거시 진행률이 흐려진다.
+
+1. **이번 단위에서 한 일** — 커밋 SHA·핵심 변경 요지 (한두 줄).
+2. **검증 결과** — tsc / test / lint / build 또는 리뷰어 등급.
+3. **다음 행동** — 곧장 진입할 후속 작업이 있으면 명시 (예: "PR-D 진입 권장", "nit follow-up PR 분리"). 사용자 결정이 필요한 분기점이면 선택지를 나열.
+4. **계획 진행 상황** — 두 층위 모두 표기:
+   - **거시 흐름**: 에픽 전체(예: E10) 잔여 PR 목록과 다음에 권장하는 순서.
+   - **현재 페이즈**: 방금 끝낸 PR/단위가 페이즈 내 마지막인지 여부.
+
+**전체 계획이 모두 끝났다면 명시적으로 "🏁 E10 완료" 또는 "이 에픽의 모든 PR 완료" 같은 마무리 표식을 단다.** 거시 흐름과 현재 페이즈 양쪽이 모두 닫혔을 때만 마무리로 처리하고, 한쪽만 닫혔으면 어느 쪽이 닫혔는지 구분해 보고한다.
+
 ## Stack & Runtime
 
 - **Runtime/package manager: Bun.** Use `bun`, `bun run`, `bunx` — never `node`, `npm`, `npx`. Tests run via `bun test`.

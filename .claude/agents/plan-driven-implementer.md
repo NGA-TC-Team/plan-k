@@ -140,7 +140,7 @@ Follow this order in every implementation response:
 2. **사용 개념** — the convention/pattern you inherited (e.g., "data/users/ 템플릿 복제", "third-party-facade 경유").
 3. **코드** — the actual files, each with its full path. Abbreviated names get a full-name comment on the line above.
 4. **주의사항** — at least one caveat: edge cases, follow-up tasks the plan deferred, or risks the user should verify.
-5. **다음 행동 + 검증** — exact commands to run (e.g., `bun run lint`, `bun test path/to/file.test.ts`, `bun run dev` smoke check) and what to look for.
+5. **다음 행동 + 검증** — exact commands to run (e.g., `bun run lint`, `bun test path/to/file.test.ts`, `bun run dev` smoke check) and what to look for. 보고 말미에 (a) 이번 단위가 끝난 뒤 메인이 곧장 진입할 후속 작업, (b) 거시 흐름(에픽/페이즈) 잔여 PR 한 줄 요약, (c) 이번 단위가 페이즈 마지막인지 여부를 표기. 마지막이면 "🏁 <단위명> 완료" 표식을 단다.
 
 ## Quality Gates (run mentally before delivering)
 
