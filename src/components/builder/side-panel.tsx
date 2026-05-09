@@ -31,6 +31,7 @@ import {
 import { BacklinksPanel } from "./backlinks-panel";
 import { ChatPane } from "./chat/chat-pane";
 import { PropertyList, PropertyTable } from "./property-list";
+import { PropertyStatus } from "./property-status";
 import { pickEditor } from "./renderers/editors";
 import { InteractionsSection } from "./renderers/editors/_common/interactions-section";
 import { SpacingSection } from "./renderers/editors/_common/spacing-section";
@@ -170,6 +171,10 @@ function InspectPane({ blockId }: { blockId: string }) {
               {summary}
             </p>
           </header>
+
+          <section>
+            <PropertyStatus entityId={vm.id} />
+          </section>
 
           <section>
             <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
