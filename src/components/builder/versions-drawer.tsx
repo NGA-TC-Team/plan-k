@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { usePlanVersionsQuery } from "@/data/plan-versions";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { DiffPanel } from "./diff-panel";
 import { TagVersionDialog } from "./tag-version-dialog";
 import { VersionsListItem } from "./versions-list-item";
 
@@ -24,6 +25,8 @@ export function VersionsDrawer({ planId }: VersionsDrawerProps) {
   const closeDrawer = useVersionsUiStore((s) => s.closeDrawer);
   const tagDialogOpen = useVersionsUiStore((s) => s.tagDialogOpen);
   const closeTagDialog = useVersionsUiStore((s) => s.closeTagDialog);
+  const diffVersionId = useVersionsUiStore((s) => s.diffVersionId);
+  const closeDiff = useVersionsUiStore((s) => s.closeDiff);
 
   // Local fallback for the "Tag current version" button in the header
   const [localTagOpen, setLocalTagOpen] = useState(false);
@@ -57,39 +60,50 @@ export function VersionsDrawer({ planId }: VersionsDrawerProps) {
           <SheetDescription className="sr-only">
             Tag the current plan state and view past versions.
           </SheetDescription>
-          <SheetHeader className="flex-row items-center justify-between border-b pb-3">
-            <span className="font-medium text-sm">Version history</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setLocalTagOpen(true)}
-              className="gap-1.5"
-            >
-              <Tag className="size-3.5" />
-              Tag current version
-            </Button>
-          </SheetHeader>
+          {/* Sub-view switch: DiffPanel replaces the list when diffVersionId is set */}
+          {diffVersionId !== null ? (
+            <DiffPanel
+              planId={planId}
+              versionId={diffVersionId}
+              onBack={closeDiff}
+            />
+          ) : (
+            <>
+              <SheetHeader className="flex-row items-center justify-between border-b pb-3">
+                <span className="font-medium text-sm">Version history</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocalTagOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Tag className="size-3.5" />
+                  Tag current version
+                </Button>
+              </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="px-4 py-6 text-sm text-muted-foreground">
-                Loading…
+              <div className="flex-1 overflow-y-auto">
+                {isLoading ? (
+                  <div className="px-4 py-6 text-sm text-muted-foreground">
+                    Loading…
+                  </div>
+                ) : versionCount === 0 ? (
+                  <div className="px-4 py-6 text-sm text-muted-foreground">
+                    No versions yet — tag the current state to start a history.
+                  </div>
+                ) : (
+                  <ul className="divide-y">
+                    {versions?.map((version) => (
+                      <li key={version.id}>
+                        <VersionsListItem planId={planId} version={version} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            ) : versionCount === 0 ? (
-              <div className="px-4 py-6 text-sm text-muted-foreground">
-                No versions yet — tag the current state to start a history.
-              </div>
-            ) : (
-              <ul className="divide-y">
-                {versions?.map((version) => (
-                  <li key={version.id}>
-                    <VersionsListItem planId={planId} version={version} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+            </>
+          )}
         </SheetContent>
       </Sheet>
 

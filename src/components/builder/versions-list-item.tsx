@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { PlanVersionListItem } from "@/data/plan-versions";
 import { useDeletePlanVersionMutation } from "@/data/plan-versions";
+import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
 
 type VersionsListItemProps = {
   planId: string;
@@ -71,6 +72,11 @@ export function VersionsListItem({ planId, version }: VersionsListItemProps) {
           <MoreVertical className="size-3.5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => useVersionsUiStore.getState().openDiff(version.id)}
+          >
+            Compare with current
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onClick={handleDelete}
