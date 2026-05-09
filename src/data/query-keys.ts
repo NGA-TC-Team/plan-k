@@ -16,4 +16,8 @@ export const queryKeys = {
     list: () => [...queryKeys.projects.all, "list"] as const,
     detail: (id: string) => [...queryKeys.projects.all, "detail", id] as const,
   },
+  media: {
+    all: ["media"] as const,
+    list: (planId: string) => [...queryKeys.media.all, "list", planId] as const,
+  },
 } as const;
