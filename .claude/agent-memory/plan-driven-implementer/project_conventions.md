@@ -122,6 +122,15 @@ type: project
 - selector + callback 형태의 2인자 subscribe는 `subscribeWithSelector` 미들웨어 필요.
 - 미들웨어 없이 selector 패턴 쓰려면: 리스너 안에서 prev 값을 클로저로 캐싱해 변경 감지.
 
+## VersionsUiStore + Drawer 패턴 (E10 PR-B, 2026-05-10)
+
+- `versions-ui.store.ts`: persist 없는 에페머럴 Zustand 스토어. `create<T>()(...)` 패턴(theme-store 방식). `tagDialogOpen` 플래그도 같은 스토어에 포함해 커맨드팔레트에서 드로어+다이얼로그 동시 오픈 가능.
+- `VersionsDrawer`에서 `openTagDialog` selector는 실제로 사용하지 않으면 Biome noUnusedVariables 에러 발생 — 사용하는 selector만 선언.
+- `DropdownMenuTrigger`의 `render` prop 패턴은 `asChild` 대신 반드시 사용 (TS2322 방지). 자식 노드는 trigger 사이에 넣는 방식: `<DropdownMenuTrigger render={<Button .../>}><Icon/></DropdownMenuTrigger>`.
+- Biome organizeImports: `theme-store`는 `time-window` 앞에 위치해야 알파벳 순서가 맞음.
+- 커맨드팔레트 등록 절차: (1) `actions.ts`에 핸들러 추가, (2) `registry.ts` ICON_MAP에 아이콘 추가, (3) `commands.json`에 그룹과 커맨드 항목 추가 — 3파일 모두 수정 필요.
+- React 컴포넌트 테스트: `@testing-library/react` 미설치. 컴포넌트 테스트 요구 시 Zustand 스토어 로직 단위 테스트(.test.ts)로 대체 가능 (기존 컨벤션 일치).
+
 ## Biome unsafe fix 주의 (E8 PR-1)
 
 - `after!.state` → `after?.state` unsafe fix는 TS 타입 오류를 유발.
