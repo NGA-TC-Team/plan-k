@@ -1,6 +1,7 @@
 "use client";
 
 import { File, FileAudio, FileText, FileVideo, ImageIcon } from "lucide-react";
+import type React from "react";
 import type { MediaItem } from "@/data/media/types";
 import { useMediaUrl } from "@/hooks/builder/use-media-url.hook";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,15 @@ type Props = {
   onClick?: () => void;
   /** Number of blocks that currently reference this media item. Omit or 0 = no badge. */
   count?: number;
+  /**
+   * Optional slot for the count badge area.
+   * When provided, replaces the default <span> badge so the caller can inject
+   * a popover trigger (or any interactive element) without coupling thumb to
+   * the popover implementation.
+   * Rendered only when count > 0 AND countBadge is defined.
+   * If omitted, falls back to the built-in read-only <span> badge.
+   */
+  countBadge?: React.ReactNode;
 };
 
 /**
@@ -22,7 +32,13 @@ type Props = {
  * - count > 0 → small badge at bottom-right showing number of block usages
  * - title attr → "<originalName> (<KB> KB)"
  */
-export function MediaThumb({ media, selected, onClick, count }: Props) {
+export function MediaThumb({
+  media,
+  selected,
+  onClick,
+  count,
+  countBadge,
+}: Props) {
   const url = useMediaUrl(`media:${media.id}`);
   const kb = Math.round(media.sizeBytes / 1024);
   const titleAttr = `${media.originalName} (${kb} KB)`;
@@ -54,12 +70,21 @@ export function MediaThumb({ media, selected, onClick, count }: Props) {
         <div className="absolute inset-0 bg-primary/10" aria-hidden />
       )}
       {typeof count === "number" && count > 0 && (
-        <span
-          title={`Used in ${count} block${count === 1 ? "" : "s"}`}
-          className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium leading-none text-white"
-        >
-          {count}
-        </span>
+        // Slot: if caller provides countBadge (e.g. a popover trigger), render
+        // it; otherwise fall back to the read-only <span>.
+        // stopPropagation must be handled by the injected element if needed.
+        <div className="absolute bottom-1 right-1">
+          {countBadge !== undefined ? (
+            countBadge
+          ) : (
+            <span
+              title={`Used in ${count} block${count === 1 ? "" : "s"}`}
+              className="rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium leading-none text-white"
+            >
+              {count}
+            </span>
+          )}
+        </div>
       )}
     </button>
   );

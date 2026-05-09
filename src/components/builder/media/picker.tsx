@@ -19,6 +19,7 @@ import {
 } from "@/data/media/mutations";
 import { useMediaListQuery } from "@/data/media/queries";
 import { MediaThumb } from "./thumb";
+import { MediaUsagePopover } from "./usage-popover";
 
 type Props = {
   open: boolean;
@@ -147,6 +148,22 @@ function LibraryTab({
             selected={value === `media:${item.id}`}
             onClick={() => onSelect(`media:${item.id}`)}
             count={item.useCount}
+            countBadge={
+              item.useCount > 0 ? (
+                // Wrap in a presentation div that stops click from bubbling up
+                // to the thumb button (which would trigger media selection).
+                // role="presentation" signals this is a non-interactive wrapper;
+                // the actual interactive element is the PopoverTrigger inside.
+                // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation presentation wrapper — interactive child is PopoverTrigger
+                <div role="presentation" onClick={(e) => e.stopPropagation()}>
+                  <MediaUsagePopover
+                    planId={planId}
+                    mediaId={item.id}
+                    triggerLabel={item.useCount}
+                  />
+                </div>
+              ) : undefined
+            }
           />
         ))}
       </div>
