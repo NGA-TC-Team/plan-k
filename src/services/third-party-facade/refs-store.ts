@@ -9,7 +9,7 @@ import type { AppState } from "@/builder/types/state";
 // file in bun:test does NOT trigger client.ts (better-sqlite3 binding).
 // The DB handle is accessed lazily via getDb() so mock.module("@/db") applied
 // before the first function call can substitute an in-memory DB for tests.
-import { refs } from "@/db/schema";
+import { refs, type RefRow } from "@/db/schema";
 
 // biome-ignore lint/suspicious/noExplicitAny: adapter-agnostic drizzle instance
 type AnyDb = any;
@@ -113,18 +113,18 @@ export function rebuildRefs(
   return { blocks: blockEntries.length, edges: edgeCount };
 }
 
-export function getIncomingRefs(planId: string, dstId: string) {
+export function getIncomingRefs(planId: string, dstId: string): RefRow[] {
   return getDb()
     .select()
     .from(refs)
     .where(and(eq(refs.planId, planId), eq(refs.dstId, dstId)))
-    .all();
+    .all() as RefRow[];
 }
 
-export function getOutgoingRefs(planId: string, srcId: string) {
+export function getOutgoingRefs(planId: string, srcId: string): RefRow[] {
   return getDb()
     .select()
     .from(refs)
     .where(and(eq(refs.planId, planId), eq(refs.srcId, srcId)))
-    .all();
+    .all() as RefRow[];
 }
