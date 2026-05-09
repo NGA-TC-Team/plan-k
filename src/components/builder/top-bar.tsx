@@ -396,13 +396,47 @@ const THEME_MODE_LABELS: Record<string, string> = {
   light: "Light",
   dark: "Dark",
   system: "System",
-  auto: "Auto (18:00–07:00)",
+  auto: "Auto",
 };
+
+// Validates a raw string value as a 0–23 integer hour.
+// Returns the parsed integer, or null if invalid/out-of-range.
+function parseHour(raw: string): number | null {
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) return null;
+  return parsed;
+}
 
 function ThemeToggle() {
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
+  const autoDarkStart = useThemeStore((s) => s.autoDarkStart);
+  const autoDarkEnd = useThemeStore((s) => s.autoDarkEnd);
+  const setAutoSchedule = useThemeStore((s) => s.setAutoSchedule);
   const ModeIcon = THEME_MODE_ICONS[mode] ?? Sun;
+
+  // Local draft values — committed on blur/Enter; reverts to store value on invalid input.
+  const [draftStart, setDraftStart] = useState(String(autoDarkStart));
+  const [draftEnd, setDraftEnd] = useState(String(autoDarkEnd));
+
+  function commitStart(raw: string) {
+    const hour = parseHour(raw);
+    if (hour === null) {
+      // Revert to store value on invalid input
+      setDraftStart(String(autoDarkStart));
+    } else {
+      setAutoSchedule(hour, autoDarkEnd);
+    }
+  }
+
+  function commitEnd(raw: string) {
+    const hour = parseHour(raw);
+    if (hour === null) {
+      setDraftEnd(String(autoDarkEnd));
+    } else {
+      setAutoSchedule(autoDarkStart, hour);
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -419,7 +453,7 @@ function ThemeToggle() {
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuLabel>Theme</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
@@ -445,6 +479,48 @@ function ThemeToggle() {
             Auto
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
+        {mode === "auto" && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                Auto schedule
+              </p>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={0}
+                  max={23}
+                  step={1}
+                  value={draftStart}
+                  className="h-7 w-12 px-1 text-center text-xs"
+                  aria-label="Dark mode start hour (0–23)"
+                  onChange={(e) => setDraftStart(e.target.value)}
+                  onBlur={(e) => commitStart(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitStart(e.currentTarget.value);
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">–</span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={23}
+                  step={1}
+                  value={draftEnd}
+                  className="h-7 w-12 px-1 text-center text-xs"
+                  aria-label="Dark mode end hour (0–23)"
+                  onChange={(e) => setDraftEnd(e.target.value)}
+                  onBlur={(e) => commitEnd(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEnd(e.currentTarget.value);
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">h</span>
+              </div>
+            </div>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
