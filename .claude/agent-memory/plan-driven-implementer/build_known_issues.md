@@ -17,3 +17,9 @@ type: project
 
 **Why:** Confirmed by git stash test — build was already broken at HEAD before PR-1.
 **How to apply:** Do not count these as PR-1 regressions. Document in PR diff summary.
+
+## E7 PR-5 추가 확인 (2026-05-09)
+
+- `bunx tsc --noEmit` 결과에서 `src/` 내 PR-5 관련 신규 에러 없음.
+- `src/services/third-party-facade/plan-compaction.ts:87` 에러는 기존 이슈 — `$client` 누락.
+- 위 항목들 모두 pre-existing이며 PR-5 코드는 TS 에러 없음.
