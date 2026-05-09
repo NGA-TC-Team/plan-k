@@ -93,3 +93,24 @@ type: project
 
 ### Biome import 정렬 규칙
 - `type` import는 value import 앞에 위치 (alphabetical 내에서도). `organizeImports` 어시스트 오류 발생 시 수동 재정렬.
+
+## Builder types import 그래프 (E8 PR-1, 2026-05-09)
+
+- `entity.ts` → 아무것도 import하지 않음 (leaf).
+- `state.ts` → `entity.ts`, `intent.ts`를 import.
+- `intent.ts` → `entity.ts`를 import.
+- 신규 타입은 `entity.ts`에 두면 순환 없이 state.ts/intent.ts 양쪽이 import 가능.
+- `EntityStatus`를 `entity.ts`에 두고 `SectionStatus`는 alias로 유지 (breaking change 없음).
+
+## Builder reducer/inverse 슬라이스 패턴 (E8 PR-1)
+
+- 신규 슬라이스 파일: `reducer/<name>.ts` + `inverse/<name>.ts`.
+- reducer: `apply<Name>(state, entry): SliceResult | null` — 미매칭 인텐트는 null 반환.
+- inverse: `invert<Name>(entry, prevState): Intent | null` — 미매칭 인텐트는 null 반환.
+- `reducer/index.ts` SLICES 배열과 `inverse/index.ts` SLICES 배열에 각각 추가.
+- `applySync`는 reducer 마지막에 위치해야 함 (search-index 동기화) — 새 슬라이스는 그 앞에 삽입.
+
+## Biome unsafe fix 주의 (E8 PR-1)
+
+- `after!.state` → `after?.state` unsafe fix는 TS 타입 오류를 유발.
+- round-trip 테스트에서는 `if (!after) throw new Error(...)` 가드 후 `after.state` 사용 (sections.test.ts L45 패턴).
