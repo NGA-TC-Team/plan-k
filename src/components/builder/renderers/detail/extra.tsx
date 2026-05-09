@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MarkdownView } from "@/components/builder/markdown/markdown-view";
+import { useMediaUrl } from "@/hooks/builder/use-media-url.hook";
 import { cn } from "@/lib/utils";
 import { highlightToHtml } from "@/services/third-party-facade/shiki";
 import type { BlockRenderer } from "../types";
@@ -203,12 +204,14 @@ export const FigureDetail: BlockRenderer = ({ vm }) => {
   const alt = stringValue(vm, "alt");
   const caption = stringValue(vm, "caption");
   const width = vm.displayValue.width as number | undefined;
+  // Resolve "media:<id>" refs to /api/media/<id>/raw; raw URLs pass through unchanged.
+  const resolvedSrc = useMediaUrl(src);
   return (
     <figure className="my-2 space-y-1">
-      {src ? (
+      {resolvedSrc ? (
         // biome-ignore lint/performance/noImgElement: arbitrary remote URLs.
         <img
-          src={src}
+          src={resolvedSrc}
           alt={alt || "figure"}
           style={width ? { width } : undefined}
           className="rounded border"
@@ -232,6 +235,8 @@ export const LinkCardDetail: BlockRenderer = ({ vm }) => {
   const title = stringValue(vm, "title");
   const description = stringValue(vm, "description");
   const faviconUrl = stringValue(vm, "faviconUrl");
+  // Resolve "media:<id>" refs; raw external favicon URLs pass through unchanged.
+  const resolvedFaviconUrl = useMediaUrl(faviconUrl);
   return (
     <a
       href={url || "#"}
@@ -240,9 +245,9 @@ export const LinkCardDetail: BlockRenderer = ({ vm }) => {
       rel="noreferrer"
     >
       <div className="flex items-center gap-2">
-        {faviconUrl ? (
+        {resolvedFaviconUrl ? (
           // biome-ignore lint/performance/noImgElement: tiny external favicon.
-          <img src={faviconUrl} alt="" className="h-4 w-4" />
+          <img src={resolvedFaviconUrl} alt="" className="h-4 w-4" />
         ) : null}
         <span className="font-medium">{title || empty("Untitled link")}</span>
       </div>
@@ -792,7 +797,9 @@ export const ImageDetail: BlockRenderer = ({ vm }) => {
   const fit = stringValue(vm, "fit") || "cover";
   const width = vm.displayValue.width as number | undefined;
   const height = vm.displayValue.height as number | undefined;
-  if (!src)
+  // Resolve "media:<id>" refs to /api/media/<id>/raw; raw URLs pass through unchanged.
+  const resolvedSrc = useMediaUrl(src);
+  if (!resolvedSrc)
     return (
       <div className="flex h-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
         {empty("No image")}
@@ -801,7 +808,7 @@ export const ImageDetail: BlockRenderer = ({ vm }) => {
   return (
     // biome-ignore lint/performance/noImgElement: arbitrary remote URLs.
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt || "image"}
       style={{
         width: width ?? "100%",
@@ -848,6 +855,8 @@ export const AvatarDetail: BlockRenderer = ({ vm }) => {
   const subtitle = stringValue(vm, "subtitle");
   const size = stringValue(vm, "size") || "md";
   const px = SIZE_PX[size] ?? SIZE_PX.md;
+  // Resolve "media:<id>" refs; raw URLs pass through unchanged.
+  const resolvedSrc = useMediaUrl(src);
   const initials = name
     .split(/\s+/)
     .map((p) => p[0])
@@ -861,10 +870,10 @@ export const AvatarDetail: BlockRenderer = ({ vm }) => {
         style={{ width: px, height: px }}
         className="flex shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted"
       >
-        {src ? (
+        {resolvedSrc ? (
           // biome-ignore lint/performance/noImgElement: arbitrary remote URLs.
           <img
-            src={src}
+            src={resolvedSrc}
             alt={name || "avatar"}
             className="h-full w-full object-cover"
           />
