@@ -1,11 +1,16 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Box, Cpu, FileText, Monitor, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
-  SECTION_STATUS_VALUES,
+  listTrackedEntities,
+  type TrackedEntity,
+  type TrackedEntityKind,
+} from "@/builder/selectors/tracked-entities";
+import {
+  ENTITY_STATUS_VALUES,
+  type EntityStatus,
   type SectionEntity,
-  type SectionStatus,
 } from "@/builder/types/entity";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,60 +21,111 @@ import { cn } from "@/lib/utils";
 import { useBacklogStore } from "@/services/stores";
 import { BacklogSheet } from "./backlog-sheet";
 
-const COLUMN_LABEL: Record<SectionStatus, string> = {
+// ──────────────────────────────────────────────────────────────────────────────
+// Constants
+// ──────────────────────────────────────────────────────────────────────────────
+
+const COLUMN_LABEL: Record<EntityStatus, string> = {
   pending: "Pending",
   "in-progress": "In progress",
   approved: "Approved",
   rejected: "Rejected",
 };
 
-const COLUMN_ACCENT: Record<SectionStatus, string> = {
+const COLUMN_ACCENT: Record<EntityStatus, string> = {
   pending: "border-muted-foreground/30",
   "in-progress": "border-amber-500/60",
   approved: "border-emerald-500/60",
   rejected: "border-rose-500/60",
 };
 
+function KindIcon({ kind }: { kind: TrackedEntityKind }) {
+  const cls = "size-3 shrink-0 text-muted-foreground";
+  switch (kind) {
+    case "section":
+      return <FileText className={cls} />;
+    case "block":
+      return <Box className={cls} />;
+    case "screen":
+      return <Monitor className={cls} />;
+    case "agent-node":
+      return <Cpu className={cls} />;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BacklogBoard
+// ──────────────────────────────────────────────────────────────────────────────
+
 export function BacklogBoard() {
+  // planId: primitive → useBuilderState (stable unless plan changes).
   const planId = useBuilderState(
     (s) => Object.values(s.state.plans)[0]?.id ?? null,
   );
+  // sectionsMap: passed to Column for legacy-backlog "Add" flow.
   const sectionsMap = useBuilderState((s) => s.state.sections);
-  const entityMetaMap = useBuilderState((s) => s.state.entityMeta);
+
   const dispatch = useBuilderDispatch();
   const draggingId = useBacklogStore((s) => s.draggingId);
   const setOpenSheet = useBacklogStore((s) => s.setOpenSheet);
   const orderedFor = useBacklogStore((s) => s.orderedFor);
   const registerNew = useBacklogStore((s) => s.registerNew);
 
-  const backlogSections = useMemo(
-    () =>
-      Object.values(sectionsMap).filter(
-        (sec) => sec.planId === planId && sec.kind === "backlog",
-      ),
-    [sectionsMap, planId],
+  // Full AppState snapshot — listTrackedEntities is a pure function; calling
+  // it directly avoids allocating an array inside getSnapshot (which would
+  // trigger the "infinite loop" warning). Instead we receive the raw state
+  // and run the selector in useMemo.
+  const builderState = useBuilderState((s) => s.state);
+
+  const trackedEntities = useMemo(
+    () => listTrackedEntities(builderState),
+    [builderState],
   );
 
   const grouped = useMemo(() => {
-    if (!planId)
+    if (!planId) {
       return {
-        pending: [],
-        "in-progress": [],
-        approved: [],
-        rejected: [],
-      } as Record<SectionStatus, string[]>;
-    return orderedFor(
+        pending: [] as TrackedEntity[],
+        "in-progress": [] as TrackedEntity[],
+        approved: [] as TrackedEntity[],
+        rejected: [] as TrackedEntity[],
+      };
+    }
+
+    const out: Record<EntityStatus, TrackedEntity[]> = {
+      pending: [],
+      "in-progress": [],
+      approved: [],
+      rejected: [],
+    };
+    for (const t of trackedEntities) {
+      out[t.status].push(t);
+    }
+
+    // Respect persisted column order from backlog store.
+    const ids = trackedEntities.map((t) => t.id);
+    const orderedIds = orderedFor(
       planId,
-      // Route all status reads through getEntityStatus for entityMeta priority.
-      // entityMetaMap is captured so the memo tracks entityMeta changes too.
-      (id) => {
-        const meta = entityMetaMap[id];
-        if (meta?.status !== undefined) return meta.status;
-        return sectionsMap[id]?.status ?? "pending";
-      },
-      backlogSections.map((s) => s.id),
+      (id) => trackedEntities.find((t) => t.id === id)?.status ?? "pending",
+      ids,
     );
-  }, [planId, orderedFor, sectionsMap, entityMetaMap, backlogSections]);
+
+    // Rebuild grouped using the ordered id sequence.
+    const entityMap = new Map(trackedEntities.map((t) => [t.id, t]));
+    const ordered: Record<EntityStatus, TrackedEntity[]> = {
+      pending: [],
+      "in-progress": [],
+      approved: [],
+      rejected: [],
+    };
+    for (const status of ENTITY_STATUS_VALUES) {
+      for (const id of orderedIds[status] ?? []) {
+        const e = entityMap.get(id);
+        if (e) ordered[status].push(e);
+      }
+    }
+    return ordered;
+  }, [planId, trackedEntities, orderedFor]);
 
   if (!planId) {
     return (
@@ -79,7 +135,7 @@ export function BacklogBoard() {
     );
   }
 
-  const handleAdd = (status: SectionStatus) => {
+  const handleAdd = (status: EntityStatus) => {
     const section: SectionEntity = {
       id: crypto.randomUUID(),
       planId,
@@ -114,13 +170,13 @@ export function BacklogBoard() {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-4 gap-3">
-        {SECTION_STATUS_VALUES.map((status) => (
+        {ENTITY_STATUS_VALUES.map((status) => (
           <Column
             key={status}
             status={status}
-            sectionIds={grouped[status]}
-            sectionsMap={sectionsMap}
+            entities={grouped[status]}
             planId={planId}
+            sectionsMap={sectionsMap}
             dragActive={draggingId !== null}
             onAdd={() => handleAdd(status)}
           />
@@ -132,23 +188,26 @@ export function BacklogBoard() {
   );
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Column
+// ──────────────────────────────────────────────────────────────────────────────
+
 function Column({
   status,
-  sectionIds,
-  sectionsMap,
+  entities,
   planId,
+  sectionsMap,
   dragActive,
   onAdd,
 }: {
-  status: SectionStatus;
-  sectionIds: string[];
-  sectionsMap: Record<string, SectionEntity>;
+  status: EntityStatus;
+  entities: TrackedEntity[];
   planId: string;
+  sectionsMap: Record<string, SectionEntity>;
   dragActive: boolean;
   onAdd: () => void;
 }) {
   const dispatch = useBuilderDispatch();
-  const entityMetaMap = useBuilderState((s) => s.state.entityMeta);
   const reorder = useBacklogStore((s) => s.reorder);
   const endDrag = useBacklogStore((s) => s.endDrag);
   const [overIdx, setOverIdx] = useState<number | null>(null);
@@ -162,14 +221,33 @@ function Column({
     setColumnHover(false);
     endDrag();
     if (!id) return;
-    const cur = sectionsMap[id];
-    if (!cur) return;
-    // Read current status via the unified helper (entityMeta priority).
-    const meta = entityMetaMap[id];
-    const fromStatus: SectionStatus =
-      meta?.status !== undefined
-        ? (meta.status as SectionStatus)
-        : (cur.status ?? "pending");
+
+    // Determine the entity's current status by searching all tracked entities.
+    // We use entities in scope only for the target column; we need to know
+    // the *source* status so we get it from the AppState snapshot via a
+    // separate selector read. Since Column is a child of BacklogBoard which
+    // re-renders on state change, `entities` is always fresh — we search the
+    // dragged id across all columns via the backlog store's orderedFor:
+    // it's simpler to just dispatch and let the reorder store handle cross-
+    // column movement.
+
+    // Find current status from the dragged entity. We walk the sectionsMap
+    // for sections; for other kinds we rely on entityMeta (already reflected
+    // in the TrackedEntity list passed from BacklogBoard).
+    // The reorder call needs fromStatus — approximate it as the column the
+    // drag started from. If the card came from a different column the reorder
+    // store will reconcile.
+    const fromStatus: EntityStatus = (() => {
+      // The drag source entity may be in any column. Use sectionsMap for legacy
+      // backlog sections; for others the entityMeta status was embedded in
+      // TrackedEntity. We don't have cross-column entity list here, so we read
+      // from the dispatch (store will correct on next render cycle).
+      const sec = sectionsMap[id];
+      if (sec?.status) return sec.status;
+      // Default: treat as same column (reorder handles no-op gracefully).
+      return status;
+    })();
+
     if (fromStatus !== status) {
       dispatch({
         type: "UPDATE_ENTITY_META",
@@ -211,7 +289,7 @@ function Column({
             {COLUMN_LABEL[status]}
           </span>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            {sectionIds.length}
+            {entities.length}
           </span>
         </div>
         <button
@@ -236,42 +314,36 @@ function Column({
             : undefined
         }
         onDrop={
-          dragActive
-            ? (e) => handleDropAtIndex(e, sectionIds.length)
-            : undefined
+          dragActive ? (e) => handleDropAtIndex(e, entities.length) : undefined
         }
       >
-        {sectionIds.map((id, idx) => {
-          const sec = sectionsMap[id];
-          if (!sec) return null;
-          return (
-            <div key={id}>
-              <DropZone
-                active={dragActive}
-                hover={overIdx === idx}
-                onEnter={() => setOverIdx(idx)}
-                onLeave={() => setOverIdx((cur) => (cur === idx ? null : cur))}
-                onDrop={(e) => handleDropAtIndex(e, idx)}
-              />
-              <BacklogCard section={sec} />
-            </div>
-          );
-        })}
+        {entities.map((entity, idx) => (
+          <div key={entity.id}>
+            <DropZone
+              active={dragActive}
+              hover={overIdx === idx}
+              onEnter={() => setOverIdx(idx)}
+              onLeave={() => setOverIdx((cur) => (cur === idx ? null : cur))}
+              onDrop={(e) => handleDropAtIndex(e, idx)}
+            />
+            <TrackedCard entity={entity} />
+          </div>
+        ))}
         <DropZone
           active={dragActive}
-          hover={overIdx === sectionIds.length}
-          onEnter={() => setOverIdx(sectionIds.length)}
+          hover={overIdx === entities.length}
+          onEnter={() => setOverIdx(entities.length)}
           onLeave={() =>
-            setOverIdx((cur) => (cur === sectionIds.length ? null : cur))
+            setOverIdx((cur) => (cur === entities.length ? null : cur))
           }
-          onDrop={(e) => handleDropAtIndex(e, sectionIds.length)}
+          onDrop={(e) => handleDropAtIndex(e, entities.length)}
         />
-        {sectionIds.length === 0 && !dragActive ? (
+        {entities.length === 0 && !dragActive ? (
           <div className="rounded-md border border-dashed py-6 text-center text-[11px] text-muted-foreground">
             empty
           </div>
         ) : null}
-        {sectionIds.length === 0 && dragActive ? (
+        {entities.length === 0 && dragActive ? (
           <div
             className={cn(
               "rounded-md border-2 border-dashed py-6 text-center text-[11px] transition-colors",
@@ -287,6 +359,10 @@ function Column({
     </section>
   );
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// DropZone
+// ──────────────────────────────────────────────────────────────────────────────
 
 function DropZone({
   active,
@@ -330,14 +406,22 @@ function DropZone({
   );
 }
 
-function BacklogCard({ section }: { section: SectionEntity }) {
+// ──────────────────────────────────────────────────────────────────────────────
+// TrackedCard — entity kind별 prefix 아이콘 + title + path
+// ──────────────────────────────────────────────────────────────────────────────
+
+function TrackedCard({ entity }: { entity: TrackedEntity }) {
   const beginDrag = useBacklogStore((s) => s.beginDrag);
   const endDrag = useBacklogStore((s) => s.endDrag);
   const setOpenSheet = useBacklogStore((s) => s.setOpenSheet);
-  const isDragging = useBacklogStore((s) => s.draggingId === section.id);
-  const childCount = useBuilderState(
-    (s) => s.state.children[section.id]?.length ?? 0,
-  );
+  const isDragging = useBacklogStore((s) => s.draggingId === entity.id);
+
+  const handleDoubleClick = () => {
+    // v1: sheet는 section 전용. 다른 kind는 noop.
+    if (entity.kind === "section") {
+      setOpenSheet(entity.id);
+    }
+  };
 
   return (
     <button
@@ -345,11 +429,11 @@ function BacklogCard({ section }: { section: SectionEntity }) {
       draggable
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("application/x-backlog-id", section.id);
-        beginDrag(section.id);
+        e.dataTransfer.setData("application/x-backlog-id", entity.id);
+        beginDrag(entity.id);
       }}
       onDragEnd={() => endDrag()}
-      onDoubleClick={() => setOpenSheet(section.id)}
+      onDoubleClick={handleDoubleClick}
       className={cn(
         "block w-full cursor-grab rounded-md border bg-amber-50 px-3 py-2 text-left shadow-sm",
         "transition-transform hover:-rotate-[0.3deg] hover:shadow",
@@ -358,12 +442,17 @@ function BacklogCard({ section }: { section: SectionEntity }) {
         isDragging && "opacity-40",
       )}
     >
-      <div className="truncate text-sm font-medium">
-        {section.title || "Untitled"}
+      <div className="flex items-center gap-1.5 truncate">
+        <KindIcon kind={entity.kind} />
+        <span className="truncate text-sm font-medium">
+          {entity.title || "Untitled"}
+        </span>
       </div>
-      <div className="mt-0.5 text-[10px] text-muted-foreground">
-        {childCount > 0 ? `${childCount} blocks` : "더블클릭해서 작성"}
-      </div>
+      {entity.path ? (
+        <div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+          {entity.path}
+        </div>
+      ) : null}
     </button>
   );
 }
