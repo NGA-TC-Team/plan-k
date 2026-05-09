@@ -26,9 +26,12 @@ type: project
 ## Test isolation (facade tests)
 
 - `better-sqlite3` is NOT supported in `bun test` — crashes with `ERR_DLOPEN_FAILED`.
-- Solution: use `makeXxxStore(db)` factory pattern in facades, inject a `bun:sqlite` + `drizzle-orm/bun-sqlite` in-memory DB in tests.
+- Solution A (preferred for new facades): `makeXxxStore(db)` factory pattern — inject `bun:sqlite` + `drizzle-orm/bun-sqlite` in-memory DB. No `@/db` barrel import needed.
+- Solution B (for existing facades with static `@/db` imports): make DB access lazy via `getDb() { return require("@/db").db }` + import schema objects from `@/db/schema` directly. Then `mock.module("@/db", ...)` in test file (before all imports) substitutes in-memory DB.
+- `refs-store.ts` was refactored to Solution B pattern (PR-5 test boilerplate). `getDb()` lazy getter + `import { refs } from "@/db/schema"`.
 - Run `migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") })` in test setup to get full schema.
-- Production singletons use lazy `require("@/db").db` inside function bodies — avoids loading `better-sqlite3` at import time when tests import the facade module.
+- `mock.module` must be called BEFORE importing any module that transitively imports `@/db`. Use `ssrf-guard.test.ts` ordering as reference.
+- `bun test src/services/third-party-facade/refs-sync.test.ts` works standalone. For multi-file runs, use `--isolate` if module cache conflicts appear.
 
 ## Route handler pattern (Next.js 16)
 
