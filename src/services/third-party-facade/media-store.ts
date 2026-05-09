@@ -179,8 +179,23 @@ export function makeMediaStore(db: AnyDb) {
       createdAt: now,
     };
 
-    const [inserted] = db.insert(media).values(row).returning().all();
-    return inserted as MediaRow;
+    // ── DB insert with rollback ───────────────────────────────────────────────
+    // If the insert fails (e.g. FK violation, unique constraint), attempt to
+    // remove the file we just wrote. Rollback is best-effort: if rm also fails,
+    // warn and rethrow the original DB error — the orphan will be swept by the
+    // media-sweep job.
+    try {
+      const [inserted] = db.insert(media).values(row).returning().all();
+      return inserted as MediaRow;
+    } catch (insertErr) {
+      await rm(absPath, { force: true }).catch((rmErr) => {
+        console.warn(
+          `[media-store] createMedia rollback rm failed for ${absPath}:`,
+          rmErr,
+        );
+      });
+      throw insertErr;
+    }
   }
 
   function getMedia(id: string): MediaRow | null {
