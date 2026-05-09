@@ -110,6 +110,18 @@ type: project
 - `reducer/index.ts` SLICES 배열과 `inverse/index.ts` SLICES 배열에 각각 추가.
 - `applySync`는 reducer 마지막에 위치해야 함 (search-index 동기화) — 새 슬라이스는 그 앞에 삽입.
 
+## DropdownMenuTrigger render prop 패턴 (E9 PR-D)
+
+- 이 프로젝트의 Radix/shadcn DropdownMenuTrigger는 `asChild` 대신 `render` prop을 사용.
+- `<DropdownMenuTrigger render={<Button ...>...</Button>} />` (self-closing).
+- `asChild` 사용 시 TS2322 타입 오류 발생.
+
+## Zustand subscribe 2인자 불가 (E9 PR-D)
+
+- vanilla Zustand subscribe는 `(state, prevState) => void` 1-listener 시그니처.
+- selector + callback 형태의 2인자 subscribe는 `subscribeWithSelector` 미들웨어 필요.
+- 미들웨어 없이 selector 패턴 쓰려면: 리스너 안에서 prev 값을 클로저로 캐싱해 변경 감지.
+
 ## Biome unsafe fix 주의 (E8 PR-1)
 
 - `after!.state` → `after?.state` unsafe fix는 TS 타입 오류를 유발.
