@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9f87fa0b-9294-48e5-88ff-4ac7b11c68b5",
-  "prevId": "7ff26274-a802-4f0b-bf3e-4a96bb0a1f62",
+  "id": "fe12357c-6aa6-4302-89b6-f9f57c8783da",
+  "prevId": "9f87fa0b-9294-48e5-88ff-4ac7b11c68b5",
   "tables": {
     "chat_attachments": {
       "name": "chat_attachments",
@@ -658,6 +658,88 @@
         "media_plan_id_plans_id_fk": {
           "name": "media_plan_id_plans_id_fk",
           "tableFrom": "media",
+          "tableTo": "plans",
+          "columnsFrom": ["plan_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "plan_versions": {
+      "name": "plan_versions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "plan_id": {
+          "name": "plan_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "server_seq_at_tag": {
+          "name": "server_seq_at_tag",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        }
+      },
+      "indexes": {
+        "plan_versions_plan_idx": {
+          "name": "plan_versions_plan_idx",
+          "columns": ["plan_id"],
+          "isUnique": false
+        },
+        "plan_versions_plan_created_idx": {
+          "name": "plan_versions_plan_created_idx",
+          "columns": ["plan_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "plan_versions_plan_id_plans_id_fk": {
+          "name": "plan_versions_plan_id_plans_id_fk",
+          "tableFrom": "plan_versions",
           "tableTo": "plans",
           "columnsFrom": ["plan_id"],
           "columnsTo": ["id"],

@@ -19,7 +19,11 @@ Object.defineProperty(globalThis, "localStorage", {
 // to keep the module from throwing on import).
 Object.defineProperty(globalThis, "window", {
   value: {
-    matchMedia: (_query: string) => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    matchMedia: (_query: string) => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }),
   },
   writable: true,
 });
@@ -158,10 +162,7 @@ describe("useThemeStore — v1→v2 persist migration", () => {
 // Extract the migrate function directly from the store's persist config.
 // Zustand exposes persist internals via store.persist.
 // ---------------------------------------------------------------------------
-function migrateFn(
-  state: unknown,
-  version: number,
-): unknown {
+function migrateFn(state: unknown, version: number): unknown {
   // Access the migrate option passed to persist() — it is stored on the
   // store's persist property as of Zustand 4.x.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

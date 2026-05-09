@@ -3,7 +3,9 @@ import { BLOCK_KIND_REGISTRY } from "@/builder/defaults";
 import type { BlockKind } from "@/builder/types/entity";
 import { getSuggestedKinds } from "./suggested";
 
-const registryKinds = new Set<BlockKind>(BLOCK_KIND_REGISTRY.map((s) => s.kind));
+const registryKinds = new Set<BlockKind>(
+  BLOCK_KIND_REGISTRY.map((s) => s.kind),
+);
 
 describe("getSuggestedKinds", () => {
   it("docs: returns 4–6 entries", () => {

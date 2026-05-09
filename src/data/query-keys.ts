@@ -20,4 +20,11 @@ export const queryKeys = {
     all: ["media"] as const,
     list: (planId: string) => [...queryKeys.media.all, "list", planId] as const,
   },
+  planVersions: {
+    all: ["plan-versions"] as const,
+    list: (planId: string) =>
+      [...queryKeys.planVersions.all, "list", planId] as const,
+    detail: (planId: string, versionId: string) =>
+      [...queryKeys.planVersions.all, "detail", planId, versionId] as const,
+  },
 } as const;

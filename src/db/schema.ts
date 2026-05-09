@@ -291,3 +291,31 @@ export type MediaRow = typeof media.$inferSelect;
 export type NewMediaRow = typeof media.$inferInsert;
 export type ChatStagedIntentRow = typeof chatStagedIntents.$inferSelect;
 export type NewChatStagedIntentRow = typeof chatStagedIntents.$inferInsert;
+
+// ─── Plan Versions ──────────────────────────────────────────────────────────
+// Named snapshots of a plan's hydrated AppState. Each row stores the full
+// serialised AppState at tag time so versions remain readable regardless of
+// compaction or archive pruning of the intent log.
+export const planVersions = sqliteTable(
+  "plan_versions",
+  {
+    id: text("id").primaryKey(), // pv_<uuid no dashes>
+    planId: text("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+    label: text("label").notNull(), // 1–80 chars free text
+    note: text("note").notNull().default(""), // optional long changelog
+    snapshot: text("snapshot").notNull(), // full hydrated AppState JSON
+    serverSeqAtTag: integer("server_seq_at_tag").notNull(), // audit/tracking
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [
+    index("plan_versions_plan_idx").on(t.planId),
+    index("plan_versions_plan_created_idx").on(t.planId, t.createdAt),
+  ],
+);
+
+export type PlanVersionRow = typeof planVersions.$inferSelect;
+export type NewPlanVersionRow = typeof planVersions.$inferInsert;

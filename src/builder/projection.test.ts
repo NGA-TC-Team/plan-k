@@ -160,7 +160,12 @@ describe("projectScreenInspect", () => {
       },
     });
     const vm = projectScreenInspect(state, "s1");
-    expect(vm).toEqual({ id: "s1", kind: "screen", title: "Home", route: "/home" });
+    expect(vm).toEqual({
+      id: "s1",
+      kind: "screen",
+      title: "Home",
+      route: "/home",
+    });
   });
 
   it("route is optional — returns undefined when absent", () => {
@@ -221,7 +226,12 @@ describe("projectAgentNodeInspect", () => {
       },
     });
     const vm = projectAgentNodeInspect(state, "n1");
-    expect(vm).toEqual({ id: "n1", kind: "agent-node", label: "Reasoner", role: "llm" });
+    expect(vm).toEqual({
+      id: "n1",
+      kind: "agent-node",
+      label: "Reasoner",
+      role: "llm",
+    });
   });
 
   it("returns null when id belongs to a block", () => {
