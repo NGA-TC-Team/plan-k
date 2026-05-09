@@ -35,7 +35,7 @@ export default function RootLayout({
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted inline script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=localStorage.getItem("plan-k:theme");var t="dark";if(s){var p=JSON.parse(s);if(p&&p.state&&p.state.theme){t=p.state.theme;}}var r=document.documentElement;if(t==="dark"){r.classList.add("dark");}r.style.colorScheme=t;}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
+            __html: `(function(){try{var s=localStorage.getItem("plan-k:theme");var isDark=true;if(s){var p=JSON.parse(s);var st=p&&p.state;if(st){var mode=st.mode||(st.theme)||"dark";if(mode==="light"){isDark=false;}else if(mode==="system"){isDark=window.matchMedia("(prefers-color-scheme: dark)").matches;}else if(mode==="auto"){var h=new Date().getHours();var ds=typeof st.autoDarkStart==="number"?st.autoDarkStart:18;var de=typeof st.autoDarkEnd==="number"?st.autoDarkEnd:7;isDark=ds<de?(h>=ds&&h<de):(h>=ds||h<de);}}}var r=document.documentElement;r.classList.toggle("dark",isDark);r.style.colorScheme=isDark?"dark":"light";}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`,
           }}
         />
       </head>

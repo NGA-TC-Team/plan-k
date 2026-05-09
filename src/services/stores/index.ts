@@ -29,7 +29,8 @@ export { useInlineAiStore } from "./inline-ai.store";
 export { useInsertMruStore } from "./insert-mru.store";
 export { type SaveStatus, useSaveStatusStore } from "./save-status.store";
 export { useSearchHighlightStore } from "./search-highlight.store";
-export { type Theme, useThemeStore } from "./theme-store";
+export { isInDarkWindow } from "./time-window";
+export { type Theme, type ThemeMode, useThemeStore } from "./theme-store";
 export { useUiStore } from "./ui-store";
 export {
   PANEL_WIDTH_BOUNDS,

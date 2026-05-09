@@ -195,7 +195,7 @@ function PaletteContents({
     theme: {
       set: themeStore.setTheme,
       toggle: themeStore.toggleTheme,
-      current: themeStore.theme,
+      current: themeStore.resolvedTheme,
     },
     projects: projectsData ?? [],
     createProject: (input) => createProject.mutateAsync(input),

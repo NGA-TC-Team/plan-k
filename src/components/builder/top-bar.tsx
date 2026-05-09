@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Clock,
   Download,
   Eye,
   FileImage,
@@ -8,6 +9,7 @@ import {
   Home,
   KanbanSquare,
   LayoutDashboard,
+  Monitor,
   Moon,
   Pencil,
   Printer,
@@ -36,6 +38,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -378,20 +384,68 @@ function ExportMenu({ planId }: { planId: string }) {
   );
 }
 
+// Mode icon map — resolves to the icon representing the *current* mode choice.
+const THEME_MODE_ICONS = {
+  light: Sun,
+  dark: Moon,
+  system: Monitor,
+  auto: Clock,
+} as const;
+
+const THEME_MODE_LABELS: Record<string, string> = {
+  light: "Light",
+  dark: "Dark",
+  system: "System",
+  auto: "Auto (18:00–07:00)",
+};
+
 function ThemeToggle() {
-  const theme = useThemeStore((s) => s.theme);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
-  const isDark = theme === "dark";
+  const mode = useThemeStore((s) => s.mode);
+  const setMode = useThemeStore((s) => s.setMode);
+  const ModeIcon = THEME_MODE_ICONS[mode] ?? Sun;
+
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      onClick={toggleTheme}
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-      title={isDark ? "Light mode" : "Dark mode"}
-    >
-      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Theme: ${THEME_MODE_LABELS[mode] ?? mode}`}
+            title={`Theme: ${THEME_MODE_LABELS[mode] ?? mode}`}
+          >
+            <ModeIcon className="size-4" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuLabel>Theme</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={mode}
+          onValueChange={(v) =>
+            setMode(v as import("@/services/stores").ThemeMode)
+          }
+        >
+          <DropdownMenuRadioItem value="light">
+            <Sun className="mr-2 size-3.5" />
+            Light
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="dark">
+            <Moon className="mr-2 size-3.5" />
+            Dark
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="system">
+            <Monitor className="mr-2 size-3.5" />
+            System
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="auto">
+            <Clock className="mr-2 size-3.5" />
+            Auto
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
