@@ -200,12 +200,13 @@ export const RuleDetail: BlockRenderer = () => (
 );
 
 export const FigureDetail: BlockRenderer = ({ vm }) => {
-  const src = stringValue(vm, "src");
+  // imageRef is the canonical key; fall back to legacy src for existing data.
+  const ref = stringValue(vm, "imageRef") || stringValue(vm, "src");
   const alt = stringValue(vm, "alt");
   const caption = stringValue(vm, "caption");
   const width = vm.displayValue.width as number | undefined;
   // Resolve "media:<id>" refs to /api/media/<id>/raw; raw URLs pass through unchanged.
-  const resolvedSrc = useMediaUrl(src);
+  const resolvedSrc = useMediaUrl(ref);
   return (
     <figure className="my-2 space-y-1">
       {resolvedSrc ? (
@@ -792,13 +793,14 @@ export const CtaSectionDetail: BlockRenderer = ({ vm }) => {
 };
 
 export const ImageDetail: BlockRenderer = ({ vm }) => {
-  const src = stringValue(vm, "src");
+  // imageRef is the canonical key; fall back to legacy src for existing data.
+  const ref = stringValue(vm, "imageRef") || stringValue(vm, "src");
   const alt = stringValue(vm, "alt");
   const fit = stringValue(vm, "fit") || "cover";
   const width = vm.displayValue.width as number | undefined;
   const height = vm.displayValue.height as number | undefined;
   // Resolve "media:<id>" refs to /api/media/<id>/raw; raw URLs pass through unchanged.
-  const resolvedSrc = useMediaUrl(src);
+  const resolvedSrc = useMediaUrl(ref);
   if (!resolvedSrc)
     return (
       <div className="flex h-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">

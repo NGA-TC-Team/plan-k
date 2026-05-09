@@ -6,7 +6,7 @@ import { EditorShell } from "./editor-shell";
 import { useBlockForm } from "./use-block-form";
 
 type Values = {
-  src: string;
+  imageRef: string;
   alt: string;
   caption: string;
   width?: number;
@@ -23,7 +23,7 @@ export const FigureEditor: BlockRenderer = ({ vm, handlers }) => {
     >
       <ImageRefField
         form={form}
-        srcName="src"
+        srcName="imageRef"
         altName="alt"
         captionName="caption"
       />

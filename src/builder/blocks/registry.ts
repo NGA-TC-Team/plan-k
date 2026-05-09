@@ -181,13 +181,14 @@ const figureManifest = manifest({
   group: "Media",
   shortcut: "F",
   schema: z.object({
-    src: z.string().default(""),
+    // imageRef replaces legacy `src`. Renderers read imageRef ?? src for back-compat.
+    imageRef: z.string().default(""),
     alt: z.string().default(""),
     caption: z.string().default(""),
     width: z.number().int().positive().optional(),
   }),
-  defaults: { src: "", alt: "", caption: "" } as {
-    src: string;
+  defaults: { imageRef: "", alt: "", caption: "" } as {
+    imageRef: string;
     alt: string;
     caption: string;
     width?: number;
@@ -750,7 +751,8 @@ const imageManifest = manifest({
   group: "Content",
   shortcut: "M",
   schema: z.object({
-    src: z.string().default(""),
+    // imageRef replaces legacy `src`. Renderers read imageRef ?? src for back-compat.
+    imageRef: z.string().default(""),
     alt: z.string().default(""),
     caption: z.string().default(""),
     width: z.number().int().positive().optional(),
@@ -758,12 +760,12 @@ const imageManifest = manifest({
     fit: z.enum(["cover", "contain"]).default("cover"),
   }),
   defaults: {
-    src: "",
+    imageRef: "",
     alt: "",
     caption: "",
     fit: "cover" as const,
   } as {
-    src: string;
+    imageRef: string;
     alt: string;
     caption: string;
     width?: number;
