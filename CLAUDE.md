@@ -20,6 +20,7 @@ This Next.js app is **not** a deployable web service. It's a **locally-built pla
 - **메인 에이전트(여기) 담당**: 요구사항 정리, DoD 7속성 점검, 아키텍처 결정, 파일/모듈 배치 결정, 대안 비교, 핸드오프 문서 작성, 사용자와의 합의. **결정과 합의에만 집중**하고 탐색·구현은 서브에이전트에 위임한다.
 - **`Explore` 서브에이전트 담당 (조사·탐색)**: 코드베이스 탐색, 파일 위치 파악, 심볼/키워드 검색, 컨벤션 확인, "X가 어디에 정의되어 있나 / Y를 참조하는 파일은 어디인가" 류 질문. 메인이 계획을 세우기 전 컨텍스트 수집 단계에서 적극 활용.
 - **`plan-driven-implementer` 담당 (구현)**: 합의된 계획을 받아 실제 파일을 생성·수정. Edit/Write/Bash 등 코드를 변경하는 도구 호출은 이 에이전트가 수행.
+- **`implementation-reviewer` 담당 (검수)**: 구현이 끝난 코드를 설계 부합성·컨벤션·자동 검증(lint/tsc/test/build)·에러 처리 견고성 4축으로 검사하고 등급(APPROVE / APPROVE WITH NITS / REQUEST CHANGES / BLOCK)과 사용자용 보고서를 산출. **수정 권한 없음** — 검토자와 구현자의 분리를 깨뜨리지 않는다.
 
 ### Explore 위임 규칙
 
@@ -43,13 +44,32 @@ This Next.js app is **not** a deployable web service. It's a **locally-built pla
 - **에러 처리 체크 강제**: 위임 프롬프트에 *"코드 작성 후 별도 에러 처리 체크 패스를 돌리고, 누락은 같은 PR에서 보강하라. 보고에 점검 결과 섹션을 포함하라"*를 항상 포함한다. 점검 항목은 외부 입력 검증·I/O catch 분기·HTTP 코드 정합성·non-null assertion 분기화·자원 정리·트랜잭션 경계·구조화 에러 페이로드·boundary 값 처리. (에이전트 파일의 "에러 처리 체크 + 누락 보강" 섹션과 동일.)
 - **검증**: 서브에이전트 완료 후 메인이 결과물(diff, 실행 명령 결과, 에러 처리 점검 보고)을 확인하고 사용자에게 요약 보고. 미흡하면 후속 위임으로 보강.
 
+### implementation-reviewer 위임 규칙
+
+- **트리거**: `plan-driven-implementer` 단위가 끝난 직후, 사용자가 직접 짠 코드를 리뷰해 달라고 한 시점, 병렬 worktree 머지 직후의 통합 검증 단계. 메인이 자체 검증으로 대체하지 말 것 — 일관된 등급(APPROVE / APPROVE WITH NITS / REQUEST CHANGES / BLOCK)과 보고 포맷, 그리고 검토자/구현자 분리를 위해 항상 위임한다.
+- **호출 방식**: `Agent` 도구로 `subagent_type: "implementation-reviewer"` 지정. 프롬프트에 (a) 리뷰 대상 범위 — 구체적 파일 경로 또는 커밋 SHA 또는 `git diff` 기준 — , (b) 합의된 계획·핸드오프 본문 또는 `ai-docs/` 경로의 핵심 발췌 (gitignored이므로 직접 인용), (c) 비목표(Non-goals) 명시, (d) 시간 절약 목적의 build skip 여부, (e) implementer 보고에서 메인이 인지한 특이사항(무관 변경, 이상 lint 카운트 변동 등)을 포함.
+- **스코프 명확화 강제**: 범위가 모호하면 리뷰어가 사용자에게 되묻기 때문에 라운드트립이 늘어난다. 메인이 미리 변경 파일 리스트나 커밋 SHA를 프롬프트에 박아 보낸다.
+- **결과 처리**:
+  - **APPROVE / APPROVE WITH NITS**: 메인이 사용자에게 등급·검증 결과·nit 항목을 요약 보고 후 다음 PR 진입 또는 머지 진행. nits는 *후속 PR로 분리* 또는 *같은 PR 보강* 중 하나로 분류해 명시.
+  - **REQUEST CHANGES**: 리뷰어가 제공한 "복붙 가능한 지시문 블록"을 그대로 `plan-driven-implementer`에 후속 위임으로 넘긴다. 메인이 임의로 수정 항목을 재해석·축소·확장하지 말 것. 재구현 후 다시 리뷰어 위임.
+  - **BLOCK**: 머지/추가 PR 진행 즉시 중단. 사유와 함께 사용자에게 의사결정 요청.
+- **호출 금지 시점**: 리뷰어가 이미 한 번 돈 PR에 사소한 메모리 갱신·gitignored 문서 추가만 있는 변경, 한 줄 오타 수정. 이중 호출은 노이즈.
+- **메인이 직접 검증해도 되는 예외**: CLAUDE.md / AGENTS.md / `ai-docs/` 메모의 *텍스트 전용* 변경. 코드가 한 줄도 안 바뀌면 리뷰어 호출 불요.
+- **수정 권한 분리**: 리뷰어는 코드를 수정하지 않는다 (CLAUDE.md/AGENTS.md/`ai-docs/` 오타 한 줄 예외 제외). REQUEST CHANGES 항목을 메인이 직접 패치하지 말고 implementer에 재위임. 리뷰어가 검증한 분리(검토자 ≠ 구현자)를 깨뜨리지 않는다.
+- **메모리**: implementation-reviewer는 자체 agent-memory를 가진다 (`.claude/agent-memory/implementation-reviewer/`). 메인은 이 디렉터리를 직접 편집하지 않는다 — 리뷰어 자율 갱신.
+
 ### 표준 작업 흐름
 
 1. 요구 접수 → 메인이 DoD 7속성 점검, 빠진 부분은 1~3개 질문.
 2. 컨텍스트 수집 → **`Explore` 위임** (필요시 병렬). 메인은 직접 grep/find을 남발하지 않는다.
 3. 메인이 Explore 결과를 종합해 계획·대안·비목표를 사용자에게 제시, 합의.
 4. 합의된 계획 + Explore가 파악한 경로/컨벤션을 묶어 **`plan-driven-implementer`에 위임**.
-5. 결과 확인 → 검증 명령 실행 결과 점검 → 사용자에게 요약 보고.
+5. implementer 완료 보고 수신 → 메인이 변경 범위·특이사항 확인.
+6. **`implementation-reviewer`에 위임** — 등급(APPROVE / APPROVE WITH NITS / REQUEST CHANGES / BLOCK)과 검증 결과 수신.
+7. 결과 분기:
+   - APPROVE / APPROVE WITH NITS → 사용자에게 요약 보고 + 다음 단계(머지·후속 PR·nit 정리) 결정.
+   - REQUEST CHANGES → 리뷰어 지시문을 그대로 `plan-driven-implementer`에 후속 위임 → 다시 5단계로.
+   - BLOCK → 진행 중단, 사용자 의사결정 대기.
 
 ## Stack & Runtime
 
