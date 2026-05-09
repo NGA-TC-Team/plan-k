@@ -9,6 +9,7 @@ import type {
   CanvasMode,
   TopMode,
 } from "@/services/stores/builder-ui.store";
+import { useErrorsUiStore } from "@/services/stores/errors-ui.store";
 import type { Theme } from "@/services/stores/theme-store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
 
@@ -200,6 +201,10 @@ export const ACTIONS: Record<string, ActionHandler> = {
     );
     const project = await ctx.createProject({ kind, title, seed });
     ctx.router.push(`/plan/${project.id}`);
+  },
+
+  "errors.openHistory": (_ctx) => {
+    useErrorsUiStore.getState().openDrawer();
   },
 
   "versions.openHistory": (ctx) => {

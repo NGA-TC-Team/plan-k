@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  AlertCircle,
   Bot,
   Eye,
   FileImage,
@@ -98,6 +99,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Printer,
   History,
   Tag,
+  AlertCircle,
 };
 
 // ──────────────────────────────────────────────────────────────────

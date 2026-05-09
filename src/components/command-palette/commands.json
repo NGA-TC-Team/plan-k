@@ -10,6 +10,7 @@
     "create": "만들기",
     "export": "내보내기",
     "versions": "버전",
+    "diagnostics": "진단",
     "panel": "패널",
     "appearance": "모드 / 외관",
     "block": "블록 삽입"
@@ -305,6 +306,23 @@
       "icon": "Tag",
       "action": "versions.tagVersion",
       "when": "builder"
+    },
+    {
+      "id": "errors.openHistory",
+      "group": "diagnostics",
+      "label": "최근 에러 보기",
+      "keywords": [
+        "errors",
+        "log",
+        "diagnostics",
+        "warnings",
+        "에러",
+        "로그",
+        "경고"
+      ],
+      "icon": "AlertCircle",
+      "action": "errors.openHistory",
+      "when": "always"
     }
   ]
 }

@@ -57,6 +57,7 @@ import { cn } from "@/lib/utils";
 import { useBuilderUiStore, useThemeStore } from "@/services/stores";
 import { usePrintOptionsStore } from "@/services/stores/print-options.store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { ErrorsDrawer } from "./errors-drawer";
 import { buildExportParams } from "./export-params";
 import { PrintOptionsPopover } from "./print-options-popover";
 import { SaveStatusChip } from "./save-status-chip";
@@ -239,6 +240,7 @@ export function TopBar() {
         </div>
       </div>
       {planMeta?.id ? <VersionsDrawer planId={planMeta.id} /> : null}
+      <ErrorsDrawer />
     </header>
   );
 }

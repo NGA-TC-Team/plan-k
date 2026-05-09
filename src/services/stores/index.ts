@@ -31,6 +31,7 @@ export {
   type ErrorSource,
   useErrorsStore,
 } from "./errors-store";
+export { useErrorsUiStore } from "./errors-ui.store";
 export { useInlineAiStore } from "./inline-ai.store";
 export { useInsertMruStore } from "./insert-mru.store";
 export { type PrintOptions, usePrintOptionsStore } from "./print-options.store";

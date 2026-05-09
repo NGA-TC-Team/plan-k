@@ -76,6 +76,7 @@ export function BuilderProvider({ planId, children }: Props) {
               level === "error" ? "error" : level === "warn" ? "warn" : "info",
             source: "reducer",
             message,
+            context: { level },
           });
         },
       },
