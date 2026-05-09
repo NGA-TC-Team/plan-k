@@ -494,7 +494,11 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
               activeId={currentSectionId}
               planId={planId}
               subSectionsOf={subSectionsOf}
-              onSelect={setCurrentSectionId}
+              onSelect={(sectionId) => {
+                // navigation(currentSectionId)과 selection(InspectPane) 동시 갱신.
+                setCurrentSectionId(sectionId);
+                dispatch({ type: "SELECT_NODE", nodeId: sectionId });
+              }}
               onAddChild={handleAddChild}
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}

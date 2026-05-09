@@ -25,5 +25,10 @@ export function decideSelection(
 }
 
 function nodeExists(state: AppState, id: string): boolean {
-  return id in state.blocks || id in state.screens || id in state.agentNodes;
+  return (
+    id in state.blocks ||
+    id in state.screens ||
+    id in state.agentNodes ||
+    id in state.sections
+  );
 }

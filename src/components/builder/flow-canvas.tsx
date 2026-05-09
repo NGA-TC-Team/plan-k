@@ -89,6 +89,8 @@ export function FlowCanvas({ kind }: { kind: ProjectKind }) {
   const handleCardClick = (screenId: string) => {
     if (!connectMode) {
       dispatch({ type: "SWITCH_SCREEN", screenId });
+      // SELECT_NODE로 InspectPane이 ScreenInspector를 표시하도록 selection 갱신.
+      dispatch({ type: "SELECT_NODE", nodeId: screenId });
       return;
     }
     if (connectFromId === null) {

@@ -60,6 +60,7 @@ function triggerInlineAiPicker(planId: string | null) {
   if (!store || !planId) return;
   const state = store.getState().state;
   if (state.selection.kind !== "node") return;
+  // Inline AI picker는 block 전용 기능 — screen/section/agentNode 선택 시 no-op.
   const block = state.blocks[state.selection.id];
   if (!block) return;
   useInlineAiStore.getState().openPicker({

@@ -1,10 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { makeEmptyState, makeEntry, withBlocks, withPending } from "./fixtures";
 import {
+  projectAgentNodeInspect,
   projectBlock,
   projectBlockTree,
   projectBuilder,
   projectScreen,
+  projectScreenInspect,
+  projectSectionInspect,
+  resolveEntityKind,
 } from "./projection";
 
 const screenState = () =>
@@ -141,5 +145,129 @@ describe("projectBuilder", () => {
   it("returns null screen when screenId is null", () => {
     const vm = projectBuilder(makeEmptyState(), null);
     expect(vm.screen).toBeNull();
+  });
+});
+
+describe("projectScreenInspect", () => {
+  it("returns null for missing screen", () => {
+    expect(projectScreenInspect(makeEmptyState(), "ghost")).toBeNull();
+  });
+
+  it("maps screen fields correctly", () => {
+    const state = makeEmptyState({
+      screens: {
+        s1: { id: "s1", planId: "p1", title: "Home", route: "/home" },
+      },
+    });
+    const vm = projectScreenInspect(state, "s1");
+    expect(vm).toEqual({ id: "s1", kind: "screen", title: "Home", route: "/home" });
+  });
+
+  it("route is optional — returns undefined when absent", () => {
+    const state = makeEmptyState({
+      screens: { s1: { id: "s1", planId: "p1", title: "Home" } },
+    });
+    const vm = projectScreenInspect(state, "s1");
+    expect(vm?.route).toBeUndefined();
+  });
+
+  it("returns null when id belongs to a different entity kind", () => {
+    const state = withBlocks(makeEmptyState(), [{ id: "b1", parentId: "s1" }]);
+    expect(projectScreenInspect(state, "b1")).toBeNull();
+  });
+});
+
+describe("projectSectionInspect", () => {
+  it("returns null for missing section", () => {
+    expect(projectSectionInspect(makeEmptyState(), "ghost")).toBeNull();
+  });
+
+  it("maps section fields correctly", () => {
+    const state = makeEmptyState({
+      sections: {
+        sec1: {
+          id: "sec1",
+          planId: "p1",
+          parentId: null,
+          kind: "overview" as const,
+          title: "Overview",
+        },
+      },
+    });
+    const vm = projectSectionInspect(state, "sec1");
+    expect(vm).toEqual({
+      id: "sec1",
+      kind: "section",
+      title: "Overview",
+      sectionKind: "overview",
+    });
+  });
+
+  it("returns null when id belongs to a block", () => {
+    const state = withBlocks(makeEmptyState(), [{ id: "b1", parentId: "s1" }]);
+    expect(projectSectionInspect(state, "b1")).toBeNull();
+  });
+});
+
+describe("projectAgentNodeInspect", () => {
+  it("returns null for missing agent node", () => {
+    expect(projectAgentNodeInspect(makeEmptyState(), "ghost")).toBeNull();
+  });
+
+  it("maps agent node fields correctly", () => {
+    const state = makeEmptyState({
+      agentNodes: {
+        n1: { id: "n1", role: "llm", label: "Reasoner", data: {} },
+      },
+    });
+    const vm = projectAgentNodeInspect(state, "n1");
+    expect(vm).toEqual({ id: "n1", kind: "agent-node", label: "Reasoner", role: "llm" });
+  });
+
+  it("returns null when id belongs to a block", () => {
+    const state = withBlocks(makeEmptyState(), [{ id: "b1", parentId: "s1" }]);
+    expect(projectAgentNodeInspect(state, "b1")).toBeNull();
+  });
+});
+
+describe("resolveEntityKind", () => {
+  it("returns 'block' for a block id", () => {
+    const state = withBlocks(makeEmptyState(), [{ id: "b1", parentId: "s1" }]);
+    expect(resolveEntityKind(state, "b1")).toBe("block");
+  });
+
+  it("returns 'screen' for a screen id", () => {
+    const state = makeEmptyState({
+      screens: { s1: { id: "s1", planId: "p1", title: "Home" } },
+    });
+    expect(resolveEntityKind(state, "s1")).toBe("screen");
+  });
+
+  it("returns 'section' for a section id", () => {
+    const state = makeEmptyState({
+      sections: {
+        sec1: {
+          id: "sec1",
+          planId: "p1",
+          parentId: null,
+          kind: "overview" as const,
+          title: "Overview",
+        },
+      },
+    });
+    expect(resolveEntityKind(state, "sec1")).toBe("section");
+  });
+
+  it("returns 'agent-node' for an agent node id", () => {
+    const state = makeEmptyState({
+      agentNodes: {
+        n1: { id: "n1", role: "input", label: "Start", data: {} },
+      },
+    });
+    expect(resolveEntityKind(state, "n1")).toBe("agent-node");
+  });
+
+  it("returns null for an unknown id", () => {
+    expect(resolveEntityKind(makeEmptyState(), "ghost")).toBeNull();
   });
 });

@@ -12,7 +12,13 @@ import {
 import { useCallback, useEffect, useRef } from "react";
 import { iconForBlock } from "@/builder/blocks/icons";
 import { manifestFor, summaryFor } from "@/builder/blocks/registry";
-import { projectBlock } from "@/builder/projection";
+import {
+  projectAgentNodeInspect,
+  projectBlock,
+  projectScreenInspect,
+  projectSectionInspect,
+  resolveEntityKind,
+} from "@/builder/projection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +36,11 @@ import {
 } from "@/services/stores";
 import { BacklinksPanel } from "./backlinks-panel";
 import { ChatPane } from "./chat/chat-pane";
+import {
+  AgentNodeInspector,
+  ScreenInspector,
+  SectionInspector,
+} from "./inspectors";
 import { PropertyList, PropertyTable } from "./property-list";
 import { PropertyStatus } from "./property-status";
 import { pickEditor } from "./renderers/editors";
@@ -95,7 +106,7 @@ export function SidePanel() {
           {editingId ? (
             <EditorPane key={editingId} blockId={editingId} />
           ) : selectionId ? (
-            <InspectPane blockId={selectionId} />
+            <InspectPane key={selectionId} entityId={selectionId} />
           ) : multiCount > 0 ? (
             <MultiPane count={multiCount} />
           ) : (
@@ -134,7 +145,69 @@ function EditorPane({ blockId }: { blockId: string }) {
   );
 }
 
-function InspectPane({ blockId }: { blockId: string }) {
+/**
+ * InspectPane — entity-kind agnostic 진입점.
+ * resolveEntityKind로 kind를 판별 후 각 Inspector 컴포넌트에 위임.
+ * block → 기존 BlockInspector 흐름, 나머지 → 신규 inspectors/ 폴더.
+ */
+function InspectPane({ entityId }: { entityId: string }) {
+  const kind = useBuilderState((s) => resolveEntityKind(s.state, entityId));
+
+  if (kind === null)
+    return (
+      <div className="p-5">
+        <FallbackMessage>Selection no longer exists</FallbackMessage>
+      </div>
+    );
+
+  if (kind === "screen") return <ScreenInspectPane entityId={entityId} />;
+  if (kind === "section") return <SectionInspectPane entityId={entityId} />;
+  if (kind === "agent-node")
+    return <AgentNodeInspectPane entityId={entityId} />;
+  // kind === "block"
+  return <BlockInspectPane blockId={entityId} />;
+}
+
+function ScreenInspectPane({ entityId }: { entityId: string }) {
+  const vm = useBuilderStateShallow((s) =>
+    projectScreenInspect(s.state, entityId),
+  );
+  if (!vm)
+    return (
+      <div className="p-5">
+        <FallbackMessage>Screen no longer exists</FallbackMessage>
+      </div>
+    );
+  return <ScreenInspector vm={vm} />;
+}
+
+function SectionInspectPane({ entityId }: { entityId: string }) {
+  const vm = useBuilderStateShallow((s) =>
+    projectSectionInspect(s.state, entityId),
+  );
+  if (!vm)
+    return (
+      <div className="p-5">
+        <FallbackMessage>Section no longer exists</FallbackMessage>
+      </div>
+    );
+  return <SectionInspector vm={vm} />;
+}
+
+function AgentNodeInspectPane({ entityId }: { entityId: string }) {
+  const vm = useBuilderStateShallow((s) =>
+    projectAgentNodeInspect(s.state, entityId),
+  );
+  if (!vm)
+    return (
+      <div className="p-5">
+        <FallbackMessage>Agent node no longer exists</FallbackMessage>
+      </div>
+    );
+  return <AgentNodeInspector vm={vm} />;
+}
+
+function BlockInspectPane({ blockId }: { blockId: string }) {
   const vm = useBuilderStateShallow((s) => projectBlock(s.state, blockId));
   const { handlers } = useBlock(blockId);
   if (!vm)

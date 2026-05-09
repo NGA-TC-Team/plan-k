@@ -58,4 +58,23 @@ describe("decideSelection", () => {
     );
     expect(out).toEqual({ ok: true });
   });
+
+  it("accepts select on section id", () => {
+    const state = makeEmptyState({
+      sections: {
+        sec1: {
+          id: "sec1",
+          planId: "p1",
+          parentId: null,
+          kind: "overview" as const,
+          title: "Overview",
+        },
+      },
+    });
+    const out = decideSelection(
+      state,
+      makeEntry({ type: "SELECT_NODE", nodeId: "sec1" }),
+    );
+    expect(out).toEqual({ ok: true });
+  });
 });

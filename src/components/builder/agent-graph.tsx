@@ -68,7 +68,11 @@ export function AgentGraph() {
   };
 
   const handleNodeClick = (nodeId: string) => {
-    if (!connectMode) return;
+    if (!connectMode) {
+      // connectMode 아닐 때 노드 클릭 → selection 갱신으로 InspectPane 연결.
+      dispatch({ type: "SELECT_NODE", nodeId });
+      return;
+    }
     if (connectFromId === null) {
       setConnectFromId(nodeId);
       return;
