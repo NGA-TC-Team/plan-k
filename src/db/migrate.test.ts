@@ -5,7 +5,8 @@ import { migrateSnapshot, MigrationError } from "./migrate";
 describe("migrateSnapshot", () => {
   test("returns the snapshot as-is when schemaVersion matches", () => {
     const snap = { schemaVersion: SCHEMA_VERSION, foo: "bar" };
-    expect(migrateSnapshot(snap)).toBe(snap);
+    // Reference equality without narrowing `expect`'s param to AppState.
+    expect(migrateSnapshot(snap) === (snap as unknown)).toBe(true);
   });
 
   test("throws MigrationError for snapshots newer than supported", () => {

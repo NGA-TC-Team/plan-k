@@ -21,6 +21,11 @@ type IntentRowSlim = {
   parentEntryId: string | null;
 };
 
+// The transaction callback's `tx` parameter is structurally narrower than the
+// top-level db handle (no `.transaction`, no `$client`). Helpers that run
+// inside the callback take this type so they stay assignable.
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 // Best-effort post-append compaction. Runs synchronously after a successful
 // appendIntent so the same process serializes writes (better-sqlite3 is
 // blocking). Failures are logged and swallowed — the next append retries.
@@ -157,7 +162,7 @@ function runCompactionRound(planId: string): void {
 }
 
 function shiftCutoffForInverse(
-  tx: typeof db,
+  tx: DbTx,
   planId: string,
   initialCutoff: number,
 ): number | null {
