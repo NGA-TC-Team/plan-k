@@ -29,6 +29,10 @@ const DESCRIPTIONS: Partial<Record<BlockKind, string>> = {
   nav: "Top navigation bar with links",
   image: "Standalone image block",
   "page-header": "Screen title with breadcrumbs and actions",
+  // agent
+  "agent-step": "One step in an agent scenario — input, action, result",
+  "code-block": "Inline code or prompt snippet",
+  table: "Tabular data — tools, eval cases, decisions",
 };
 
 // ── curated kind lists (registry-order preserved) ──────────────────────────────
@@ -53,6 +57,15 @@ const APP_KINDS: BlockKind[] = [
   "nav",
   "image",
   "page-header",
+];
+
+const AGENT_KINDS: BlockKind[] = [
+  "agent-step", // primary — agent 시나리오의 핵심 unit
+  "heading", // 시나리오 제목/구분
+  "paragraph", // 시스템 프롬프트, 설명
+  "code-block", // sample I/O, prompt snippet
+  "table", // tools 표, eval cases
+  "decision", // 정책 결정 기록
 ];
 
 // ── registry validation set (lazily built once) ────────────────────────────────
@@ -96,7 +109,6 @@ export function getSuggestedKinds(
     case "app":
       return buildSuggested(APP_KINDS);
     case "agent":
-      // agent is out of scope for PR-C; return empty so callers can guard.
-      return [];
+      return buildSuggested(AGENT_KINDS);
   }
 }

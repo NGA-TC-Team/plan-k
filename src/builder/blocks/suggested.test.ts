@@ -18,12 +18,28 @@ describe("getSuggestedKinds", () => {
     expect(result.length).toBeLessThanOrEqual(6);
   });
 
-  it("agent: returns empty array (out of scope for PR-C)", () => {
-    expect(getSuggestedKinds("agent")).toEqual([]);
+  it("agent: returns 4–6 entries", () => {
+    const result = getSuggestedKinds("agent");
+    expect(result.length).toBeGreaterThanOrEqual(4);
+    expect(result.length).toBeLessThanOrEqual(6);
+  });
+
+  it("agent: contains agent-step as primary kind", () => {
+    const kinds = getSuggestedKinds("agent").map((s) => s.kind);
+    expect(kinds).toContain("agent-step");
+  });
+
+  it("agent: contains supporting doc kinds (heading, paragraph, code-block, table, decision)", () => {
+    const kinds = getSuggestedKinds("agent").map((s) => s.kind);
+    expect(kinds).toContain("heading");
+    expect(kinds).toContain("paragraph");
+    expect(kinds).toContain("code-block");
+    expect(kinds).toContain("table");
+    expect(kinds).toContain("decision");
   });
 
   it("all returned kinds exist in BLOCK_KIND_REGISTRY", () => {
-    for (const ctx of ["docs", "app"] as const) {
+    for (const ctx of ["docs", "app", "agent"] as const) {
       for (const item of getSuggestedKinds(ctx)) {
         expect(registryKinds.has(item.kind)).toBe(true);
       }
@@ -31,7 +47,7 @@ describe("getSuggestedKinds", () => {
   });
 
   it("each entry has non-empty label and description", () => {
-    for (const ctx of ["docs", "app"] as const) {
+    for (const ctx of ["docs", "app", "agent"] as const) {
       for (const item of getSuggestedKinds(ctx)) {
         expect(item.label.length).toBeGreaterThan(0);
         expect(item.description.length).toBeGreaterThan(0);
@@ -52,14 +68,14 @@ describe("getSuggestedKinds", () => {
   });
 
   it("no duplicate kinds within a context", () => {
-    for (const ctx of ["docs", "app"] as const) {
+    for (const ctx of ["docs", "app", "agent"] as const) {
       const kinds = getSuggestedKinds(ctx).map((s) => s.kind);
       expect(new Set(kinds).size).toBe(kinds.length);
     }
   });
 
   it("icon field equals kind (used as BLOCK_ICONS lookup key)", () => {
-    for (const ctx of ["docs", "app"] as const) {
+    for (const ctx of ["docs", "app", "agent"] as const) {
       for (const item of getSuggestedKinds(ctx)) {
         expect(item.icon).toBe(item.kind);
       }
