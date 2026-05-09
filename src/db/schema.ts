@@ -200,6 +200,9 @@ export const chatAttachments = sqliteTable(
     originalName: text("original_name").notNull(),
     storagePath: text("storage_path").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
+    // Set when this attachment has been "promoted" to the media library
+    // (PR-6). ON DELETE SET NULL so the attachment row survives media deletion.
+    mediaId: text("media_id"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
@@ -249,5 +252,42 @@ export type ChatMessageRow = typeof chatMessages.$inferSelect;
 export type NewChatMessageRow = typeof chatMessages.$inferInsert;
 export type ChatAttachmentRow = typeof chatAttachments.$inferSelect;
 export type NewChatAttachmentRow = typeof chatAttachments.$inferInsert;
+
+// ─── Media Library ─────────────────────────────────────────────────────────
+// Plan-scoped persistent media store. Files live under
+// `local-media/<planId>/<mediaId>-<safeName>` — outside public/, served via
+// /api/media/[id]/raw. Lifecycle is tied to the plan (cascade delete).
+export const media = sqliteTable(
+  "media",
+  {
+    id: text("id").primaryKey(), // crypto.randomUUID() without dashes (med_<uuid>)
+    planId: text("plan_id")
+      .notNull()
+      .references(() => plans.id, { onDelete: "cascade" }),
+    kind: text("kind", {
+      enum: ["image", "video", "audio", "doc", "other"],
+    }).notNull(),
+    mimeType: text("mime_type").notNull(),
+    originalName: text("original_name").notNull(),
+    // Relative to local-media/<planId>/ — always `<id>-<safeName>` shape,
+    // generated server-side so no user input reaches path construction.
+    storagePath: text("storage_path").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    // Image dimensions — populated when kind === "image" (optional).
+    width: integer("width"),
+    height: integer("height"),
+    // Provenance: set when created from an external URL fetch.
+    sourceUrl: text("source_url"),
+    // Back-pointer to the chat attachment this was promoted from (PR-6).
+    sourceChatAttachmentId: text("source_chat_attachment_id"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [index("media_plan_idx").on(t.planId)],
+);
+
+export type MediaRow = typeof media.$inferSelect;
+export type NewMediaRow = typeof media.$inferInsert;
 export type ChatStagedIntentRow = typeof chatStagedIntents.$inferSelect;
 export type NewChatStagedIntentRow = typeof chatStagedIntents.$inferInsert;

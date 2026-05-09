@@ -53,6 +53,7 @@ next-env.d.ts
 .next-mock-data.json
 
 # chat session uploads (local-only, lives next to local.db)
+/local-media
 /local-uploads
 
 # playwright
