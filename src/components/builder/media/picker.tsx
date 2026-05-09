@@ -163,6 +163,8 @@ const URL_ERROR_MESSAGES: Record<string, string> = {
   DNS_FAILURE: "도메인을 확인할 수 없습니다.",
   FETCH_TIMEOUT: "원격 서버 응답 시간이 초과되었습니다.",
   FETCH_FAILED: "원격 URL에서 파일을 가져오지 못했습니다.",
+  REDIRECT_FORBIDDEN: "리다이렉트 목적지가 허용되지 않는 호스트입니다.",
+  TOO_MANY_REDIRECTS: "리다이렉트가 너무 많습니다.",
   MEDIA_TOO_LARGE: "파일이 너무 큽니다 (최대 50MB).",
   UNSUPPORTED_MIME: "지원하지 않는 파일 형식입니다.",
   STORAGE_ERROR: "파일을 저장하는 중 오류가 발생했습니다.",

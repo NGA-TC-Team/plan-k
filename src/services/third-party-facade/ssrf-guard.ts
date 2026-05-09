@@ -12,17 +12,29 @@
  *    and apply the same IP checks. TOCTOU gap (DNS could change between
  *    lookup and connect) is acknowledged as a v1 limitation — full mitigation
  *    requires post-connect peer-IP inspection at OS/socket level.
+ *  - Redirect safety: safeFetchSSRF uses redirect:"manual" and re-validates
+ *    each Location URL through guardUrl before following. Maximum 5 hops.
+ *  - TOCTOU IP-pinning (HTTP-only): deferred to a separate PR. The DNS
+ *    lookup→connect window remains open for HTTPS targets.
  */
 
 import { lookup } from "node:dns/promises";
 
-// ─── Error code type ──────────────────────────────────────────────────────────
+// ─── Error code types ─────────────────────────────────────────────────────────
 
 export type SsrfErrorCode =
   | "INVALID_URL"
   | "UNSUPPORTED_PROTOCOL"
   | "FORBIDDEN_HOST"
   | "DNS_FAILURE";
+
+/** Extended error codes produced by safeFetchSSRF (superset of SsrfErrorCode). */
+export type SafeFetchErrorCode =
+  | SsrfErrorCode
+  | "REDIRECT_FORBIDDEN"
+  | "TOO_MANY_REDIRECTS"
+  | "FETCH_FAILED"
+  | "FETCH_TIMEOUT";
 
 export class SsrfError extends Error {
   constructor(
@@ -295,4 +307,147 @@ export async function guardUrl(rawUrl: string): Promise<URL> {
   }
 
   return parsed;
+}
+
+// ─── safeFetchSSRF ────────────────────────────────────────────────────────────
+
+/** Discriminated union returned by safeFetchSSRF. */
+export type SafeFetchResult =
+  | { ok: true; response: Response; finalUrl: string }
+  | { ok: false; code: SafeFetchErrorCode; reason: string; status?: number };
+
+/**
+ * Minimal fetch call signature used for dependency injection in tests.
+ * Narrower than `typeof fetch` so mock functions don't need to carry Bun-
+ * specific properties like `preconnect`.
+ */
+export type FetchLike = (
+  input: string | URL | Request,
+  init?: RequestInit,
+) => Promise<Response>;
+
+/** Default maximum number of redirect hops safeFetchSSRF will follow. */
+const DEFAULT_MAX_REDIRECTS = 5;
+
+/**
+ * Fetch a URL with SSRF protection and safe redirect following.
+ *
+ * - Uses redirect:"manual" so Node/Bun never silently follows a 3xx to a
+ *   private host.
+ * - Each Location header is resolved against the current URL and re-validated
+ *   through guardUrl before the next hop.
+ * - Redirect depth is capped at `maxRedirects` (default 5).
+ *
+ * Dependency injection: pass `fetchImpl` to replace the global `fetch` in
+ * tests without module-level mocking.
+ *
+ * TOCTOU note: DNS is re-checked via guardUrl at every hop (including
+ * redirect destinations). The lookup→connect window for HTTPS targets remains
+ * open; IP-pinning mitigation is deferred to a separate PR.
+ */
+export async function safeFetchSSRF(
+  urlString: string,
+  options?: {
+    signal?: AbortSignal;
+    maxRedirects?: number;
+    fetchImpl?: FetchLike;
+  },
+): Promise<SafeFetchResult> {
+  const {
+    signal,
+    maxRedirects = DEFAULT_MAX_REDIRECTS,
+    // Default to the global fetch — callers in tests inject a mock here.
+    fetchImpl = fetch,
+  } = options ?? {};
+
+  let currentUrl = urlString;
+  let redirectCount = 0;
+
+  for (;;) {
+    // ── 1. SSRF guard (URL parse + protocol + hostname + DNS) ────────────────
+    try {
+      await guardUrl(currentUrl);
+    } catch (err) {
+      if (err instanceof SsrfError) {
+        // Distinguish initial-URL failures from redirect-destination failures.
+        const code: SafeFetchErrorCode =
+          redirectCount > 0 ? "REDIRECT_FORBIDDEN" : err.code;
+        return { ok: false, code, reason: err.message };
+      }
+      return {
+        ok: false,
+        code: "FETCH_FAILED",
+        reason: "URL validation threw an unexpected error",
+      };
+    }
+
+    // ── 2. Fetch with redirect:manual ────────────────────────────────────────
+    let response: Response;
+    try {
+      response = await fetchImpl(currentUrl, {
+        redirect: "manual",
+        signal,
+        headers: { "User-Agent": "plan-k-media-fetcher/1.0" },
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return {
+          ok: false,
+          code: "FETCH_TIMEOUT",
+          reason: "Request timed out",
+        };
+      }
+      // Bun surfaces timeout as TimeoutError (AbortSignal.timeout).
+      if (err instanceof Error && err.name === "TimeoutError") {
+        return {
+          ok: false,
+          code: "FETCH_TIMEOUT",
+          reason: "Request timed out",
+        };
+      }
+      const msg = err instanceof Error ? err.message : String(err);
+      return { ok: false, code: "FETCH_FAILED", reason: msg };
+    }
+
+    const status = response.status;
+
+    // ── 3. Handle 3xx redirect ───────────────────────────────────────────────
+    if (status >= 300 && status < 400) {
+      const location = response.headers.get("location");
+
+      // No Location header → treat as a non-redirect response and return it.
+      if (!location) {
+        return { ok: true, response, finalUrl: currentUrl };
+      }
+
+      // Depth limit check before we increment.
+      if (redirectCount >= maxRedirects) {
+        return {
+          ok: false,
+          code: "TOO_MANY_REDIRECTS",
+          reason: `Exceeded ${maxRedirects} redirects`,
+        };
+      }
+
+      // Resolve relative Location against current URL (handles /foo paths).
+      let resolved: string;
+      try {
+        resolved = new URL(location, currentUrl).toString();
+      } catch {
+        return {
+          ok: false,
+          code: "REDIRECT_FORBIDDEN",
+          reason: `Could not resolve redirect Location: ${location}`,
+        };
+      }
+
+      redirectCount++;
+      currentUrl = resolved;
+      // Loop back to re-validate + fetch the redirect destination.
+      continue;
+    }
+
+    // ── 4. Non-redirect response — return to caller ──────────────────────────
+    return { ok: true, response, finalUrl: currentUrl };
+  }
 }

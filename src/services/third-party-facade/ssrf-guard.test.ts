@@ -27,11 +27,14 @@ mock.module("node:dns/promises", () => ({
 import { describe, expect, it } from "bun:test";
 import {
   checkHostname,
+  type FetchLike,
   guardUrl,
   isBlockedIPv4,
   isBlockedIPv6,
+  type SafeFetchErrorCode,
   SsrfError,
   type SsrfErrorCode,
+  safeFetchSSRF,
 } from "./ssrf-guard";
 
 // ─── Helper: assert guardUrl throws with specific code ───────────────────────
@@ -305,6 +308,231 @@ describe("guardUrl — DNS_FAILURE", () => {
     await assertGuardRejects(
       "https://this-domain-does-not-exist-xyz.example/img.png",
       "DNS_FAILURE",
+    );
+  });
+});
+
+// ─── safeFetchSSRF ────────────────────────────────────────────────────────────
+
+/**
+ * Build a minimal mock fetch that returns a controlled sequence of Responses.
+ * Each call to the returned function pops the next entry from `responses`.
+ * If the list is exhausted it throws to surface unexpected extra calls.
+ */
+function makeMockFetch(
+  responses: Array<
+    | { status: number; headers?: Record<string, string>; body?: string }
+    | "abort"
+    | "network-error"
+  >,
+): FetchLike {
+  let idx = 0;
+  return async (_input, _options) => {
+    const entry = responses[idx++];
+    if (entry === undefined) throw new Error("Unexpected extra fetch call");
+
+    // Simulate an AbortSignal that is already aborted (timeout scenario).
+    if (entry === "abort") {
+      const err = new DOMException(
+        "signal is aborted without reason",
+        "AbortError",
+      );
+      throw err;
+    }
+
+    if (entry === "network-error") {
+      throw new Error("fetch failed");
+    }
+
+    const { status, headers = {}, body = "" } = entry;
+    return new Response(body, { status, headers });
+  };
+}
+
+/** Assert safeFetchSSRF returns ok:false with the given code. */
+async function assertSafeFetchFails(
+  url: string,
+  expectedCode: SafeFetchErrorCode,
+  fetchImpl: FetchLike,
+  opts?: { maxRedirects?: number },
+): Promise<void> {
+  const result = await safeFetchSSRF(url, { fetchImpl, ...opts });
+  expect(result.ok).toBe(false);
+  if (!result.ok) {
+    expect(result.code).toBe(expectedCode);
+  }
+}
+
+describe("safeFetchSSRF", () => {
+  // ── Happy path ────────────────────────────────────────────────────────────
+
+  it("returns ok:true with finalUrl == input on 200 response", async () => {
+    const fetchImpl = makeMockFetch([{ status: 200, body: "ok" }]);
+    const result = await safeFetchSSRF("https://good-domain.example/img.png", {
+      fetchImpl,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.finalUrl).toBe("https://good-domain.example/img.png");
+      expect(result.response.status).toBe(200);
+    }
+  });
+
+  it("follows 301 to same-domain path and returns updated finalUrl", async () => {
+    const fetchImpl = makeMockFetch([
+      {
+        status: 301,
+        headers: { location: "https://good-domain.example/new-path.png" },
+      },
+      { status: 200, body: "ok" },
+    ]);
+    const result = await safeFetchSSRF("https://good-domain.example/img.png", {
+      fetchImpl,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.finalUrl).toBe("https://good-domain.example/new-path.png");
+    }
+  });
+
+  it("resolves relative Location (/foo) against base URL", async () => {
+    const fetchImpl = makeMockFetch([
+      { status: 302, headers: { location: "/new/path.png" } },
+      { status: 200, body: "ok" },
+    ]);
+    const result = await safeFetchSSRF("https://good-domain.example/img.png", {
+      fetchImpl,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.finalUrl).toBe("https://good-domain.example/new/path.png");
+    }
+  });
+
+  // ── Redirect to blocked destination ──────────────────────────────────────
+
+  it("returns REDIRECT_FORBIDDEN when 302 → private IP (10.x)", async () => {
+    // guardUrl will throw FORBIDDEN_HOST for 10.0.0.1 — no fetch call needed.
+    const fetchImpl = makeMockFetch([
+      { status: 302, headers: { location: "http://10.0.0.1/" } },
+    ]);
+    await assertSafeFetchFails(
+      "https://good-domain.example/img.png",
+      "REDIRECT_FORBIDDEN",
+      fetchImpl,
+    );
+  });
+
+  it("returns REDIRECT_FORBIDDEN when 302 → localhost", async () => {
+    const fetchImpl = makeMockFetch([
+      { status: 302, headers: { location: "http://localhost/secret" } },
+    ]);
+    await assertSafeFetchFails(
+      "https://good-domain.example/img.png",
+      "REDIRECT_FORBIDDEN",
+      fetchImpl,
+    );
+  });
+
+  // ── Redirect depth limit ──────────────────────────────────────────────────
+
+  it("returns TOO_MANY_REDIRECTS after exceeding maxRedirects (5)", async () => {
+    // 6 redirect responses (0-indexed 301s to the same safe URL).
+    const redirectResponse = {
+      status: 301,
+      headers: { location: "https://good-domain.example/img.png" },
+    };
+    const fetchImpl = makeMockFetch([
+      redirectResponse,
+      redirectResponse,
+      redirectResponse,
+      redirectResponse,
+      redirectResponse,
+      redirectResponse, // 6th → hits cap
+    ]);
+    await assertSafeFetchFails(
+      "https://good-domain.example/img.png",
+      "TOO_MANY_REDIRECTS",
+      fetchImpl,
+    );
+  });
+
+  it("allows exactly maxRedirects hops then resolves", async () => {
+    // With maxRedirects:1 — one redirect is allowed, second call returns 200.
+    const fetchImpl = makeMockFetch([
+      {
+        status: 301,
+        headers: { location: "https://good-domain.example/final.png" },
+      },
+      { status: 200, body: "ok" },
+    ]);
+    const result = await safeFetchSSRF("https://good-domain.example/img.png", {
+      fetchImpl,
+      maxRedirects: 1,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.finalUrl).toBe("https://good-domain.example/final.png");
+    }
+  });
+
+  // ── Timeout / network errors ──────────────────────────────────────────────
+
+  it("returns FETCH_TIMEOUT when fetch throws AbortError", async () => {
+    const fetchImpl = makeMockFetch(["abort"]);
+    await assertSafeFetchFails(
+      "https://good-domain.example/img.png",
+      "FETCH_TIMEOUT",
+      fetchImpl,
+    );
+  });
+
+  it("returns FETCH_FAILED on network error", async () => {
+    const fetchImpl = makeMockFetch(["network-error"]);
+    await assertSafeFetchFails(
+      "https://good-domain.example/img.png",
+      "FETCH_FAILED",
+      fetchImpl,
+    );
+  });
+
+  // ── Non-2xx responses are passed through (guard's responsibility ends) ────
+
+  it("returns ok:true for 4xx response (route handler decides)", async () => {
+    const fetchImpl = makeMockFetch([{ status: 404, body: "not found" }]);
+    const result = await safeFetchSSRF("https://good-domain.example/img.png", {
+      fetchImpl,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.response.status).toBe(404);
+    }
+  });
+
+  it("returns ok:true for 5xx response (route handler decides)", async () => {
+    const fetchImpl = makeMockFetch([{ status: 503, body: "unavailable" }]);
+    const result = await safeFetchSSRF("https://good-domain.example/img.png", {
+      fetchImpl,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.response.status).toBe(503);
+    }
+  });
+
+  // ── Initial URL guard failures propagate with original code ──────────────
+
+  it("returns INVALID_URL for a malformed initial URL", async () => {
+    const fetchImpl = makeMockFetch([]);
+    await assertSafeFetchFails("not-a-url", "INVALID_URL", fetchImpl);
+  });
+
+  it("returns FORBIDDEN_HOST for initial URL pointing to private IP", async () => {
+    const fetchImpl = makeMockFetch([]);
+    await assertSafeFetchFails(
+      "http://10.0.0.1/img.png",
+      "FORBIDDEN_HOST",
+      fetchImpl,
     );
   });
 });

@@ -11,20 +11,23 @@ import {
   isPlanLoadError,
 } from "@/services/third-party-facade/plan-store";
 import {
-  guardUrl,
-  SsrfError,
-  type SsrfErrorCode,
+  type SafeFetchErrorCode,
+  safeFetchSSRF,
 } from "@/services/third-party-facade/ssrf-guard";
 
 export const runtime = "nodejs";
 
 // ─── Error code → HTTP status mapping ────────────────────────────────────────
 
-const SSRF_STATUS: Record<SsrfErrorCode, number> = {
+const FETCH_STATUS: Record<SafeFetchErrorCode, number> = {
   INVALID_URL: 400,
   UNSUPPORTED_PROTOCOL: 400,
   FORBIDDEN_HOST: 400,
   DNS_FAILURE: 400,
+  REDIRECT_FORBIDDEN: 400,
+  TOO_MANY_REDIRECTS: 400,
+  FETCH_TIMEOUT: 408,
+  FETCH_FAILED: 502,
 };
 
 // ─── Filename extraction from URL ─────────────────────────────────────────────
@@ -124,48 +127,26 @@ export async function POST(
 
   const urlString = rawUrl.trim();
 
-  // ── 3–5. SSRF guard: URL parse + protocol + hostname + DNS ────────────────
-  let parsedUrl: URL;
-  try {
-    parsedUrl = await guardUrl(urlString);
-  } catch (err) {
-    if (err instanceof SsrfError) {
-      return NextResponse.json(
-        { error: err.message, code: err.code },
-        { status: SSRF_STATUS[err.code] },
-      );
-    }
+  // ── 3–6. SSRF guard + safe fetch (redirect:manual, max 5 hops) ──────────────
+  const fetchResult = await safeFetchSSRF(urlString, {
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!fetchResult.ok) {
+    const httpStatus = FETCH_STATUS[fetchResult.code] ?? 500;
     return NextResponse.json(
-      { error: "URL validation failed", code: "INTERNAL_ERROR" },
-      { status: 500 },
+      { error: fetchResult.reason, code: fetchResult.code },
+      { status: httpStatus },
     );
   }
 
-  // ── 6. Fetch with 30s timeout ──────────────────────────────────────────────
-  let response: Response;
+  const { response, finalUrl } = fetchResult;
+  // Use the final URL (after any redirects) for filename derivation.
+  let parsedUrl: URL;
   try {
-    response = await fetch(parsedUrl.toString(), {
-      signal: AbortSignal.timeout(30_000),
-      // Do not follow redirects to a potentially blocked host — Node 18+
-      // redirect: "follow" is the default, but we guard with the pre-fetch
-      // SSRF check and trust the final URL here for v1.
-      redirect: "follow",
-      headers: {
-        // Identify ourselves without revealing internal host info
-        "User-Agent": "plan-k-media-fetcher/1.0",
-      },
-    });
-  } catch (err) {
-    if (err instanceof Error && err.name === "TimeoutError") {
-      return NextResponse.json(
-        { error: "Remote URL fetch timed out", code: "FETCH_TIMEOUT" },
-        { status: 408 },
-      );
-    }
-    return NextResponse.json(
-      { error: "Failed to fetch remote URL", code: "FETCH_FAILED" },
-      { status: 502 },
-    );
+    parsedUrl = new URL(finalUrl);
+  } catch {
+    parsedUrl = new URL(urlString);
   }
 
   if (!response.ok) {
