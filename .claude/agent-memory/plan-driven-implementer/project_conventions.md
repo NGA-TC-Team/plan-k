@@ -65,3 +65,28 @@ type: project
 - `file-type` is ESM-only; use `await import("file-type")` (dynamic) inside async functions to avoid static ESM/CJS interop issues with Next.js.
 - `image-size` v2: `imageSize(buf)` (sync, pure JS); import as `import { imageSize } from "image-size"`.
 - Both packages installed at E7 PR-2 (file-type@22.0.1, image-size@2.0.2).
+
+## E7 PR-4 패턴 (2026-05-09)
+
+### SSRF 가드 (ssrf-guard.ts)
+- 순수 함수로 분리: `isBlockedIPv4`, `isBlockedIPv6`, `checkHostname`, `guardUrl`.
+- `SsrfError extends Error` 클래스 — `code: SsrfErrorCode` 필드로 HTTP 응답 분기.
+- DNS lookup: `import { lookup } from "node:dns/promises"`. 도메인에만 적용, IP 리터럴은 skip.
+- TOCTOU 잔재 인지됨 — v1 수용 (완전 방어는 소켓 레벨 peer-IP 검사 필요).
+
+### Bun 테스트 패턴
+- `mock.module("node:dns/promises", ...)` — 반드시 테스트 파일 최상단 (import 전)에 호출.
+- `rejects.toSatisfy` Bun에서 불안정 — `try/catch + instanceof + expect` 패턴 사용.
+
+### 공유 media 검증 헬퍼 (media-store.ts)
+- `validateAndClassifyMediaBuffer(buffer, declaredMime?)`: mime sniff + SVG script 가드 + raster dimension 추출 통합.
+- `ALLOWED_MEDIA_MIMES` Set export — upload route와 from-url route 양쪽에서 import.
+- throw는 `MediaValidationError` discriminated union (code: UNSUPPORTED_MIME | MIME_MISMATCH | SVG_SCRIPT).
+
+### from-url 라우트
+- `AbortSignal.timeout(30_000)` — fetch 타임아웃. TimeoutError catch.
+- streaming cap: `response.body.getReader()` loop, 누적 바이트 초과 시 즉시 abort + 413.
+- Content-Length 사전 체크 후 streaming 이중 cap 패턴.
+
+### Biome import 정렬 규칙
+- `type` import는 value import 앞에 위치 (alphabetical 내에서도). `organizeImports` 어시스트 오류 발생 시 수동 재정렬.
