@@ -26,6 +26,9 @@ export type EntityMeta = {
   /** Unix timestamp in milliseconds */
   dueDate?: number;
   tags?: string[];
+  /** Per-entity viewMode override. When set, overrides the global viewMode for
+   *  this section or screen. null is never stored — use undefined for "unset". */
+  viewModeOverride?: "detail" | "wireframe";
 };
 
 export type Selection =

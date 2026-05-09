@@ -97,6 +97,8 @@ export type UpdateEntityMetaPatch = {
   dueDate?: number | null;
   /** Replaced wholesale. An empty array is an explicit clear. */
   tags?: string[];
+  /** null = remove override (fall back to global viewMode). */
+  viewModeOverride?: "detail" | "wireframe" | null;
 };
 
 export type Command =

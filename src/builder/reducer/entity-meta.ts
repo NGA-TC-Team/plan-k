@@ -69,6 +69,13 @@ export function applyEntityMeta(
     next.tags = Array.from(new Set(patch.tags));
   }
 
+  // viewModeOverride: null → delete (fall back to global), value → set, undefined → leave.
+  if (patch.viewModeOverride === null) {
+    delete next.viewModeOverride;
+  } else if (patch.viewModeOverride !== undefined) {
+    next.viewModeOverride = patch.viewModeOverride;
+  }
+
   return {
     state: {
       ...state,

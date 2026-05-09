@@ -26,6 +26,7 @@ import { LeftRail } from "./left-rail";
 import { MarqueeOverlay } from "./marquee-overlay";
 import { SidePanel } from "./side-panel";
 import { TopBar } from "./top-bar";
+import { ViewModeOverrideToggle } from "./view-mode-override-toggle";
 
 const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
@@ -171,6 +172,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
             ({childIds.length} blocks · {viewMode})
           </span>
         </div>
+        <ViewModeOverrideToggle entityId={screen.id} />
       </div>
       <ScreenFrame kind={planKind} screen={screen}>
         {blockTree}
@@ -210,11 +212,14 @@ function SectionCanvas() {
       onPointerMove={marquee.handlers.onPointerMove}
       onPointerUp={marquee.handlers.onPointerUp}
     >
-      <div className="mb-4 text-sm">
-        <span className="font-medium">{section.title}</span>
-        <span className="ml-2 text-xs text-muted-foreground">
-          ({childBlockIds.length} blocks)
-        </span>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm">
+          <span className="font-medium">{section.title}</span>
+          <span className="ml-2 text-xs text-muted-foreground">
+            ({childBlockIds.length} blocks)
+          </span>
+        </div>
+        <ViewModeOverrideToggle entityId={section.id} />
       </div>
       <div className="rounded-lg border p-4">
         <AnimatePresence initial={false}>

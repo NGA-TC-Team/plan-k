@@ -49,6 +49,11 @@ export function invertEntityMeta(
     invertedPatch.tags = prev?.tags !== undefined ? [...prev.tags] : [];
   }
 
+  if ("viewModeOverride" in patch) {
+    // prev.viewModeOverride undefined → null (delete in reverse), otherwise restore.
+    invertedPatch.viewModeOverride = prev?.viewModeOverride ?? null;
+  }
+
   return {
     type: "UPDATE_ENTITY_META",
     entityId,

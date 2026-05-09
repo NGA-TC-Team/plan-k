@@ -209,6 +209,69 @@ describe("applyEntityMeta.UPDATE_ENTITY_META", () => {
     expect(out?.state.entityMeta.ag1?.status).toBe("rejected");
   });
 
+  it("sets viewModeOverride on a section", () => {
+    const state = makeEmptyState({
+      sections: { sec1: makeSection("sec1") },
+    });
+    const out = applyEntityMeta(
+      state,
+      makeEntry({
+        type: "UPDATE_ENTITY_META",
+        entityId: "sec1",
+        patch: { viewModeOverride: "wireframe" },
+      }),
+    );
+    expect(out?.state.entityMeta.sec1?.viewModeOverride).toBe("wireframe");
+  });
+
+  it("null viewModeOverride removes the field", () => {
+    const state = makeEmptyState({
+      sections: { sec1: makeSection("sec1") },
+      entityMeta: {
+        sec1: {
+          lamport: 1,
+          origin: "human:test",
+          viewModeOverride: "wireframe",
+        },
+      },
+    });
+    const out = applyEntityMeta(
+      state,
+      makeEntry({
+        type: "UPDATE_ENTITY_META",
+        entityId: "sec1",
+        patch: { viewModeOverride: null },
+      }),
+    );
+    expect(out?.state.entityMeta.sec1).not.toHaveProperty("viewModeOverride");
+  });
+
+  it("viewModeOverride does not affect other entityMeta fields", () => {
+    const state = makeEmptyState({
+      sections: { sec1: makeSection("sec1") },
+      entityMeta: {
+        sec1: {
+          lamport: 3,
+          origin: "human:test",
+          status: "in-progress",
+          assignee: "alice",
+        },
+      },
+    });
+    const out = applyEntityMeta(
+      state,
+      makeEntry({
+        type: "UPDATE_ENTITY_META",
+        entityId: "sec1",
+        patch: { viewModeOverride: "detail" },
+      }),
+    );
+    const meta = out?.state.entityMeta.sec1;
+    expect(meta?.viewModeOverride).toBe("detail");
+    expect(meta?.status).toBe("in-progress");
+    expect(meta?.assignee).toBe("alice");
+  });
+
   it("tags empty array is preserved (explicit clear, not deleted)", () => {
     const state = makeEmptyState({
       sections: { sec1: makeSection("sec1") },
@@ -318,6 +381,62 @@ describe("invertEntityMeta", () => {
     expect(meta?.status).toBe("pending");
     expect(meta?.assignee).toBe("carol");
     expect(meta?.dueDate).toBe(9999);
+  });
+
+  it("round-trips viewModeOverride set → null (unset)", () => {
+    const before = makeEmptyState({
+      sections: { sec1: makeSection("sec1") },
+    });
+    const forward = makeEntry({
+      type: "UPDATE_ENTITY_META",
+      entityId: "sec1",
+      patch: { viewModeOverride: "wireframe" },
+    });
+    const inv = invertEntityMeta(forward, before);
+    // Prior had no override → inverse should null it out.
+    expect(inv).toEqual({
+      type: "UPDATE_ENTITY_META",
+      entityId: "sec1",
+      patch: { viewModeOverride: null },
+    });
+
+    const after = applyEntityMeta(before, forward);
+    if (!after) throw new Error("forward apply failed");
+    expect(after.state.entityMeta.sec1?.viewModeOverride).toBe("wireframe");
+
+    const reverted = applyEntityMeta(after.state, makeEntry(inv as never));
+    expect(reverted?.state.entityMeta.sec1).not.toHaveProperty(
+      "viewModeOverride",
+    );
+  });
+
+  it("round-trips viewModeOverride change (detail → wireframe)", () => {
+    const before = makeEmptyState({
+      sections: { sec1: makeSection("sec1") },
+      entityMeta: {
+        sec1: {
+          lamport: 2,
+          origin: "human:test",
+          viewModeOverride: "detail",
+        },
+      },
+    });
+    const forward = makeEntry({
+      type: "UPDATE_ENTITY_META",
+      entityId: "sec1",
+      patch: { viewModeOverride: "wireframe" },
+    });
+    const inv = invertEntityMeta(forward, before);
+    expect(inv).toEqual({
+      type: "UPDATE_ENTITY_META",
+      entityId: "sec1",
+      patch: { viewModeOverride: "detail" },
+    });
+
+    const after = applyEntityMeta(before, forward);
+    if (!after) throw new Error("forward apply failed");
+    const reverted = applyEntityMeta(after.state, makeEntry(inv as never));
+    expect(reverted?.state.entityMeta.sec1?.viewModeOverride).toBe("detail");
   });
 
   it("returns null for unrelated intents", () => {

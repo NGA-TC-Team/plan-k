@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { BlockViewModel } from "@/builder/projection";
 import { projectBlock } from "@/builder/projection";
+import { getEffectiveViewMode } from "@/builder/selectors/view-mode";
 import type { BlockHandlers } from "@/components/builder/renderers/types";
 import {
   useBuilderDispatch,
@@ -18,7 +19,11 @@ export type UseBlockReturn = {
 
 export function useBlock(blockId: string): UseBlockReturn {
   const vm = useBuilderStateShallow((s) => projectBlock(s.state, blockId));
-  const viewMode = useBuilderState((s) => s.state.viewMode);
+  // Resolve effective viewMode: parentId may be a section or screen; its
+  // entityMeta.viewModeOverride takes priority over the global viewMode.
+  const viewMode = useBuilderState((s) =>
+    getEffectiveViewMode(s.state, vm?.parentId ?? null),
+  );
   const dispatch = useBuilderDispatch();
 
   const handlers = useMemo<BlockHandlers>(
