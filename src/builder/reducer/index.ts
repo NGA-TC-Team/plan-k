@@ -2,6 +2,7 @@ import type { IntentLogEntry } from "../types/intent";
 import type { AppState, SliceResult } from "../types/state";
 import { applyAgent } from "./agent";
 import { applyEditing } from "./editing";
+import { applyEntityMeta } from "./entity-meta";
 import { applyProjects } from "./projects";
 import { applyScreens } from "./screens";
 import { applySections } from "./sections";
@@ -24,6 +25,7 @@ const SLICES: SliceReducer[] = [
   applySections,
   applyAgent,
   applyProjects,
+  applyEntityMeta,
   applySync,
 ];
 

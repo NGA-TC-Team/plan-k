@@ -2,6 +2,7 @@ import type {
   AgentEdge,
   AgentNode,
   BlockEntity,
+  EntityStatus,
   PlanShell,
   ProjectMeta,
   ScreenEdge,
@@ -17,7 +18,15 @@ import type {
   Reason,
 } from "./intent";
 
-export type EntityMeta = { lamport: LamportClock; origin: OriginId };
+export type EntityMeta = {
+  lamport: LamportClock;
+  origin: OriginId;
+  status?: EntityStatus;
+  assignee?: string;
+  /** Unix timestamp in milliseconds */
+  dueDate?: number;
+  tags?: string[];
+};
 
 export type Selection =
   | { kind: "none" }

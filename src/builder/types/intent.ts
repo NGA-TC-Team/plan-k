@@ -2,6 +2,7 @@ import type {
   AgentEdge,
   AgentNode,
   BlockEntity,
+  EntityStatus,
   ScreenEdge,
   ScreenEntity,
   SectionEntity,
@@ -78,7 +79,25 @@ export type Intent =
   | { type: "REDO" }
   // Coalesced batch — children apply in order, the whole group occupies one
   // history frame so a single ⌘Z undoes the entire operation.
-  | { type: "BATCH"; intents: Intent[] };
+  | { type: "BATCH"; intents: Intent[] }
+  | {
+      type: "UPDATE_ENTITY_META";
+      entityId: string;
+      patch: UpdateEntityMetaPatch;
+    };
+
+/** Patch shape for UPDATE_ENTITY_META.
+ *  - `null` on a field means "remove the field".
+ *  - `tags` is replaced wholesale; deduplicated before storage.
+ *  - Fields absent from the patch are left unchanged.
+ */
+export type UpdateEntityMetaPatch = {
+  status?: EntityStatus | null;
+  assignee?: string | null;
+  dueDate?: number | null;
+  /** Replaced wholesale. An empty array is an explicit clear. */
+  tags?: string[];
+};
 
 export type Command =
   | { type: "PERSIST_INTENT"; entry: IntentLogEntry }

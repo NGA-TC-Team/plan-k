@@ -2,6 +2,7 @@ import type { Intent, IntentLogEntry } from "../types/intent";
 import type { AppState } from "../types/state";
 import { invertAgent } from "./agent";
 import { invertEditing } from "./editing";
+import { invertEntityMeta } from "./entity-meta";
 import { invertProjects } from "./projects";
 import { invertScreens } from "./screens";
 import { invertSections } from "./sections";
@@ -21,6 +22,7 @@ const SLICES: SliceInvert[] = [
   invertSections,
   invertAgent,
   invertProjects,
+  invertEntityMeta,
 ];
 
 export function invert(

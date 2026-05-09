@@ -147,14 +147,19 @@ export type SectionKind =
   // they're rendered as cards in the Backlog board and edited in a Sheet.
   | "backlog";
 
-export type SectionStatus = "pending" | "in-progress" | "approved" | "rejected";
+export type EntityStatus = "pending" | "in-progress" | "approved" | "rejected";
 
-export const SECTION_STATUS_VALUES: readonly SectionStatus[] = [
+export const ENTITY_STATUS_VALUES: readonly EntityStatus[] = [
   "pending",
   "in-progress",
   "approved",
   "rejected",
 ] as const;
+
+// Backward-compat aliases — existing code referencing SectionStatus still works.
+export type SectionStatus = EntityStatus;
+export const SECTION_STATUS_VALUES: readonly SectionStatus[] =
+  ENTITY_STATUS_VALUES;
 
 export type SectionEntity = {
   id: SectionId;
