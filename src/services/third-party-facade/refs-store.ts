@@ -9,7 +9,7 @@ import type { AppState } from "@/builder/types/state";
 // file in bun:test does NOT trigger client.ts (better-sqlite3 binding).
 // The DB handle is accessed lazily via getDb() so mock.module("@/db") applied
 // before the first function call can substitute an in-memory DB for tests.
-import { refs, type RefRow } from "@/db/schema";
+import { type RefRow, refs } from "@/db/schema";
 
 // biome-ignore lint/suspicious/noExplicitAny: adapter-agnostic drizzle instance
 type AnyDb = any;
