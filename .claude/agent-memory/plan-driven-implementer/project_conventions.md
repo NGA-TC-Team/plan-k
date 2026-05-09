@@ -122,6 +122,30 @@ type: project
 - selector + callback 형태의 2인자 subscribe는 `subscribeWithSelector` 미들웨어 필요.
 - 미들웨어 없이 selector 패턴 쓰려면: 리스너 안에서 prev 값을 클로저로 캐싱해 변경 감지.
 
+## diff 패키지 (E10 PR-C, 2026-05-10)
+
+- `diff` v9 + `@types/diff` v8 installed.
+- `diffLines(before, after)` 반환 타입: `Array<{ added?: boolean; removed?: boolean; value: string }>`.
+- `import { diffLines } from "diff"` — named export 사용.
+
+## compareSnapshots 순수 함수 패턴 (E10 PR-C, 2026-05-10)
+
+- `src/builder/diff/compare-snapshots.ts`: no React/Zustand/DOM import — bun:test에서 직접 구동 가능.
+- `stableStringify`: sorted-key recursive JSON.stringify로 deep equality 판단. inline 15줄.
+- entity extractor: lamport/origin/appliedEntries 등 런타임 필드 제거 후 structural 필드만 비교.
+- `diffRecords<T>`: 범용 id-set bucketer — added/removed/modified 3-way 분류.
+- entityMeta diff: status/assignee/dueDate/viewModeOverride 4개 필드만. modified 맵에 병합(중복 entry 방지).
+- children move: addedIds/removedIds에 속한 parent는 skip.
+- 정렬: `(kind, id)` ascending — 테스트 assertion 안정화.
+- `(obj ?? {})[id]` 패턴 → biome `useOptionalChain` 경고 유발. `obj?.[id]` 로 써야 함.
+
+## DiffPanel live state 접근 패턴 (E10 PR-C, 2026-05-10)
+
+- `useActiveBuilderStore((s) => s.store)` 로 BuilderStore hook 참조 획득.
+- 획득한 hook을 `builderStoreHook((s) => s.state)` 처럼 직접 호출해 AppState 읽기.
+- hook이 null이면(BuilderProvider 외부) `liveState = null` — DiffPanel이 에러 상태 표시.
+- `version.snapshot` JSON 파싱은 `useMemo` 안에서 try/catch 처리 → `{ ok, snapshot | message }` discriminated union.
+
 ## PrintOptionsStore + PrintView Cover/TOC 패턴 (E10 PR-D, 2026-05-10)
 
 - `print-options.store.ts`: persist v1 + no-op migrate. `usePrintOptionsStore.getState()` 로 render 외부(trigger 함수)에서 단발 읽기 — selector 불필요.
