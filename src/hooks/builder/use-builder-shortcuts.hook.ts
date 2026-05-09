@@ -30,6 +30,17 @@ export function useBuilderShortcuts() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Zen mode: Esc exits zen before any other handler so editing-exit Esc
+      // (which only fires inside a typing target) never conflicts.
+      if (e.key === "Escape" && !isTypingTarget(e.target)) {
+        const { zenMode, setZenMode } = useBuilderUiStore.getState();
+        if (zenMode) {
+          e.preventDefault();
+          setZenMode(false);
+          return;
+        }
+      }
+
       // Multi-select aware actions need live state — handle them here so
       // we can fire batched intents instead of a single decision.
       if (storeHook && !isTypingTarget(e.target)) {
@@ -74,6 +85,12 @@ export function useBuilderShortcuts() {
               nodeId: id,
             })),
           });
+          return;
+        }
+        // Zen mode toggle: Cmd+\
+        if (isMod && e.key === "\\") {
+          e.preventDefault();
+          useBuilderUiStore.getState().toggleZenMode();
           return;
         }
       }

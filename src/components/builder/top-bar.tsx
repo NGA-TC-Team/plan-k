@@ -46,6 +46,7 @@ import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
+import { cn } from "@/lib/utils";
 import { useBuilderUiStore, useThemeStore } from "@/services/stores";
 import { SaveStatusChip } from "./save-status-chip";
 
@@ -63,6 +64,7 @@ export function TopBar() {
   const setTopMode = useBuilderUiStore((s) => s.setTopMode);
   const canvasMode = useBuilderUiStore((s) => s.canvasMode);
   const setCanvasMode = useBuilderUiStore((s) => s.setCanvasMode);
+  const zenMode = useBuilderUiStore((s) => s.zenMode);
   const showCanvasModeToggle =
     topMode === "app" &&
     (planMeta?.kind === "web" || planMeta?.kind === "mobile");
@@ -72,7 +74,12 @@ export function TopBar() {
   const title = project?.title ?? planMeta?.id ?? "Untitled plan";
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b bg-background px-4 py-2">
+    <header
+      className={cn(
+        "flex items-center justify-between gap-4 border-b bg-background px-4 transition-[padding] duration-200 ease-out",
+        zenMode ? "py-1" : "py-2",
+      )}
+    >
       <div className="flex min-w-0 items-center gap-3">
         <Link
           href="/"
@@ -124,15 +131,15 @@ export function TopBar() {
       >
         <ToggleGroupItem value="backlog" aria-label="Backlog mode">
           <KanbanSquare className="size-3.5" />
-          <span>Backlog</span>
+          <span className={zenMode ? "sr-only" : undefined}>Backlog</span>
         </ToggleGroupItem>
         <ToggleGroupItem value="docs" aria-label="Docs mode">
           <FileText className="size-3.5" />
-          <span>Docs</span>
+          <span className={zenMode ? "sr-only" : undefined}>Docs</span>
         </ToggleGroupItem>
         <ToggleGroupItem value="app" aria-label="App design mode">
           <LayoutDashboard className="size-3.5" />
-          <span>App design</span>
+          <span className={zenMode ? "sr-only" : undefined}>App design</span>
         </ToggleGroupItem>
       </ToggleGroup>
 
@@ -150,11 +157,11 @@ export function TopBar() {
           >
             <ToggleGroupItem value="screen">
               <Smartphone className="size-3.5" />
-              <span>Screen</span>
+              <span className={zenMode ? "sr-only" : undefined}>Screen</span>
             </ToggleGroupItem>
             <ToggleGroupItem value="flow">
               <Workflow className="size-3.5" />
-              <span>Flow</span>
+              <span className={zenMode ? "sr-only" : undefined}>Flow</span>
             </ToggleGroupItem>
           </ToggleGroup>
         ) : null}
@@ -173,11 +180,11 @@ export function TopBar() {
           >
             <ToggleGroupItem value="detail">
               <Eye className="size-3.5" />
-              <span>Detail</span>
+              <span className={zenMode ? "sr-only" : undefined}>Detail</span>
             </ToggleGroupItem>
             <ToggleGroupItem value="wireframe">
               <Wrench className="size-3.5" />
-              <span>Wire</span>
+              <span className={zenMode ? "sr-only" : undefined}>Wire</span>
             </ToggleGroupItem>
           </ToggleGroup>
         ) : null}

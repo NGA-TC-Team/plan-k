@@ -42,18 +42,31 @@ function BuilderShell() {
   const runState = useChatStore((s) => s.runState);
   const aiActive = runState !== "idle";
   const leftCollapsed = useBuilderUiStore((s) => s.leftRailCollapsed);
+  const zenMode = useBuilderUiStore((s) => s.zenMode);
   const rightWidth = usePanelStore((s) => s.width);
   const leftWidth = leftCollapsed ? 36 : 260;
+
+  // Zen: collapse side panels to 0; canvas expands to fill.
+  // Width + opacity transition 200ms ease-out applied on the wrapper divs.
+  const effectiveLeft = zenMode ? 0 : leftWidth;
+  const effectiveRight = zenMode ? 0 : rightWidth;
+
   return (
     <div className="grid h-screen grid-rows-[auto_1fr]">
       <TopBar />
       <div
-        className="grid overflow-hidden"
+        className="grid overflow-hidden transition-[grid-template-columns] duration-200 ease-out"
         style={{
-          gridTemplateColumns: `${leftWidth}px 1fr ${rightWidth}px`,
+          gridTemplateColumns: `${effectiveLeft}px 1fr ${effectiveRight}px`,
         }}
       >
-        <LeftRail />
+        {/* LeftRail wrapper: overflow-hidden ensures content is clipped as width shrinks */}
+        <div
+          className="overflow-hidden transition-opacity duration-200 ease-out"
+          style={{ opacity: zenMode ? 0 : 1 }}
+        >
+          <LeftRail />
+        </div>
         <div
           data-ai-active={aiActive ? "true" : undefined}
           data-ai-state={runState}
@@ -64,7 +77,13 @@ function BuilderShell() {
         >
           <Canvas />
         </div>
-        <SidePanel />
+        {/* SidePanel wrapper: same fade pattern as LeftRail */}
+        <div
+          className="overflow-hidden transition-opacity duration-200 ease-out"
+          style={{ opacity: zenMode ? 0 : 1 }}
+        >
+          <SidePanel />
+        </div>
       </div>
     </div>
   );
