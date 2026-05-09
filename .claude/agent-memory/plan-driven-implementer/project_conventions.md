@@ -194,6 +194,18 @@ type: project
 - footerText 길이 클램핑: route handler에서 `slice(0, 200)` 적용.
 - PNG export에 cover/toc 파라미터 전달: full-page screenshot이므로 커버+TOC 포함 전체 페이지 캡처 (적용 결정).
 
+## ErrorsUiStore + ErrorsDrawer 패턴 (E11 PR-B, 2026-05-10)
+
+- `errors-ui.store.ts`: no-persist Zustand. `closeDrawer`에서 `selectedErrorId`도 함께 초기화.
+- `ErrorsDrawer`는 app-scoped(planId prop 없음) — `<ErrorsDrawer />` 단독 마운트. `VersionsDrawer`는 planId 필요.
+- `errors-list-item.tsx`: 행마다 독립적인 `useState` expand/collapse — 중앙 selectedId 의존 없음.
+- `formatRelative(at: number)`: date-fns 없이 인라인 ~15줄. 음수 델타(clock skew) → "just now".
+- `safeStringify(value)`: `JSON.stringify` try/catch → 실패 시 `String(value)` fallback. 순환 참조 방어.
+- `context`/`detail` 필드는 optional — `{context ? <pre>…</pre> : null}` 가드 필수.
+- 커맨드팔레트 `errors.openHistory` action: ctx 인자 미사용이므로 `_ctx` 파라미터명 사용 (Biome noUnusedVariables 방어).
+- `commands.json` "diagnostics" 그룹 추가 — `"when": "always"` (builder 밖에서도 접근 가능).
+- PR-A nit: `builder-provider.tsx` emitToast에 `context: { level }` 추가로 drawer에서 원본 severity 확인 가능.
+
 ## VersionsUiStore + Drawer 패턴 (E10 PR-B, 2026-05-10)
 
 - `versions-ui.store.ts`: persist 없는 에페머럴 Zustand 스토어. `create<T>()(...)` 패턴(theme-store 방식). `tagDialogOpen` 플래그도 같은 스토어에 포함해 커맨드팔레트에서 드로어+다이얼로그 동시 오픈 가능.
