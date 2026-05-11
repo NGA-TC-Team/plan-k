@@ -113,7 +113,7 @@ export function ChatMessageList() {
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto px-4 py-4"
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
       >
         {messages.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">

@@ -82,7 +82,7 @@ function BuilderShell() {
         </div>
         {/* SidePanel wrapper: same fade pattern as LeftRail */}
         <div
-          className="overflow-hidden transition-opacity duration-200 ease-out"
+          className="h-full min-h-0 overflow-hidden transition-opacity duration-200 ease-out"
           style={{ opacity: zenMode ? 0 : 1 }}
         >
           <SidePanel />

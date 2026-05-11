@@ -70,7 +70,7 @@ export function SidePanel() {
   return (
     <aside
       aria-label="Right panel"
-      className="relative hidden min-h-0 border-l text-sm lg:flex lg:flex-col lg:overflow-hidden"
+      className="relative hidden h-full min-h-0 border-l text-sm lg:flex lg:flex-col lg:overflow-hidden"
       style={{ width }}
     >
       <button
