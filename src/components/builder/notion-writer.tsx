@@ -349,6 +349,21 @@ export function NotionWriter({ parentId }: Props) {
               return;
             }
 
+            if (routed.kind === "table") {
+              e.preventDefault();
+              // Commit any pending writer content first.
+              const md = editorToMarkdown(editorRef.current);
+              if (md.trim().length > 0) {
+                commitCurrent(md);
+              }
+              // Insert table block — columnWidths omitted (undefined → even dist).
+              insertBlock("table", {
+                columns: routed.columns,
+                rows: routed.rows,
+              });
+              return;
+            }
+
             // kind === "text" — paste as plain text (strip rich formatting).
             e.preventDefault();
             document.execCommand("insertText", false, t);

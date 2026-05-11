@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAiFlashStore } from "@/services/stores";
 import { BlockShell } from "./block-shell";
 import { BookmarkCard } from "./blocks/bookmark-card";
+import { EditableTable } from "./editable-table";
 import { InlineEditor, type InlineEditorHandle } from "./inline-editor";
 
 type Props = {
@@ -45,6 +46,14 @@ export function EditableBlock({ blockId }: Props) {
           <BookmarkCard block={block} />
         </BlockFrame>
       );
+    case "table":
+      return (
+        // layout animation disabled for table blocks — cell focus events would
+        // trigger constant re-layout causing visual jitter (plan note §PR-2).
+        <BlockFrame blockId={blockId} disableLayoutAnim>
+          <EditableTable block={block} />
+        </BlockFrame>
+      );
     default:
       return <BlockShell blockId={blockId} />;
   }
@@ -53,15 +62,18 @@ export function EditableBlock({ blockId }: Props) {
 function BlockFrame({
   blockId,
   children,
+  disableLayoutAnim = false,
 }: {
   blockId: string;
   children: React.ReactNode;
+  /** Set true for table blocks to prevent layout jitter on cell focus. */
+  disableLayoutAnim?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   const isFlashing = useAiFlashStore((s) => s.flashedIds.has(blockId));
   return (
     <motion.div
-      layout={reduceMotion ? false : "position"}
+      layout={disableLayoutAnim || reduceMotion ? false : "position"}
       initial={reduceMotion ? false : { opacity: 0, y: 4 }}
       animate={
         reduceMotion

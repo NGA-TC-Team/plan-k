@@ -90,4 +90,79 @@ describe("routePaste", () => {
       url: "https://xn--p1ai.example.com",
     });
   });
+
+  // ─── Table cases ────────────────────────────────────────────────────────────
+
+  test("basic 3-column 2-row table returns kind=table", () => {
+    const md =
+      "| Name | Age | City |\n| --- | --- | --- |\n| Alice | 30 | Seoul |\n| Bob | 25 | Busan |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["Name", "Age", "City"],
+      rows: [
+        ["Alice", "30", "Seoul"],
+        ["Bob", "25", "Busan"],
+      ],
+    });
+  });
+
+  test("alignment specifiers (:---, ---:, :---:) are ignored and not in rows", () => {
+    const md =
+      "| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["Left", "Center", "Right"],
+      rows: [["a", "b", "c"]],
+    });
+  });
+
+  test("header-only table (no data rows) returns kind=table with empty rows", () => {
+    const md = "| Col A | Col B |\n| --- | --- |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["Col A", "Col B"],
+      rows: [],
+    });
+  });
+
+  test("single-line text (no alignment row) falls back to kind=text", () => {
+    const md = "| Col A | Col B |";
+    const result = routePaste(md);
+    expect(result.kind).toBe("text");
+  });
+
+  test("table followed by paragraph text — only table is extracted, paragraph ignored", () => {
+    const md =
+      "| A | B |\n| --- | --- |\n| 1 | 2 |\n\nSome extra paragraph text";
+    const result = routePaste(md);
+    // Empty line doesn't start with `|`, so parsing stops and we get the table.
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["A", "B"],
+      rows: [["1", "2"]],
+    });
+  });
+
+  test("short row is padded with empty strings to match header column count", () => {
+    const md = "| A | B | C |\n| --- | --- | --- |\n| only one |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["A", "B", "C"],
+      rows: [["only one", "", ""]],
+    });
+  });
+
+  test("row with more cells than header is truncated", () => {
+    const md = "| A | B |\n| --- | --- |\n| 1 | 2 | 3 | 4 |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["A", "B"],
+      rows: [["1", "2"]],
+    });
+  });
 });

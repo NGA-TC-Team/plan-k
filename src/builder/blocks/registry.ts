@@ -158,8 +158,10 @@ const tableManifest = manifest({
   schema: z.object({
     columns: z.array(z.string()).default(["", ""]),
     rows: z.array(z.array(z.string())).default([["", ""]]),
+    // px widths per column. undefined → even distribution in the renderer.
+    columnWidths: z.array(z.number()).optional(),
   }),
-  defaults: { columns: ["", ""], rows: [["", ""]] },
+  defaults: { columns: ["", ""], rows: [["", ""]], columnWidths: undefined },
   summary: (v) => `${v.columns.length} cols × ${v.rows.length} rows`,
 });
 
