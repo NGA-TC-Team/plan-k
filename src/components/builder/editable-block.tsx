@@ -2,7 +2,7 @@
 
 import { GripVertical } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import type { BlockEntity } from "@/builder/types/entity";
 import {
   useBuilderDispatch,
@@ -10,6 +10,7 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useAiFlashStore } from "@/services/stores";
+import { BacklogSelectionContext } from "./backlog-sheet";
 import { BlockShell } from "./block-shell";
 import { BookmarkCard } from "./blocks/bookmark-card";
 import { MathBlock } from "./blocks/math-block";
@@ -21,11 +22,191 @@ type Props = {
   parentId?: string;
 };
 
+// ── Merge helper ──────────────────────────────────────────────────────────────
+// Focuses the InlineEditor inside a BlockFrame that owns the given blockId,
+// then places the caret at charOffset (character position in plain text).
+// Falls back silently when the block is not yet in the DOM (virtualised, offscreen).
+function focusBlockAtOffset(blockId: string, charOffset: number): void {
+  // RAF ensures the DOM has updated after any preceding dispatch (UPDATE_BLOCK).
+  requestAnimationFrame(() => {
+    const frame = document.querySelector(
+      `[data-block-id="${CSS.escape(blockId)}"]`,
+    );
+    if (!frame) return;
+    // The InlineEditor contenteditable div is the first [contenteditable] child.
+    const editor = frame.querySelector<HTMLElement>("[contenteditable='true']");
+    if (!editor) return;
+    editor.focus();
+    // placeCaretAtOffset is a DOM utility exported from inline-editor.tsx; import
+    // it via the InlineEditorHandle's placeCaretAt or directly from the module.
+    // Here we call the DOM util directly to avoid ref coupling.
+    placeCaretAtOffsetDOM(editor, charOffset);
+  });
+}
+
+// Walks text nodes to place the caret at charOffset — mirrors the exported
+// placeCaretAtOffset in inline-editor.tsx but operates on any HTMLElement so
+// we don't need an InlineEditorHandle reference in this module.
+function placeCaretAtOffsetDOM(el: HTMLElement, charOffset: number): void {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let accumulated = 0;
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    const len = node.length;
+    if (accumulated + len >= charOffset) {
+      const range = document.createRange();
+      range.setStart(node, charOffset - accumulated);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return;
+    }
+    accumulated += len;
+    node = walker.nextNode() as Text | null;
+  }
+  // Past end — place at content end.
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// Hook: returns the prev sibling block id for the given blockId within its
+// parent's children array. Returns null when there is no prev sibling.
+function usePrevSiblingId(blockId: string): string | null {
+  return useBuilderState((s) => {
+    const block = s.state.blocks[blockId];
+    if (!block) return null;
+    const siblings = s.state.children[block.parentId] ?? [];
+    const idx = siblings.indexOf(blockId);
+    if (idx <= 0) return null;
+    return siblings[idx - 1] ?? null;
+  });
+}
+
+// ── mergeIntoBlock ────────────────────────────────────────────────────────────
+// Merges `currentMd` into `prevBlock`'s text field based on kind.
+// After dispatching UPDATE_BLOCK, schedules a caret placement at the junction.
+//
+// Table / non-text blocks: triggers table selected state (first-stage highlight)
+// instead of merging. Returns true if a merge was dispatched; false otherwise.
+function mergeIntoBlock(
+  prevBlock: BlockEntity,
+  currentMd: string,
+  dispatch: ReturnType<typeof useBuilderDispatch>,
+  setSelectedTableId: (id: string | null) => void,
+): boolean {
+  switch (prevBlock.kind) {
+    case "paragraph": {
+      const prevMd = (prevBlock.data.markdown as string) ?? "";
+      const prevLen = prevMd.length;
+      dispatch({
+        type: "UPDATE_BLOCK",
+        nodeId: prevBlock.id,
+        patch: { data: { ...prevBlock.data, markdown: prevMd + currentMd } },
+      });
+      focusBlockAtOffset(prevBlock.id, prevLen);
+      return true;
+    }
+    case "heading": {
+      const prevText = (prevBlock.data.text as string) ?? "";
+      const prevLen = prevText.length;
+      dispatch({
+        type: "UPDATE_BLOCK",
+        nodeId: prevBlock.id,
+        patch: { data: { ...prevBlock.data, text: prevText + currentMd } },
+      });
+      focusBlockAtOffset(prevBlock.id, prevLen);
+      return true;
+    }
+    case "blockquote": {
+      const prevText = (prevBlock.data.text as string) ?? "";
+      const prevLen = prevText.length;
+      dispatch({
+        type: "UPDATE_BLOCK",
+        nodeId: prevBlock.id,
+        patch: { data: { ...prevBlock.data, text: prevText + currentMd } },
+      });
+      focusBlockAtOffset(prevBlock.id, prevLen);
+      return true;
+    }
+    case "code-block": {
+      const prevCode = (prevBlock.data.code as string) ?? "";
+      const prevLen = prevCode.length;
+      // Join with a newline when the prev code has content.
+      const joined =
+        prevCode.length > 0 ? `${prevCode}\n${currentMd}` : currentMd;
+      dispatch({
+        type: "UPDATE_BLOCK",
+        nodeId: prevBlock.id,
+        patch: { data: { ...prevBlock.data, code: joined } },
+      });
+      focusBlockAtOffset(prevBlock.id, prevLen);
+      return true;
+    }
+    case "bullet-list":
+    case "numbered-list": {
+      const items = ((prevBlock.data.items as string[]) ?? []).slice();
+      if (items.length === 0) {
+        items.push(currentMd);
+      } else {
+        const lastIdx = items.length - 1;
+        items[lastIdx] = (items[lastIdx] ?? "") + currentMd;
+      }
+      dispatch({
+        type: "UPDATE_BLOCK",
+        nodeId: prevBlock.id,
+        patch: { data: { ...prevBlock.data, items } },
+      });
+      // Focus the last item — BlockFrame-based focus is not directly applicable
+      // for list items (they render their own InlineEditors without data-block-id
+      // per item). We focus the block frame end as best-effort.
+      focusBlockAtOffset(prevBlock.id, 0);
+      return true;
+    }
+    case "checklist": {
+      const items = (
+        (prevBlock.data.items as Array<{ text: string; done: boolean }>) ?? []
+      ).slice();
+      if (items.length === 0) {
+        items.push({ text: currentMd, done: false });
+      } else {
+        const lastIdx = items.length - 1;
+        const last = items[lastIdx];
+        if (last) items[lastIdx] = { ...last, text: last.text + currentMd };
+      }
+      dispatch({
+        type: "UPDATE_BLOCK",
+        nodeId: prevBlock.id,
+        patch: { data: { ...prevBlock.data, items } },
+      });
+      focusBlockAtOffset(prevBlock.id, 0);
+      return true;
+    }
+    case "table":
+      // Table: enter outer-selected state (2-step delete stage 1) instead of merge.
+      setSelectedTableId(prevBlock.id);
+      return false;
+    default:
+      // Non-text prev block (link-card, figure, math-block, etc.): caret jump only.
+      // The current block is preserved; we just move focus to end of prev block.
+      focusBlockAtOffset(prevBlock.id, 0);
+      return false;
+  }
+}
+
 // Renders a block inline-editably for kinds that have a primary text/markdown
 // field. Kinds we don't yet support fall back to the existing BlockShell
 // (double-click → side-panel form editor).
 export function EditableBlock({ blockId }: Props) {
   const block = useBuilderState((s) => s.state.blocks[blockId]);
+  // Read table outer-selection state from BacklogSheet context (may be null
+  // when this component is rendered outside a BacklogSheet, e.g. on a screen).
+  const { selectedTableId } = useContext(BacklogSelectionContext);
+
   if (!block) return null;
   switch (block.kind) {
     case "paragraph":
@@ -52,7 +233,10 @@ export function EditableBlock({ blockId }: Props) {
         // layout animation disabled for table blocks — cell focus events would
         // trigger constant re-layout causing visual jitter (plan note §PR-2).
         <BlockFrame blockId={blockId} disableLayoutAnim>
-          <EditableTable block={block} />
+          <EditableTable
+            block={block}
+            outerSelected={selectedTableId === blockId}
+          />
         </BlockFrame>
       );
     case "math-block":
@@ -106,6 +290,9 @@ function BlockFrame({
         duration: reduceMotion ? 0 : isFlashing ? 0.55 : 0.15,
         ease: "easeOut",
       }}
+      // data-block-id allows mergeIntoBlock() and DOM-walk navigation to locate
+      // a specific block's InlineEditor by querying '[data-block-id="<id>"]'.
+      data-block-id={blockId}
       className="group/eb relative py-0.5"
     >
       <span
@@ -123,6 +310,11 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
   const value = (block.data.markdown as string) ?? "";
   const handleRef = useRef<InlineEditorHandle | null>(null);
+  const prevSiblingId = usePrevSiblingId(block.id);
+  const prevBlock = useBuilderState((s) =>
+    prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
+  );
+  const { setSelectedTableId } = useContext(BacklogSelectionContext);
 
   const commit = (md: string) => {
     if (md === value) return;
@@ -141,13 +333,26 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
         onBlur={commit}
         placeholder="Empty paragraph"
         onKeyDown={(e, md) => {
-          if (
-            e.key === "Backspace" &&
-            md.length === 0 &&
-            handleRef.current?.isCaretAtStart()
-          ) {
-            e.preventDefault();
-            dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+          if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
+            if (md.length === 0) {
+              // Empty block Backspace: check if prev sibling is a table →
+              // enter table selected state instead of plain DELETE_BLOCK.
+              if (prevBlock?.kind === "table") {
+                e.preventDefault();
+                setSelectedTableId(prevBlock.id);
+                dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+                return;
+              }
+              e.preventDefault();
+              dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+              return;
+            }
+            // Non-empty block at start: merge into prev sibling.
+            if (prevBlock) {
+              e.preventDefault();
+              mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
+              dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+            }
           }
         }}
         inputClassName="text-base leading-relaxed"
@@ -160,6 +365,12 @@ function HeadingLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
   const level = (block.data.level as 1 | 2 | 3) ?? 1;
   const value = (block.data.text as string) ?? "";
+  const handleRef = useRef<InlineEditorHandle | null>(null);
+  const prevSiblingId = usePrevSiblingId(block.id);
+  const prevBlock = useBuilderState((s) =>
+    prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
+  );
+  const { setSelectedTableId } = useContext(BacklogSelectionContext);
 
   const commit = (md: string) => {
     if (md === value) return;
@@ -180,10 +391,31 @@ function HeadingLine({ block }: { block: BlockEntity }) {
   return (
     <BlockFrame blockId={block.id}>
       <InlineEditor
+        ref={handleRef}
         value={value}
         onBlur={commit}
         placeholder={`Heading ${level}`}
         inputClassName={sizeClass}
+        onKeyDown={(e, md) => {
+          if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
+            if (md.length === 0) {
+              if (prevBlock?.kind === "table") {
+                e.preventDefault();
+                setSelectedTableId(prevBlock.id);
+                dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+                return;
+              }
+              e.preventDefault();
+              dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+              return;
+            }
+            if (prevBlock) {
+              e.preventDefault();
+              mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
+              dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+            }
+          }
+        }}
       />
     </BlockFrame>
   );
@@ -192,6 +424,13 @@ function HeadingLine({ block }: { block: BlockEntity }) {
 function QuoteLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
   const value = (block.data.text as string) ?? "";
+  const handleRef = useRef<InlineEditorHandle | null>(null);
+  const prevSiblingId = usePrevSiblingId(block.id);
+  const prevBlock = useBuilderState((s) =>
+    prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
+  );
+  const { setSelectedTableId } = useContext(BacklogSelectionContext);
+
   const commit = (md: string) => {
     if (md === value) return;
     dispatch({
@@ -204,10 +443,31 @@ function QuoteLine({ block }: { block: BlockEntity }) {
     <BlockFrame blockId={block.id}>
       <div className="border-l-4 border-muted-foreground/40 pl-3 italic">
         <InlineEditor
+          ref={handleRef}
           value={value}
           onBlur={commit}
           placeholder="Quote"
           inputClassName="text-base"
+          onKeyDown={(e, md) => {
+            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
+              if (md.length === 0) {
+                if (prevBlock?.kind === "table") {
+                  e.preventDefault();
+                  setSelectedTableId(prevBlock.id);
+                  dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+                  return;
+                }
+                e.preventDefault();
+                dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+                return;
+              }
+              if (prevBlock) {
+                e.preventDefault();
+                mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
+                dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+              }
+            }
+          }}
         />
       </div>
     </BlockFrame>
@@ -217,6 +477,13 @@ function QuoteLine({ block }: { block: BlockEntity }) {
 function CodeLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
   const value = (block.data.code as string) ?? "";
+  const handleRef = useRef<InlineEditorHandle | null>(null);
+  const prevSiblingId = usePrevSiblingId(block.id);
+  const prevBlock = useBuilderState((s) =>
+    prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
+  );
+  const { setSelectedTableId } = useContext(BacklogSelectionContext);
+
   const commit = (md: string) => {
     if (md === value) return;
     dispatch({
@@ -229,12 +496,33 @@ function CodeLine({ block }: { block: BlockEntity }) {
     <BlockFrame blockId={block.id}>
       <div className="rounded-md bg-muted px-3 py-2 font-mono text-sm">
         <InlineEditor
+          ref={handleRef}
           value={value}
           onBlur={commit}
           multiline
           toolbar={false}
           placeholder="Code"
           inputClassName="font-mono text-sm"
+          onKeyDown={(e, md) => {
+            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
+              if (md.length === 0) {
+                if (prevBlock?.kind === "table") {
+                  e.preventDefault();
+                  setSelectedTableId(prevBlock.id);
+                  dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+                  return;
+                }
+                e.preventDefault();
+                dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+                return;
+              }
+              if (prevBlock) {
+                e.preventDefault();
+                mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
+                dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+              }
+            }
+          }}
         />
       </div>
     </BlockFrame>
@@ -252,6 +540,11 @@ function ListLine({ block }: { block: BlockEntity }) {
   const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(
     isFreshBlock ? 0 : null,
   );
+  const prevSiblingId = usePrevSiblingId(block.id);
+  const prevBlock = useBuilderState((s) =>
+    prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
+  );
+  const { setSelectedTableId } = useContext(BacklogSelectionContext);
 
   // Reset pendingFocusIdx one animation frame after the focused item mounts.
   // This prevents the flag from persisting across unrelated re-renders.
@@ -296,6 +589,41 @@ function ListLine({ block }: { block: BlockEntity }) {
     });
   };
 
+  // Merge item at idx into the item at idx-1 (same-list merge).
+  // Used when caret is at the start of a non-first item and Backspace is pressed.
+  const mergeItemIntoAbove = (idx: number, md: string) => {
+    if (idx === 0) return; // guard: use onBackspaceStart for first item
+    const next = items.slice();
+    next[idx - 1] = (next[idx - 1] ?? "") + md;
+    next.splice(idx, 1);
+    dispatch({
+      type: "UPDATE_BLOCK",
+      nodeId: block.id,
+      patch: { data: { ...block.data, items: next } },
+    });
+    // Focus the merged-into item (idx - 1) and place caret at junction.
+    setPendingFocusIdx(idx - 1);
+  };
+
+  // First-item Backspace with content: merge first item text into prev block.
+  const handleFirstItemBackspaceStart = (md: string) => {
+    if (!prevBlock) return;
+    const merged = mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
+    if (merged) {
+      // Remove first item from this list (or delete the whole list if only 1).
+      if (items.length <= 1) {
+        dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+      } else {
+        const next = items.slice(1);
+        dispatch({
+          type: "UPDATE_BLOCK",
+          nodeId: block.id,
+          patch: { data: { ...block.data, items: next } },
+        });
+      }
+    }
+  };
+
   // freshValue: the in-editor text at the moment Alt+Arrow fires.
   // Supplying it avoids relying on onBlur to flush before the move dispatch,
   // which would otherwise drop the last keystroke (race condition).
@@ -331,6 +659,8 @@ function ListLine({ block }: { block: BlockEntity }) {
             onCommit={(md) => updateItem(0, md)}
             onEnter={() => splitAt(0)}
             onBackspaceEmpty={() => removeAt(0)}
+            onBackspaceStart={(md) => handleFirstItemBackspaceStart(md)}
+            onMergeIntoAbove={undefined}
             onMoveUp={(fresh) => moveItem(0, -1, fresh)}
             onMoveDown={(fresh) => moveItem(0, 1, fresh)}
           />
@@ -345,6 +675,14 @@ function ListLine({ block }: { block: BlockEntity }) {
               onCommit={(md) => updateItem(idx, md)}
               onEnter={() => splitAt(idx)}
               onBackspaceEmpty={() => removeAt(idx)}
+              onBackspaceStart={
+                idx === 0
+                  ? (md) => handleFirstItemBackspaceStart(md)
+                  : undefined
+              }
+              onMergeIntoAbove={
+                idx > 0 ? (md) => mergeItemIntoAbove(idx, md) : undefined
+              }
               onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
               onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
             />
@@ -363,6 +701,8 @@ function ListItem({
   onCommit,
   onEnter,
   onBackspaceEmpty,
+  onBackspaceStart,
+  onMergeIntoAbove,
   onMoveUp,
   onMoveDown,
 }: {
@@ -373,6 +713,10 @@ function ListItem({
   onCommit: (md: string) => void;
   onEnter: () => void;
   onBackspaceEmpty: () => void;
+  /** Called when caret is at start of first item (idx===0) and md has content. */
+  onBackspaceStart?: (md: string) => void;
+  /** Called when caret is at start of a non-first item (idx>0) and md has content. */
+  onMergeIntoAbove?: (md: string) => void;
   // freshValue: live in-editor text passed to prevent stale-items race.
   onMoveUp: (freshValue: string) => void;
   onMoveDown: (freshValue: string) => void;
@@ -411,13 +755,24 @@ function ListItem({
               onEnter();
               return;
             }
-            if (
-              e.key === "Backspace" &&
-              md.length === 0 &&
-              handleRef.current?.isCaretAtStart()
-            ) {
-              e.preventDefault();
-              onBackspaceEmpty();
+            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
+              if (md.length === 0) {
+                e.preventDefault();
+                onBackspaceEmpty();
+                return;
+              }
+              // Non-empty at caret start: merge into item above (same list) or
+              // into prev block (first item only).
+              if (onMergeIntoAbove) {
+                e.preventDefault();
+                onCommit(md); // flush before mutating items
+                onMergeIntoAbove(md);
+                return;
+              }
+              if (onBackspaceStart) {
+                e.preventDefault();
+                onBackspaceStart(md);
+              }
             }
           }}
         />
@@ -439,6 +794,11 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
   const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(
     isFreshBlock ? 0 : null,
   );
+  const prevSiblingId = usePrevSiblingId(block.id);
+  const prevBlock = useBuilderState((s) =>
+    prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
+  );
+  const { setSelectedTableId } = useContext(BacklogSelectionContext);
 
   // Reset pendingFocusIdx one animation frame after the focused item mounts.
   useEffect(() => {
@@ -490,6 +850,30 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
     setItems(items.filter((_, i) => i !== idx));
   };
 
+  // Merge checklist item at idx into item at idx-1 (same-list merge).
+  const mergeChecklistItemIntoAbove = (idx: number, md: string) => {
+    if (idx === 0) return;
+    const next = items.slice();
+    const above = next[idx - 1];
+    if (above) next[idx - 1] = { ...above, text: above.text + md };
+    next.splice(idx, 1);
+    setItems(next);
+    setPendingFocusIdx(idx - 1);
+  };
+
+  // First-item Backspace with content: merge text into prev block.
+  const handleFirstChecklistItemBackspaceStart = (md: string) => {
+    if (!prevBlock) return;
+    const merged = mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
+    if (merged) {
+      if (items.length <= 1) {
+        dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
+      } else {
+        setItems(items.slice(1));
+      }
+    }
+  };
+
   // freshText: the in-editor text at the moment Alt+Arrow fires.
   // Patch items[idx].text before swapping so onBlur latency cannot drop input.
   const moveItem = (idx: number, dir: -1 | 1, freshText?: string) => {
@@ -524,6 +908,14 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             onCommit={(md) => updateItem(idx, { text: md })}
             onEnter={() => splitAt(idx)}
             onBackspaceEmpty={() => removeAt(idx)}
+            onBackspaceStart={
+              idx === 0
+                ? (md) => handleFirstChecklistItemBackspaceStart(md)
+                : undefined
+            }
+            onMergeIntoAbove={
+              idx > 0 ? (md) => mergeChecklistItemIntoAbove(idx, md) : undefined
+            }
             onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
             onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
           />
@@ -541,6 +933,8 @@ function ChecklistItem({
   onCommit,
   onEnter,
   onBackspaceEmpty,
+  onBackspaceStart,
+  onMergeIntoAbove,
   onMoveUp,
   onMoveDown,
 }: {
@@ -551,6 +945,10 @@ function ChecklistItem({
   onCommit: (md: string) => void;
   onEnter: () => void;
   onBackspaceEmpty: () => void;
+  /** Called when caret is at start of first item (idx===0) and md has content. */
+  onBackspaceStart?: (md: string) => void;
+  /** Called when caret is at start of a non-first item (idx>0) and md has content. */
+  onMergeIntoAbove?: (md: string) => void;
   // freshValue: live in-editor text passed to prevent stale-items race.
   onMoveUp: (freshValue: string) => void;
   onMoveDown: (freshValue: string) => void;
@@ -593,13 +991,22 @@ function ChecklistItem({
               onEnter();
               return;
             }
-            if (
-              e.key === "Backspace" &&
-              md.length === 0 &&
-              handleRef.current?.isCaretAtStart()
-            ) {
-              e.preventDefault();
-              onBackspaceEmpty();
+            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
+              if (md.length === 0) {
+                e.preventDefault();
+                onBackspaceEmpty();
+                return;
+              }
+              if (onMergeIntoAbove) {
+                e.preventDefault();
+                onCommit(md);
+                onMergeIntoAbove(md);
+                return;
+              }
+              if (onBackspaceStart) {
+                e.preventDefault();
+                onBackspaceStart(md);
+              }
             }
           }}
         />

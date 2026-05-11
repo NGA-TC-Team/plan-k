@@ -37,7 +37,14 @@ type RowMenuState = { rowIdx: number; x: number; y: number } | null;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function EditableTable({ block }: { block: BlockEntity }) {
+export function EditableTable({
+  block,
+  outerSelected = false,
+}: {
+  block: BlockEntity;
+  /** When true, renders a ring-2 highlight around the table (2-step delete first stage). */
+  outerSelected?: boolean;
+}) {
   const dispatch = useBuilderDispatch();
 
   const columns: string[] = (block.data.columns as string[]) ?? EMPTY_COLS;
@@ -312,7 +319,14 @@ export function EditableTable({ block }: { block: BlockEntity }) {
 
   return (
     // Outer wrapper: relative so row/col handles can be positioned.
-    <div className="group/table relative overflow-x-auto rounded-md border">
+    // outerSelected adds ring-2 for the 2-step table deletion first stage.
+    <div
+      className={cn(
+        "group/table relative overflow-x-auto rounded-md border",
+        outerSelected &&
+          "ring-2 ring-primary/60 ring-offset-2 ring-offset-background",
+      )}
+    >
       <table
         className="border-collapse text-sm"
         style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}

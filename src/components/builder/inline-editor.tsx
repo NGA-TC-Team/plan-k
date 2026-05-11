@@ -24,6 +24,8 @@ export type InlineEditorHandle = {
   isCaretAtStart: () => boolean;
   isCaretAtEnd: () => boolean;
   setMarkdown: (md: string) => void;
+  /** Place caret at a specific character offset within the editor's plain text. */
+  placeCaretAt: (charOffset: number) => void;
 };
 
 type Props = {
@@ -111,6 +113,12 @@ export function InlineEditor({
       el.innerHTML = inlineMdToHtml(md);
       lastValueRef.current = md;
       setIsEmpty(md.length === 0);
+    },
+    placeCaretAt: (charOffset: number) => {
+      const el = editorRef.current;
+      if (!el) return;
+      el.focus();
+      placeCaretAtOffset(el, charOffset);
     },
   }));
 
@@ -363,6 +371,38 @@ function FloatingToolbar({
 }
 
 // — helpers ───────────────────────────────────────────────────────────────
+
+/**
+ * Place the caret at a specific character offset within `el`'s plain text.
+ * Walks text nodes via TreeWalker, accumulating character counts until the
+ * target offset is reached, then sets a collapsed Selection at that exact
+ * (textNode, localOffset) position.
+ *
+ * Falls back to placeCaretAtEnd when offset exceeds total character count
+ * (e.g. after a merge that appended content).
+ */
+export function placeCaretAtOffset(el: HTMLElement, charOffset: number): void {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let accumulated = 0;
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    const len = node.length;
+    if (accumulated + len >= charOffset) {
+      const range = document.createRange();
+      range.setStart(node, charOffset - accumulated);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return;
+    }
+    accumulated += len;
+    node = walker.nextNode() as Text | null;
+  }
+  // charOffset exceeds total content — fall back to end.
+  placeCaretAtEnd(el);
+}
 
 function placeCaretAtEnd(el: HTMLElement) {
   const sel = window.getSelection();
