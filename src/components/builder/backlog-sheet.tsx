@@ -1,8 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { AnimatePresence } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -18,6 +17,7 @@ import { useBacklogStore } from "@/services/stores";
 import { EditableBlock } from "./editable-block";
 import { NotionWriter } from "./notion-writer";
 import { EntityStatusChip } from "./status-chip";
+import { VirtualBlockList } from "./virtual-block-list";
 
 const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
@@ -34,6 +34,10 @@ export function BacklogSheet() {
   const blocks = useBuilderState((s) => s.state.blocks);
   const childBlockIds = childIds.filter((id) => Boolean(blocks[id]));
   const dispatch = useBuilderDispatch();
+
+  // scrollRef: the overflow-y-auto container that acts as the virtual scroll
+  // parent. VirtualBlockList's getScrollElement reads this ref.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const [title, setTitle] = useState("");
   useEffect(() => {
@@ -94,7 +98,8 @@ export function BacklogSheet() {
                 <Trash2 className="size-4" />
               </Button>
             </div>
-            <div className="flex-1 overflow-y-auto px-12 py-10">
+            {/* scroll parent — VirtualBlockList's getScrollElement points here */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-12 py-10">
               <div className="mx-auto max-w-2xl">
                 <input
                   value={title}
@@ -112,16 +117,19 @@ export function BacklogSheet() {
                   className="w-full border-0 bg-transparent p-0 text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40 focus:ring-0"
                 />
 
-                <div className="mt-8 space-y-1">
-                  <AnimatePresence initial={false}>
-                    {childBlockIds.map((id) => (
-                      <EditableBlock
-                        key={id}
-                        blockId={id}
-                        parentId={section.id}
-                      />
-                    ))}
-                  </AnimatePresence>
+                <div className="mt-8">
+                  {/* VirtualBlockList: only DOM-renders visible blocks.
+                      NotionWriter sits outside the virtual container so it
+                      is always accessible regardless of scroll position. */}
+                  <VirtualBlockList
+                    ids={childBlockIds}
+                    render={(id) => (
+                      <EditableBlock blockId={id} parentId={section.id} />
+                    )}
+                    scrollContainerRef={scrollRef}
+                    estimateSize={48}
+                    overscan={10}
+                  />
                   <NotionWriter parentId={section.id} />
                 </div>
               </div>

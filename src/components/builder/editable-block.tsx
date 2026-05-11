@@ -71,18 +71,25 @@ export function EditableBlock({ blockId }: Props) {
 function BlockFrame({
   blockId,
   children,
-  disableLayoutAnim = false,
+  // disableLayoutAnim is kept in the public API for call-site compatibility
+  // (table, math-block) but no longer controls the layout prop — layout is
+  // always false because blocks live inside absolute-positioned virtual rows.
+  disableLayoutAnim: _disableLayoutAnim = false,
 }: {
   blockId: string;
   children: React.ReactNode;
-  /** Set true for table blocks to prevent layout jitter on cell focus. */
+  /** Kept for API compatibility. layout is always false in virtual rows. */
   disableLayoutAnim?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   const isFlashing = useAiFlashStore((s) => s.flashedIds.has(blockId));
   return (
     <motion.div
-      layout={disableLayoutAnim || reduceMotion ? false : "position"}
+      // layout is always off: blocks are rendered inside an absolute-positioned
+      // virtual row (position: absolute + translateY). Framer Motion's layout
+      // tracking would read incorrect coordinates and produce visible jumps.
+      // The AI flash (opacity/blur) and enter (opacity/y) animations are kept.
+      layout={false}
       initial={reduceMotion ? false : { opacity: 0, y: 4 }}
       animate={
         reduceMotion
