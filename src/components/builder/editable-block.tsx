@@ -296,6 +296,29 @@ function ListLine({ block }: { block: BlockEntity }) {
     });
   };
 
+  // freshValue: the in-editor text at the moment Alt+Arrow fires.
+  // Supplying it avoids relying on onBlur to flush before the move dispatch,
+  // which would otherwise drop the last keystroke (race condition).
+  const moveItem = (idx: number, dir: -1 | 1, freshValue?: string) => {
+    const newIdx = idx + dir;
+    // Boundary guard: no-op when already at first or last position.
+    if (newIdx < 0 || newIdx > items.length - 1) return;
+    const next = items.slice();
+    // Patch idx slot with the live editor value before swapping so the
+    // in-flight text is never lost even if onBlur hasn't fired yet.
+    if (freshValue !== undefined) next[idx] = freshValue;
+    // splice-based move: remove from current position, insert at new position.
+    const [removed] = next.splice(idx, 1);
+    next.splice(newIdx, 0, removed);
+    dispatch({
+      type: "UPDATE_BLOCK",
+      nodeId: block.id,
+      patch: { data: { ...block.data, items: next } },
+    });
+    // Keep caret on the moved item after re-render.
+    setPendingFocusIdx(newIdx);
+  };
+
   return (
     <BlockFrame blockId={block.id}>
       <ul className={cn("space-y-0.5", ordered ? "list-none" : "list-none")}>
@@ -308,6 +331,8 @@ function ListLine({ block }: { block: BlockEntity }) {
             onCommit={(md) => updateItem(0, md)}
             onEnter={() => splitAt(0)}
             onBackspaceEmpty={() => removeAt(0)}
+            onMoveUp={(fresh) => moveItem(0, -1, fresh)}
+            onMoveDown={(fresh) => moveItem(0, 1, fresh)}
           />
         ) : (
           items.map((item, idx) => (
@@ -320,6 +345,8 @@ function ListLine({ block }: { block: BlockEntity }) {
               onCommit={(md) => updateItem(idx, md)}
               onEnter={() => splitAt(idx)}
               onBackspaceEmpty={() => removeAt(idx)}
+              onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
+              onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
             />
           ))
         )}
@@ -336,6 +363,8 @@ function ListItem({
   onCommit,
   onEnter,
   onBackspaceEmpty,
+  onMoveUp,
+  onMoveDown,
 }: {
   ordered: boolean;
   index: number;
@@ -344,6 +373,9 @@ function ListItem({
   onCommit: (md: string) => void;
   onEnter: () => void;
   onBackspaceEmpty: () => void;
+  // freshValue: live in-editor text passed to prevent stale-items race.
+  onMoveUp: (freshValue: string) => void;
+  onMoveDown: (freshValue: string) => void;
 }) {
   const handleRef = useRef<InlineEditorHandle | null>(null);
   return (
@@ -360,6 +392,19 @@ function ListItem({
           placeholder="List item"
           inputClassName="text-base"
           onKeyDown={(e, md) => {
+            // Alt+Arrow: move this item up or down within the list.
+            // Pass the live editor value (md) so moveItem can patch items[idx]
+            // before swapping — guards against onBlur not yet having fired.
+            if (e.altKey && e.key === "ArrowUp") {
+              e.preventDefault();
+              onMoveUp(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
+            if (e.altKey && e.key === "ArrowDown") {
+              e.preventDefault();
+              onMoveDown(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               onCommit(md);
@@ -445,6 +490,25 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
     setItems(items.filter((_, i) => i !== idx));
   };
 
+  // freshText: the in-editor text at the moment Alt+Arrow fires.
+  // Patch items[idx].text before swapping so onBlur latency cannot drop input.
+  const moveItem = (idx: number, dir: -1 | 1, freshText?: string) => {
+    const newIdx = idx + dir;
+    // Boundary guard: no-op when already at first or last position.
+    if (newIdx < 0 || newIdx > items.length - 1) return;
+    const next = items.slice();
+    // Patch text at idx with the live value while preserving done state.
+    if (freshText !== undefined && next[idx]) {
+      next[idx] = { ...next[idx], text: freshText };
+    }
+    // splice-based move: remove from current position, insert at new position.
+    const [removed] = next.splice(idx, 1);
+    next.splice(newIdx, 0, removed);
+    setItems(next);
+    // Keep caret on the moved item after re-render.
+    setPendingFocusIdx(newIdx);
+  };
+
   const list = items.length === 0 ? [{ text: "", done: false }] : items;
 
   return (
@@ -460,6 +524,8 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             onCommit={(md) => updateItem(idx, { text: md })}
             onEnter={() => splitAt(idx)}
             onBackspaceEmpty={() => removeAt(idx)}
+            onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
+            onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
           />
         ))}
       </ul>
@@ -475,6 +541,8 @@ function ChecklistItem({
   onCommit,
   onEnter,
   onBackspaceEmpty,
+  onMoveUp,
+  onMoveDown,
 }: {
   value: string;
   done: boolean;
@@ -483,6 +551,9 @@ function ChecklistItem({
   onCommit: (md: string) => void;
   onEnter: () => void;
   onBackspaceEmpty: () => void;
+  // freshValue: live in-editor text passed to prevent stale-items race.
+  onMoveUp: (freshValue: string) => void;
+  onMoveDown: (freshValue: string) => void;
 }) {
   const handleRef = useRef<InlineEditorHandle | null>(null);
   return (
@@ -504,6 +575,18 @@ function ChecklistItem({
           placeholder="To-do"
           inputClassName="text-base"
           onKeyDown={(e, md) => {
+            // Alt+Arrow: move this item up or down within the checklist.
+            // Pass live editor value so moveItem patches text before swapping.
+            if (e.altKey && e.key === "ArrowUp") {
+              e.preventDefault();
+              onMoveUp(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
+            if (e.altKey && e.key === "ArrowDown") {
+              e.preventDefault();
+              onMoveDown(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               onCommit(md);
