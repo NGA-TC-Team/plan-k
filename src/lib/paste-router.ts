@@ -1,13 +1,14 @@
 /**
  * Pure paste-routing function.
  *
- * Categorises clipboard text as a standalone URL, a markdown table, or plain text.
- * Math-block routing will be added in PR-4.
+ * Categorises clipboard text as a standalone URL, a markdown table,
+ * a display-math block ($$…$$), or plain text.
  */
 
 export type PasteResult =
   | { kind: "url"; url: string }
   | { kind: "table"; columns: string[]; rows: string[][] }
+  | { kind: "math"; tex: string }
   | { kind: "text"; text: string };
 
 /**
@@ -26,10 +27,20 @@ export type PasteResult =
  *  - Returns { kind: "table", columns, rows } — alignment row excluded from data.
  *  - Asymmetric rows are padded with empty strings / excess cells are truncated.
  *
+ * Math criteria (checked before URL and table):
+ *  - Trimmed text starts AND ends with `$$`
+ *  - Has at least 4 characters total (i.e. not just `$$$$`)
+ *  - Inner content (between outer `$$` markers) is the TeX source
+ *  - Single-line `$$x^2$$` is also valid (no newline required)
+ *
  * Everything else is "text".
  */
 export function routePaste(text: string): PasteResult {
   const trimmed = text.trim();
+
+  // ── Display math detection (highest priority) ────────────────────────────────
+  const mathResult = tryParseDisplayMath(trimmed);
+  if (mathResult) return mathResult;
 
   // ── Markdown table detection (takes priority over URL check) ────────────────
   const tableResult = tryParseMarkdownTable(trimmed);
@@ -85,6 +96,9 @@ function tryParseMarkdownTable(
 
   // Need at least 2 lines: header + alignment row.
   if (lines.length < 2) return null;
+  // Guard against pathological large pastes; tables beyond a few hundred rows
+  // are almost always wrong intent and slow the renderer.
+  if (lines.length > 500) return null;
 
   const headerLine = lines[0].trim();
   const alignLine = lines[1].trim();
@@ -116,4 +130,31 @@ function tryParseMarkdownTable(
 
   // Header-only table is valid (zero data rows).
   return { kind: "table", columns, rows };
+}
+
+// ── Internal: display math parser ────────────────────────────────────────────
+
+/**
+ * Attempt to parse `text` as a `$$…$$` display-math block.
+ *
+ * Accepts:
+ *  - Multi-line: `$$\n<TeX>\n$$`
+ *  - Single-line: `$$<TeX>$$`
+ *
+ * Rejects:
+ *  - `$$$$` (empty inner content — too ambiguous)
+ *  - Text that doesn't start+end with `$$`
+ */
+function tryParseDisplayMath(
+  text: string,
+): Extract<PasteResult, { kind: "math" }> | null {
+  // Must start and end with $$ and be longer than 4 chars (not just "$$$$").
+  if (!text.startsWith("$$") || !text.endsWith("$$")) return null;
+  if (text.length <= 4) return null;
+
+  // Strip the outer $$ markers and trim inner whitespace.
+  const inner = text.slice(2, text.length - 2).trim();
+  if (inner.length === 0) return null;
+
+  return { kind: "math", tex: inner };
 }

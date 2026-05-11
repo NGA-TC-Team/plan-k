@@ -3,6 +3,7 @@
 import { Bold, Code, Italic, Palette } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { renderTexToHtml } from "@/services/third-party-facade/katex";
 
 const COLOR_SWATCHES: Array<{ label: string; value: string | null }> = [
   { label: "Default", value: null },
@@ -118,6 +119,8 @@ export function InlineEditor({
     if (!el) return;
     const text = el.innerText;
     setIsEmpty(text.length === 0);
+    // Inline code backtick immediate wrap — same algorithm as notion-writer.
+    wrapLastBacktickPair(el);
     const md = editorToMarkdown(el);
     lastValueRef.current = md;
     onChange?.(md);
@@ -200,8 +203,28 @@ export function InlineEditor({
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onBlur={() => {
+          // Apply inline math conversion before serialising to markdown.
+          applyInlineMath(editorRef.current);
           const md = editorToMarkdown(editorRef.current);
           onBlur?.(md);
+        }}
+        onClick={(e) => {
+          // Toggle: clicking a .math-inline span restores raw $…$.
+          const target = e.target as HTMLElement;
+          const span = target.closest?.(".math-inline") as HTMLElement | null;
+          if (span) {
+            const rawTex = span.dataset.tex ?? "";
+            const text = document.createTextNode(`$${rawTex}$`);
+            span.replaceWith(text);
+            const sel = window.getSelection();
+            if (sel) {
+              const range = document.createRange();
+              range.setStartAfter(text);
+              range.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          }
         }}
         onPaste={(e) => {
           e.preventDefault();
@@ -438,6 +461,10 @@ function nodeToMarkdown(node: Node): string {
     case "p":
       return inner;
     case "span": {
+      // Inline math span: serialise back to $tex$.
+      if (el.classList.contains("math-inline") && el.dataset.tex) {
+        return `$${el.dataset.tex}$`;
+      }
       const color = el.style.color;
       if (color) return `<span style="color:${color}">${inner}</span>`;
       return inner;
@@ -467,6 +494,11 @@ export function inlineMdToHtml(md: string): string {
   h = h.replace(/(^|[^\w*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
   // `code`
   h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+  // $math$ — inline math → KaTeX span (contenteditable=false).
+  h = h.replace(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g, (_m, tex: string) => {
+    const html = renderTexToHtml(tex, { displayMode: false });
+    return `<span class="math-inline" data-tex="${escapeAttr(tex)}" contenteditable="false">${html}</span>`;
+  });
   // newlines → <br>
   h = h.replace(/\n/g, "<br>");
   return h;
@@ -474,6 +506,162 @@ export function inlineMdToHtml(md: string): string {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
+
+// ── Inline code: immediate backtick-pair wrap ─────────────────────────────────
+// Shared algorithm with notion-writer; kept local to avoid cross-component
+// coupling for a pure-DOM helper. Range API direct manipulation for precise
+// cursor control (execCommand insertHTML is deprecated).
+
+export function wrapLastBacktickPair(root: HTMLElement): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  let node = walker.nextNode();
+  while (node) {
+    textNodes.push(node as Text);
+    node = walker.nextNode();
+  }
+
+  type Ptr = { ni: number; offset: number };
+  const chars: Ptr[] = [];
+  for (let ni = 0; ni < textNodes.length; ni++) {
+    const len = textNodes[ni].length;
+    for (let j = 0; j < len; j++) {
+      chars.push({ ni, offset: j });
+    }
+  }
+
+  let closeIdx = -1;
+  for (let i = chars.length - 1; i >= 0; i--) {
+    const { ni, offset } = chars[i];
+    if (textNodes[ni].textContent?.[offset] === "`") {
+      closeIdx = i;
+      break;
+    }
+  }
+  if (closeIdx < 0) return;
+
+  const closeNode = textNodes[chars[closeIdx].ni];
+  if (closeNode.parentElement?.closest("code")) return;
+
+  let openIdx = -1;
+  for (let i = closeIdx - 1; i >= 0; i--) {
+    const { ni, offset } = chars[i];
+    if (textNodes[ni].textContent?.[offset] === "`") {
+      openIdx = i;
+      break;
+    }
+  }
+  if (openIdx < 0) return;
+  if (closeIdx - openIdx <= 1) return;
+
+  const openNode = textNodes[chars[openIdx].ni];
+  if (openNode.parentElement?.closest("code")) return;
+
+  const range = document.createRange();
+  range.setStart(textNodes[chars[openIdx].ni], chars[openIdx].offset);
+  range.setEnd(textNodes[chars[closeIdx].ni], chars[closeIdx].offset + 1);
+
+  const fragment = range.extractContents();
+  const codeEl = document.createElement("code");
+
+  const fragNodes = Array.from(fragment.childNodes);
+  if (fragNodes.length === 0) return;
+
+  const firstChild = fragNodes[0];
+  if (firstChild.nodeType === Node.TEXT_NODE) {
+    const txt = firstChild.textContent ?? "";
+    firstChild.textContent = txt.startsWith("`") ? txt.slice(1) : txt;
+  }
+  const lastChild = fragNodes[fragNodes.length - 1];
+  if (lastChild.nodeType === Node.TEXT_NODE) {
+    const txt = lastChild.textContent ?? "";
+    lastChild.textContent = txt.endsWith("`") ? txt.slice(0, -1) : txt;
+  }
+
+  while (fragment.firstChild) {
+    codeEl.appendChild(fragment.firstChild);
+  }
+  range.insertNode(codeEl);
+
+  const sel = window.getSelection();
+  if (sel) {
+    const after = document.createRange();
+    after.setStartAfter(codeEl);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+  }
+}
+
+// ── Inline math: $…$ → KaTeX span on blur ────────────────────────────────────
+
+export function applyInlineMath(root: HTMLElement | null): void {
+  if (!root) return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = (node as Text).parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (parent.closest(".math-inline")) return NodeFilter.FILTER_REJECT;
+      if (parent.closest("code")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  const textNodes: Text[] = [];
+  let n = walker.nextNode();
+  while (n) {
+    textNodes.push(n as Text);
+    n = walker.nextNode();
+  }
+
+  const INLINE_MATH_RE = /(?<!\$)\$([^$\n]+?)\$(?!\$)/g;
+
+  for (const textNode of textNodes) {
+    const text = textNode.textContent ?? "";
+    if (!text.includes("$")) continue;
+
+    INLINE_MATH_RE.lastIndex = 0;
+    const matches: Array<{ start: number; end: number; tex: string }> = [];
+    let m: RegExpExecArray | null;
+    // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop.
+    while ((m = INLINE_MATH_RE.exec(text)) !== null) {
+      matches.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        tex: m[1] ?? "",
+      });
+    }
+    if (matches.length === 0) continue;
+
+    const frag = document.createDocumentFragment();
+    let cursor = 0;
+    for (const match of matches) {
+      if (match.start > cursor) {
+        frag.appendChild(
+          document.createTextNode(text.slice(cursor, match.start)),
+        );
+      }
+      const span = document.createElement("span");
+      span.className = "math-inline";
+      span.dataset.tex = match.tex;
+      span.contentEditable = "false";
+      // KaTeX output is trusted HTML from our facade — no user-supplied HTML.
+      span.innerHTML = renderTexToHtml(match.tex, { displayMode: false });
+      frag.appendChild(span);
+      cursor = match.end;
+    }
+    if (cursor < text.length) {
+      frag.appendChild(document.createTextNode(text.slice(cursor)));
+    }
+
+    textNode.parentNode?.replaceChild(frag, textNode);
+  }
 }
 
 // Imperative handle helper.

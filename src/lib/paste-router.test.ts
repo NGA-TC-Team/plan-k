@@ -165,4 +165,39 @@ describe("routePaste", () => {
       rows: [["1", "2"]],
     });
   });
+
+  // ─── Math cases ─────────────────────────────────────────────────────────────
+
+  test("multiline $$ block returns kind=math with inner tex", () => {
+    const md = "$$\n\\int_0^1 x \\, dx\n$$";
+    const result = routePaste(md);
+    expect(result).toEqual({ kind: "math", tex: "\\int_0^1 x \\, dx" });
+  });
+
+  test("single-line $$…$$ returns kind=math", () => {
+    const md = "$$x^2 + y^2 = r^2$$";
+    const result = routePaste(md);
+    expect(result).toEqual({ kind: "math", tex: "x^2 + y^2 = r^2" });
+  });
+
+  test("$$$$ (empty inner) returns kind=text (ambiguous)", () => {
+    const result = routePaste("$$$$");
+    expect(result.kind).toBe("text");
+  });
+
+  test("$$ without closing marker returns kind=text", () => {
+    const result = routePaste("$$x^2");
+    expect(result.kind).toBe("text");
+  });
+
+  test("inline $…$ single-line (no $$) returns kind=text (inline handled by editor)", () => {
+    const result = routePaste("$E=mc^2$");
+    expect(result.kind).toBe("text");
+  });
+
+  test("$$ block with leading/trailing whitespace is trimmed before routing", () => {
+    const md = "  $$\n\\alpha\n$$  ";
+    const result = routePaste(md);
+    expect(result).toEqual({ kind: "math", tex: "\\alpha" });
+  });
 });

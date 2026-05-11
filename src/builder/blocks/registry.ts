@@ -504,6 +504,17 @@ const apiEndpointManifest = manifest({
   summary: (v) => `${v.method} ${v.path || "/"}`,
 });
 
+const mathBlockManifest = manifest({
+  context: "docs",
+  kind: "math-block",
+  label: "Math",
+  group: "Structure",
+  shortcut: "M",
+  schema: z.object({ tex: z.string().default("") }),
+  defaults: { tex: "" },
+  summary: (v) => (v.tex as string).slice(0, 40) || "Math",
+});
+
 // ────────────────────────────── app (web/shared) ──────────────────────────────
 
 const pageHeaderManifest = manifest({
@@ -1116,6 +1127,7 @@ export const blockManifests = {
   "color-swatch": colorSwatchManifest,
   "journey-step": journeyStepManifest,
   "api-endpoint": apiEndpointManifest,
+  "math-block": mathBlockManifest,
   // app
   "page-header": pageHeaderManifest,
   sidebar: sidebarManifest,

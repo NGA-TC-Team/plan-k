@@ -46,6 +46,7 @@ import {
   Rows3,
   Rss,
   Settings2,
+  Sigma,
   Signal,
   Smartphone,
   Sparkles,
@@ -86,6 +87,7 @@ export const BLOCK_ICONS: Record<BlockKind, LucideIcon> = {
   "color-swatch": Palette,
   "journey-step": Footprints,
   "api-endpoint": Webhook,
+  "math-block": Sigma,
   // app
   "page-header": LayoutPanelTop,
   sidebar: PanelLeft,

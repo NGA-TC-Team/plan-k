@@ -10,6 +10,10 @@ import {
 } from "@/builder/defaults";
 import type { BlockEntity, BlockKind } from "@/builder/types/entity";
 import {
+  applyInlineMath,
+  wrapLastBacktickPair,
+} from "@/components/builder/inline-editor";
+import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
@@ -188,7 +192,11 @@ export function NotionWriter({ parentId }: Props) {
         clearEditor();
         setMode(sc.mode);
         focusEditor();
+        return;
       }
+      // Inline code backtick immediate visualisation.
+      // When the user types the closing backtick, wrap the innermost `…` pair in <code>.
+      wrapLastBacktickPair(el);
     }
   };
 
@@ -234,6 +242,13 @@ export function NotionWriter({ parentId }: Props) {
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       const md = editorToMarkdown(editorRef.current);
+
+      // `$$` on its own line + Enter → insert empty math-block.
+      if (mode === "paragraph" && md.trim() === "$$") {
+        insertBlock("math-block", { tex: "" });
+        return;
+      }
+
       const stayInList =
         mode === "bullet" || mode === "numbered" || mode === "check";
       if (md.trim().length === 0) {
@@ -350,6 +365,31 @@ export function NotionWriter({ parentId }: Props) {
           data-placeholder={MODE_PLACEHOLDER[mode]}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
+          onBlur={() => {
+            // On blur, convert any unrendered $…$ spans to KaTeX HTML in paragraph mode.
+            if (mode === "paragraph") {
+              applyInlineMath(editorRef.current);
+            }
+          }}
+          onClick={(e) => {
+            // Toggle: clicking a rendered .math-inline span restores raw $…$.
+            const target = e.target as HTMLElement;
+            const span = target.closest?.(".math-inline") as HTMLElement | null;
+            if (span) {
+              const rawTex = span.dataset.tex ?? "";
+              const text = document.createTextNode(`$${rawTex}$`);
+              span.replaceWith(text);
+              // Restore caret after the inserted text.
+              const sel = window.getSelection();
+              if (sel) {
+                const range = document.createRange();
+                range.setStartAfter(text);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            }
+          }}
           onPaste={(e) => {
             const t = e.clipboardData.getData("text/plain");
             const routed = routePaste(t);
@@ -383,6 +423,16 @@ export function NotionWriter({ parentId }: Props) {
                 columns: routed.columns,
                 rows: routed.rows,
               });
+              return;
+            }
+
+            if (routed.kind === "math") {
+              e.preventDefault();
+              const md = editorToMarkdown(editorRef.current);
+              if (md.trim().length > 0) {
+                commitCurrent(md);
+              }
+              insertBlock("math-block", { tex: routed.tex });
               return;
             }
 
@@ -728,6 +778,10 @@ function nodeToMarkdown(node: Node): string {
     case "br":
       return " ";
     case "span": {
+      // Inline math span: serialise back to $tex$.
+      if (el.classList.contains("math-inline") && el.dataset.tex) {
+        return `$${el.dataset.tex}$`;
+      }
       const color = el.style.color;
       if (color) return `<span style="color:${color}">${inner}</span>`;
       return inner;
@@ -751,3 +805,6 @@ function stripFormatting(md: string): string {
     .replace(/`([^`]+)`/g, "$1")
     .replace(/<[^>]+>/g, "");
 }
+
+// wrapLastBacktickPair and applyInlineMath are shared helpers imported from
+// inline-editor.tsx — see that file for full algorithm documentation.

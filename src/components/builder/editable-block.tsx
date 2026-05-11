@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAiFlashStore } from "@/services/stores";
 import { BlockShell } from "./block-shell";
 import { BookmarkCard } from "./blocks/bookmark-card";
+import { MathBlock } from "./blocks/math-block";
 import { EditableTable } from "./editable-table";
 import { InlineEditor, type InlineEditorHandle } from "./inline-editor";
 
@@ -52,6 +53,14 @@ export function EditableBlock({ blockId }: Props) {
         // trigger constant re-layout causing visual jitter (plan note §PR-2).
         <BlockFrame blockId={blockId} disableLayoutAnim>
           <EditableTable block={block} />
+        </BlockFrame>
+      );
+    case "math-block":
+      return (
+        // layout animation disabled — mode toggle between editing/preview
+        // causes height changes that would produce layout jump.
+        <BlockFrame blockId={blockId} disableLayoutAnim>
+          <MathBlock block={block} />
         </BlockFrame>
       );
     default:

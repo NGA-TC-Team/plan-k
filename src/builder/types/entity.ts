@@ -28,7 +28,8 @@ export type DocsBlockKind =
   | "release-note"
   | "color-swatch"
   | "journey-step"
-  | "api-endpoint";
+  | "api-endpoint"
+  | "math-block";
 
 export type AppBlockKind =
   | "page-header"
