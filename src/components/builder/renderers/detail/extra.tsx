@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MarkdownView } from "@/components/builder/markdown/markdown-view";
 import { useMediaUrl } from "@/hooks/builder/use-media-url.hook";
 import { cn } from "@/lib/utils";
+import { renderTexToHtml } from "@/services/third-party-facade/katex";
 import { highlightToHtml } from "@/services/third-party-facade/shiki";
 import type { BlockRenderer } from "../types";
 import { CopyButton } from "./_copy-button";
@@ -1492,5 +1493,28 @@ export const ApiEndpointDetail: BlockRenderer = ({ vm }) => {
         </div>
       ) : null}
     </div>
+  );
+};
+
+export const MathBlockDetail: BlockRenderer = ({ vm }) => {
+  const tex =
+    typeof vm.displayValue.tex === "string" ? vm.displayValue.tex : "";
+
+  if (!tex.trim()) {
+    return (
+      <div className="flex h-12 items-center rounded border bg-muted px-3 text-xs text-muted-foreground">
+        {empty("Empty formula")}
+      </div>
+    );
+  }
+
+  const html = renderTexToHtml(tex, { displayMode: true });
+
+  return (
+    <div
+      className="overflow-x-auto py-2 text-center"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted KaTeX output.
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 };

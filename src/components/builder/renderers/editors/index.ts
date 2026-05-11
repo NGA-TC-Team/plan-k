@@ -31,6 +31,7 @@ import { JsonFallbackEditor } from "./json-fallback-editor";
 import { LinkCardEditor } from "./link-card-editor";
 import { ListEditor } from "./list-editor";
 import { ListRowEditor } from "./list-row-editor";
+import { MathBlockEditor } from "./math-block-editor";
 import { MetricEditor } from "./metric-editor";
 import { MilestoneEditor } from "./milestone-editor";
 import { ModalEditor } from "./modal-editor";
@@ -64,6 +65,7 @@ const docs: ContextRegistry = {
   rule: RuleEditor,
   figure: FigureEditor,
   "link-card": LinkCardEditor,
+  "math-block": MathBlockEditor,
   definition: DefinitionEditor,
   decision: DecisionEditor,
   persona: PersonaEditor,
