@@ -62,15 +62,20 @@ export function moveCaretToPrevBlock(currentBlockId: string): boolean {
   const idx = sorted.indexOf(currentEl);
   if (idx <= 0) return false; // already first block
 
-  const prevEl = sorted[idx - 1];
-  if (!prevEl) return false;
-
-  const editor = prevEl.querySelector<HTMLElement>("[contenteditable='true']");
-  if (!editor) return false;
-
-  editor.focus();
-  placeCaretAtOffsetDOM(editor, Number.POSITIVE_INFINITY); // infinity → end
-  return true;
+  // Walk backwards until we find a block that contains a contenteditable.
+  // This skips bookmark / figure / math-block frames that have no editable child.
+  for (let i = idx - 1; i >= 0; i--) {
+    const candidate = sorted[i];
+    if (!candidate) continue;
+    const editor = candidate.querySelector<HTMLElement>(
+      "[contenteditable='true']",
+    );
+    if (!editor) continue;
+    editor.focus();
+    placeCaretAtOffsetDOM(editor, Number.POSITIVE_INFINITY); // infinity → end
+    return true;
+  }
+  return false;
 }
 
 export function moveCaretToNextBlock(currentBlockId: string): boolean {
@@ -83,15 +88,21 @@ export function moveCaretToNextBlock(currentBlockId: string): boolean {
   const idx = sorted.indexOf(currentEl);
   if (idx < 0 || idx >= sorted.length - 1) return false; // already last block
 
-  const nextEl = sorted[idx + 1];
-  if (!nextEl) return false;
-
-  const editor = nextEl.querySelector<HTMLElement>("[contenteditable='true']");
-  if (!editor) return false;
-
-  editor.focus();
-  placeCaretAtOffsetDOM(editor, 0); // start
-  return true;
+  // Walk forwards until we find a block that contains a contenteditable.
+  // table blocks expose their header cell as the first contenteditable,
+  // which gives natural "enter table from top" behaviour.
+  for (let i = idx + 1; i < sorted.length; i++) {
+    const candidate = sorted[i];
+    if (!candidate) continue;
+    const editor = candidate.querySelector<HTMLElement>(
+      "[contenteditable='true']",
+    );
+    if (!editor) continue;
+    editor.focus();
+    placeCaretAtOffsetDOM(editor, 0); // start
+    return true;
+  }
+  return false;
 }
 
 // ── Merge helper ──────────────────────────────────────────────────────────────
@@ -699,6 +710,11 @@ function ListLine({ block }: { block: BlockEntity }) {
   const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(
     isFreshBlock ? 0 : null,
   );
+  // Tracks where the caret should land when a new item gains autoFocus via
+  // arrow-key navigation (prev item → 'end', next item → 'start').
+  const [pendingFocusCaret, setPendingFocusCaret] = useState<
+    "start" | "end" | null
+  >(null);
   const prevSiblingId = usePrevSiblingId(block.id);
   const prevBlock = useBuilderState((s) =>
     prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
@@ -709,9 +725,19 @@ function ListLine({ block }: { block: BlockEntity }) {
   // This prevents the flag from persisting across unrelated re-renders.
   useEffect(() => {
     if (pendingFocusIdx === null) return;
-    const raf = requestAnimationFrame(() => setPendingFocusIdx(null));
+    const raf = requestAnimationFrame(() => {
+      setPendingFocusIdx(null);
+      setPendingFocusCaret(null);
+    });
     return () => cancelAnimationFrame(raf);
   }, [pendingFocusIdx]);
+
+  // Focus the item at idx and place caret at the given position.
+  // Used by arrow-key handlers to move caret between list items.
+  const focusItemAt = (idx: number, caret: "start" | "end") => {
+    setPendingFocusIdx(idx);
+    setPendingFocusCaret(caret);
+  };
 
   const updateItem = (idx: number, md: string) => {
     if (items[idx] === md) return;
@@ -731,8 +757,8 @@ function ListLine({ block }: { block: BlockEntity }) {
       nodeId: block.id,
       patch: { data: { ...block.data, items: next } },
     });
-    // Request autoFocus on the newly inserted item (idx + 1).
-    setPendingFocusIdx(idx + 1);
+    // New item inserted below: focus at start of newly created item.
+    focusItemAt(idx + 1, "start");
   };
 
   const removeAt = (idx: number) => {
@@ -760,8 +786,8 @@ function ListLine({ block }: { block: BlockEntity }) {
       nodeId: block.id,
       patch: { data: { ...block.data, items: next } },
     });
-    // Focus the merged-into item (idx - 1) and place caret at junction.
-    setPendingFocusIdx(idx - 1);
+    // Focus the merged-into item at the junction (end of what was already there).
+    focusItemAt(idx - 1, "end");
   };
 
   // First-item Backspace with content: merge first item text into prev block.
@@ -802,8 +828,8 @@ function ListLine({ block }: { block: BlockEntity }) {
       nodeId: block.id,
       patch: { data: { ...block.data, items: next } },
     });
-    // Keep caret on the moved item after re-render.
-    setPendingFocusIdx(newIdx);
+    // Keep caret on the moved item after re-render (preserve current caret side).
+    focusItemAt(newIdx, "end");
   };
 
   return (
@@ -815,6 +841,7 @@ function ListLine({ block }: { block: BlockEntity }) {
             index={0}
             value=""
             autoFocus={pendingFocusIdx === 0}
+            autoFocusCaret={pendingFocusCaret ?? "end"}
             onCommit={(md) => updateItem(0, md)}
             onEnter={() => splitAt(0)}
             onBackspaceEmpty={() => removeAt(0)}
@@ -824,6 +851,8 @@ function ListLine({ block }: { block: BlockEntity }) {
             onMoveDown={(fresh) => moveItem(0, 1, fresh)}
             onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
             onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
+            onArrowPrevItem={undefined}
+            onArrowNextItem={undefined}
             isFirstItem
             isLastItem
           />
@@ -835,6 +864,7 @@ function ListLine({ block }: { block: BlockEntity }) {
               index={idx}
               value={item}
               autoFocus={pendingFocusIdx === idx}
+              autoFocusCaret={pendingFocusCaret ?? "end"}
               onCommit={(md) => updateItem(idx, md)}
               onEnter={() => splitAt(idx)}
               onBackspaceEmpty={() => removeAt(idx)}
@@ -850,6 +880,14 @@ function ListLine({ block }: { block: BlockEntity }) {
               onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
               onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
               onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
+              onArrowPrevItem={
+                idx > 0 ? () => focusItemAt(idx - 1, "end") : undefined
+              }
+              onArrowNextItem={
+                idx < items.length - 1
+                  ? () => focusItemAt(idx + 1, "start")
+                  : undefined
+              }
               isFirstItem={idx === 0}
               isLastItem={idx === items.length - 1}
             />
@@ -865,6 +903,7 @@ function ListItem({
   index,
   value,
   autoFocus = false,
+  autoFocusCaret = "end",
   onCommit,
   onEnter,
   onBackspaceEmpty,
@@ -874,6 +913,8 @@ function ListItem({
   onMoveDown,
   onArrowPrevBlock,
   onArrowNextBlock,
+  onArrowPrevItem,
+  onArrowNextItem,
   isFirstItem = false,
   isLastItem = false,
 }: {
@@ -881,6 +922,8 @@ function ListItem({
   index: number;
   value: string;
   autoFocus?: boolean;
+  /** Where to place the caret when autoFocus triggers (default 'end'). */
+  autoFocusCaret?: "start" | "end";
   onCommit: (md: string) => void;
   onEnter: () => void;
   onBackspaceEmpty: () => void;
@@ -897,6 +940,10 @@ function ListItem({
   /** Move caret to next sibling block (called when last item caret at end).
    *  Returns true when the adjacent block was found and caret moved. */
   onArrowNextBlock: () => boolean;
+  /** Move caret to previous item within this list (ArrowUp on non-first item). */
+  onArrowPrevItem?: () => void;
+  /** Move caret to next item within this list (ArrowDown on non-last item). */
+  onArrowNextItem?: () => void;
   /** Whether this is the first item in the list (enables prev-block navigation). */
   isFirstItem?: boolean;
   /** Whether this is the last item in the list (enables next-block navigation). */
@@ -913,6 +960,7 @@ function ListItem({
           ref={handleRef}
           value={value}
           autoFocus={autoFocus}
+          autoFocusCaret={autoFocusCaret}
           onBlur={onCommit}
           placeholder="List item"
           inputClassName="text-base"
@@ -928,6 +976,19 @@ function ListItem({
             if (e.altKey && e.key === "ArrowDown") {
               e.preventDefault();
               onMoveDown(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
+            // ── Arrow intra-list navigation (Notion behaviour) ────────────
+            // ArrowUp on non-first item: move to previous item regardless of caret pos.
+            // ArrowDown on non-last item: move to next item regardless of caret pos.
+            if (e.key === "ArrowUp" && onArrowPrevItem) {
+              e.preventDefault();
+              onArrowPrevItem();
+              return;
+            }
+            if (e.key === "ArrowDown" && onArrowNextItem) {
+              e.preventDefault();
+              onArrowNextItem();
               return;
             }
             // ── Arrow cross-block navigation ──────────────────────────────
@@ -995,6 +1056,11 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
   const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(
     isFreshBlock ? 0 : null,
   );
+  // Tracks where the caret should land when a new item gains autoFocus via
+  // arrow-key navigation (prev item → 'end', next item → 'start').
+  const [pendingFocusCaret, setPendingFocusCaret] = useState<
+    "start" | "end" | null
+  >(null);
   const prevSiblingId = usePrevSiblingId(block.id);
   const prevBlock = useBuilderState((s) =>
     prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
@@ -1004,9 +1070,18 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
   // Reset pendingFocusIdx one animation frame after the focused item mounts.
   useEffect(() => {
     if (pendingFocusIdx === null) return;
-    const raf = requestAnimationFrame(() => setPendingFocusIdx(null));
+    const raf = requestAnimationFrame(() => {
+      setPendingFocusIdx(null);
+      setPendingFocusCaret(null);
+    });
     return () => cancelAnimationFrame(raf);
   }, [pendingFocusIdx]);
+
+  // Focus the item at idx and place caret at the given position.
+  const focusChecklistItemAt = (idx: number, caret: "start" | "end") => {
+    setPendingFocusIdx(idx);
+    setPendingFocusCaret(caret);
+  };
 
   const setItems = (next: typeof items) => {
     dispatch({
@@ -1039,8 +1114,8 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
       ...items.slice(idx + 1),
     ];
     setItems(next);
-    // Request autoFocus on the newly inserted item (idx + 1).
-    setPendingFocusIdx(idx + 1);
+    // New item inserted below: focus at start of newly created item.
+    focusChecklistItemAt(idx + 1, "start");
   };
 
   const removeAt = (idx: number) => {
@@ -1059,7 +1134,8 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
     if (above) next[idx - 1] = { ...above, text: above.text + md };
     next.splice(idx, 1);
     setItems(next);
-    setPendingFocusIdx(idx - 1);
+    // Focus the merged-into item at the junction.
+    focusChecklistItemAt(idx - 1, "end");
   };
 
   // First-item Backspace with content: merge text into prev block.
@@ -1090,8 +1166,8 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
     const [removed] = next.splice(idx, 1);
     next.splice(newIdx, 0, removed);
     setItems(next);
-    // Keep caret on the moved item after re-render.
-    setPendingFocusIdx(newIdx);
+    // Keep caret on the moved item after re-render (preserve current caret side).
+    focusChecklistItemAt(newIdx, "end");
   };
 
   const list = items.length === 0 ? [{ text: "", done: false }] : items;
@@ -1105,6 +1181,7 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             value={item.text}
             done={item.done}
             autoFocus={pendingFocusIdx === idx}
+            autoFocusCaret={pendingFocusCaret ?? "end"}
             onToggle={() => updateItem(idx, { done: !item.done })}
             onCommit={(md) => updateItem(idx, { text: md })}
             onEnter={() => splitAt(idx)}
@@ -1121,6 +1198,14 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
             onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
             onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
+            onArrowPrevItem={
+              idx > 0 ? () => focusChecklistItemAt(idx - 1, "end") : undefined
+            }
+            onArrowNextItem={
+              idx < list.length - 1
+                ? () => focusChecklistItemAt(idx + 1, "start")
+                : undefined
+            }
             isFirstItem={idx === 0}
             isLastItem={idx === list.length - 1}
           />
@@ -1134,6 +1219,7 @@ function ChecklistItem({
   value,
   done,
   autoFocus = false,
+  autoFocusCaret = "end",
   onToggle,
   onCommit,
   onEnter,
@@ -1144,12 +1230,16 @@ function ChecklistItem({
   onMoveDown,
   onArrowPrevBlock,
   onArrowNextBlock,
+  onArrowPrevItem,
+  onArrowNextItem,
   isFirstItem = false,
   isLastItem = false,
 }: {
   value: string;
   done: boolean;
   autoFocus?: boolean;
+  /** Where to place the caret when autoFocus triggers (default 'end'). */
+  autoFocusCaret?: "start" | "end";
   onToggle: () => void;
   onCommit: (md: string) => void;
   onEnter: () => void;
@@ -1167,6 +1257,10 @@ function ChecklistItem({
   /** Move caret to next sibling block (called when last item caret at end).
    *  Returns true when the adjacent block was found and caret moved. */
   onArrowNextBlock: () => boolean;
+  /** Move caret to previous item within this checklist (ArrowUp on non-first item). */
+  onArrowPrevItem?: () => void;
+  /** Move caret to next item within this checklist (ArrowDown on non-last item). */
+  onArrowNextItem?: () => void;
   /** Whether this is the first item in the checklist. */
   isFirstItem?: boolean;
   /** Whether this is the last item in the checklist. */
@@ -1188,6 +1282,7 @@ function ChecklistItem({
           ref={handleRef}
           value={value}
           autoFocus={autoFocus}
+          autoFocusCaret={autoFocusCaret}
           onBlur={onCommit}
           placeholder="To-do"
           inputClassName="text-base"
@@ -1202,6 +1297,19 @@ function ChecklistItem({
             if (e.altKey && e.key === "ArrowDown") {
               e.preventDefault();
               onMoveDown(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
+            // ── Arrow intra-list navigation (Notion behaviour) ────────────
+            // ArrowUp on non-first item: move to previous item regardless of caret pos.
+            // ArrowDown on non-last item: move to next item regardless of caret pos.
+            if (e.key === "ArrowUp" && onArrowPrevItem) {
+              e.preventDefault();
+              onArrowPrevItem();
+              return;
+            }
+            if (e.key === "ArrowDown" && onArrowNextItem) {
+              e.preventDefault();
+              onArrowNextItem();
               return;
             }
             // ── Arrow cross-block navigation ──────────────────────────────

@@ -37,6 +37,12 @@ type Props = {
   className?: string;
   inputClassName?: string;
   autoFocus?: boolean;
+  /**
+   * Where to place the caret when `autoFocus` triggers.
+   * 'end' (default) matches existing behaviour.
+   * 'start' is used when navigating to a list item from below (ArrowUp).
+   */
+  autoFocusCaret?: "start" | "end";
   toolbar?: boolean;
   /** When true (default false), Enter inserts a newline and doesn't fire onKeyDown's preventable Enter logic. */
   multiline?: boolean;
@@ -52,6 +58,7 @@ export function InlineEditor({
   className,
   inputClassName,
   autoFocus = false,
+  autoFocusCaret = "end",
   toolbar = true,
   multiline = false,
   ref,
@@ -83,10 +90,14 @@ export function InlineEditor({
       const el = editorRef.current;
       if (!el) return;
       el.focus();
-      placeCaretAtEnd(el);
+      if (autoFocusCaret === "start") {
+        placeCaretAtStart(el);
+      } else {
+        placeCaretAtEnd(el);
+      }
     }, 30);
     return () => clearTimeout(t);
-  }, [autoFocus]);
+  }, [autoFocus, autoFocusCaret]);
 
   // Imperative handle for parent components.
   useImperativeRef(ref, () => ({

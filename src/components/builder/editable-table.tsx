@@ -18,6 +18,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { BlockEntity } from "@/builder/types/entity";
 import { useBuilderDispatch } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
+import { moveCaretToNextBlock, moveCaretToPrevBlock } from "./editable-block";
 import {
   applyInlineMath,
   editorToMarkdown,
@@ -390,6 +391,12 @@ export function EditableTable({
                   ariaLabel={`Header cell column ${ci + 1}`}
                   className="min-h-[1.25em] min-w-[1ch] outline-none"
                   onCommit={(next) => commitCell("header", 0, ci, next.trim())}
+                  blockId={block.id}
+                  rowIdx={-1}
+                  colIdx={ci}
+                  totalDataRows={rows.length}
+                  onArrowOutPrev={() => moveCaretToPrevBlock(block.id)}
+                  onArrowOutNext={() => false}
                 />
 
                 {/* Resize handle */}
@@ -464,6 +471,12 @@ export function EditableTable({
                     ariaLabel={`Cell row ${ri + 1}, column ${ci + 1}`}
                     className="min-h-[1.25em] min-w-[1ch] whitespace-pre-wrap break-words outline-none"
                     onCommit={(next) => commitCell("data", ri, ci, next.trim())}
+                    blockId={block.id}
+                    rowIdx={ri}
+                    colIdx={ci}
+                    totalDataRows={rows.length}
+                    onArrowOutPrev={() => moveCaretToPrevBlock(block.id)}
+                    onArrowOutNext={() => moveCaretToNextBlock(block.id)}
                   />
                 </td>
               ))}
@@ -621,6 +634,42 @@ function FloatingMenu({
   );
 }
 
+// ── EditableCell helpers ──────────────────────────────────────────────────────
+
+/**
+ * Place caret at the start or end of a contentEditable div.
+ * Used when moving between table cells with ArrowUp/Down.
+ */
+function placeCellCaret(el: HTMLElement, position: "start" | "end"): void {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(position === "start");
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+/**
+ * Find a sibling cell div by block/row/col data attributes and focus it,
+ * placing the caret at the requested position.
+ * Returns true when the target cell was found and focused.
+ */
+function focusCellAt(
+  blockId: string,
+  rowIdx: number,
+  colIdx: number,
+  caretPosition: "start" | "end",
+): boolean {
+  const cell = document.querySelector<HTMLElement>(
+    `[data-table-block-id="${CSS.escape(blockId)}"][data-row-idx="${rowIdx}"][data-col-idx="${colIdx}"]`,
+  );
+  if (!cell) return false;
+  cell.focus();
+  placeCellCaret(cell, caretPosition);
+  return true;
+}
+
 // ── EditableCell ──────────────────────────────────────────────────────────────
 
 /**
@@ -634,17 +683,40 @@ function FloatingMenu({
  *   only when they differ — avoids spurious cursor resets.
  * - onInput: wraps backtick pairs immediately (same as InlineEditor / NotionWriter).
  * - onBlur: applies KaTeX math, then serialises to markdown, commits only on change.
+ *
+ * Arrow navigation:
+ * - ArrowUp: move to same column in previous row (or leave table upwards).
+ * - ArrowDown: move to same column in next row (or leave table downwards).
+ * - rowIdx === -1 means header row; data rows are 0-indexed.
  */
 function EditableCell({
   value,
   onCommit,
   className,
   ariaLabel,
+  blockId,
+  rowIdx,
+  colIdx,
+  totalDataRows,
+  onArrowOutPrev,
+  onArrowOutNext,
 }: {
   value: string;
   onCommit: (next: string) => void;
   className?: string;
   ariaLabel?: string;
+  /** The owning block's id — used to scope data-attribute queries. */
+  blockId: string;
+  /** -1 = header row; 0..N-1 = data rows. */
+  rowIdx: number;
+  /** Column index (0-indexed). */
+  colIdx: number;
+  /** Total number of data rows (header not included). */
+  totalDataRows: number;
+  /** Called when ArrowUp leaves the table upward (header row only). */
+  onArrowOutPrev: () => boolean;
+  /** Called when ArrowDown leaves the table downward (last data row). */
+  onArrowOutNext: () => boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   // Gate: true while this cell owns focus — prevents useLayoutEffect from
@@ -670,6 +742,10 @@ function EditableCell({
       suppressContentEditableWarning
       aria-label={ariaLabel}
       className={className}
+      // Data attributes used by focusCellAt() for cross-row navigation.
+      data-table-block-id={blockId}
+      data-row-idx={rowIdx}
+      data-col-idx={colIdx}
       onFocus={() => {
         focusedRef.current = true;
       }}
@@ -691,6 +767,40 @@ function EditableCell({
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
           (e.currentTarget as HTMLDivElement).blur();
+          return;
+        }
+
+        // ── Vertical arrow navigation within the table ────────────────────
+        if (e.key === "ArrowUp") {
+          if (rowIdx === -1) {
+            // Header row: leave table upwards.
+            if (onArrowOutPrev()) e.preventDefault();
+          } else if (rowIdx === 0) {
+            // First data row → move to header row (same col), caret at end.
+            e.preventDefault();
+            focusCellAt(blockId, -1, colIdx, "end");
+          } else {
+            // Move to previous data row, same col, caret at end.
+            e.preventDefault();
+            focusCellAt(blockId, rowIdx - 1, colIdx, "end");
+          }
+          return;
+        }
+
+        if (e.key === "ArrowDown") {
+          if (rowIdx === -1) {
+            // Header row → first data row (same col), caret at start.
+            e.preventDefault();
+            focusCellAt(blockId, 0, colIdx, "start");
+          } else if (rowIdx === totalDataRows - 1) {
+            // Last data row: leave table downwards.
+            if (onArrowOutNext()) e.preventDefault();
+          } else {
+            // Move to next data row, same col, caret at start.
+            e.preventDefault();
+            focusCellAt(blockId, rowIdx + 1, colIdx, "start");
+          }
+          return;
         }
       }}
     />
