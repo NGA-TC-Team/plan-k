@@ -22,6 +22,78 @@ type Props = {
   parentId?: string;
 };
 
+// ── Block-navigation helpers ──────────────────────────────────────────────────
+// Moves the caret from the current block to the previous sibling's InlineEditor
+// (end position) or the next sibling's InlineEditor (start position).
+//
+// Strategy: querySelectorAll("[data-block-id]") scoped to the nearest
+// [data-backlog-sheet] ancestor, then sort by vertical translateY so the logical
+// order matches the visual order even inside an absolute-positioned virtualizer.
+// Falls back to no-op when the adjacent block isn't in the DOM (virtualized,
+// off-screen) — caller already called e.preventDefault() only after this returns
+// true (see callers below).
+
+function getSortedBlockElements(currentEl: HTMLElement): HTMLElement[] {
+  // Walk up to find the sheet scroll container that owns this block.
+  const sheetRoot = currentEl.closest<HTMLElement>("[data-backlog-sheet]");
+  const queryRoot = sheetRoot ?? document;
+  const els = Array.from(
+    queryRoot.querySelectorAll<HTMLElement>("[data-block-id]"),
+  );
+  // Sort by visual top offset. getVirtualItems places rows with CSS translateY;
+  // getBoundingClientRect().top gives the rendered vertical position regardless
+  // of the positioning model used.
+  els.sort(
+    (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+  );
+  return els;
+}
+
+// Returns true when the caret was moved (preventDefault should be called by
+// the caller *before* invoking this — the caller checks isCaretAtStart/End
+// and only invokes this when the boundary condition is met).
+export function moveCaretToPrevBlock(currentBlockId: string): boolean {
+  const currentEl = document.querySelector<HTMLElement>(
+    `[data-block-id="${CSS.escape(currentBlockId)}"]`,
+  );
+  if (!currentEl) return false;
+
+  const sorted = getSortedBlockElements(currentEl);
+  const idx = sorted.indexOf(currentEl);
+  if (idx <= 0) return false; // already first block
+
+  const prevEl = sorted[idx - 1];
+  if (!prevEl) return false;
+
+  const editor = prevEl.querySelector<HTMLElement>("[contenteditable='true']");
+  if (!editor) return false;
+
+  editor.focus();
+  placeCaretAtOffsetDOM(editor, Number.POSITIVE_INFINITY); // infinity → end
+  return true;
+}
+
+export function moveCaretToNextBlock(currentBlockId: string): boolean {
+  const currentEl = document.querySelector<HTMLElement>(
+    `[data-block-id="${CSS.escape(currentBlockId)}"]`,
+  );
+  if (!currentEl) return false;
+
+  const sorted = getSortedBlockElements(currentEl);
+  const idx = sorted.indexOf(currentEl);
+  if (idx < 0 || idx >= sorted.length - 1) return false; // already last block
+
+  const nextEl = sorted[idx + 1];
+  if (!nextEl) return false;
+
+  const editor = nextEl.querySelector<HTMLElement>("[contenteditable='true']");
+  if (!editor) return false;
+
+  editor.focus();
+  placeCaretAtOffsetDOM(editor, 0); // start
+  return true;
+}
+
 // ── Merge helper ──────────────────────────────────────────────────────────────
 // Focuses the InlineEditor inside a BlockFrame that owns the given blockId,
 // then places the caret at charOffset (character position in plain text).
@@ -47,9 +119,19 @@ function focusBlockAtOffset(blockId: string, charOffset: number): void {
 // Walks text nodes to place the caret at charOffset — mirrors the exported
 // placeCaretAtOffset in inline-editor.tsx but operates on any HTMLElement so
 // we don't need an InlineEditorHandle reference in this module.
+// Pass Number.POSITIVE_INFINITY to place caret at the very end of content.
 function placeCaretAtOffsetDOM(el: HTMLElement, charOffset: number): void {
   const sel = window.getSelection();
   if (!sel) return;
+  // Fast-path: infinity means "go to end".
+  if (!Number.isFinite(charOffset)) {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return;
+  }
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   let accumulated = 0;
   let node = walker.nextNode() as Text | null;
@@ -332,7 +414,28 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
         value={value}
         onBlur={commit}
         placeholder="Empty paragraph"
-        onKeyDown={(e, md) => {
+        onKeyDown={(e, _md) => {
+          const md = _md;
+          // ── Arrow navigation: cross-block caret movement ─────────────────
+          // Alt+Arrow is reserved for list item reorder (PR-A) — skip here.
+          // preventDefault only when moveCaretTo* succeeds (adjacent block in DOM).
+          if (!e.altKey) {
+            if (
+              (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
+              handleRef.current?.isCaretAtStart()
+            ) {
+              if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+              return;
+            }
+            if (
+              (e.key === "ArrowDown" || e.key === "ArrowRight") &&
+              handleRef.current?.isCaretAtEnd()
+            ) {
+              if (moveCaretToNextBlock(block.id)) e.preventDefault();
+              return;
+            }
+          }
+          // ── Backspace: delete / merge ─────────────────────────────────────
           if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
             if (md.length === 0) {
               // Empty block Backspace: check if prev sibling is a table →
@@ -396,7 +499,26 @@ function HeadingLine({ block }: { block: BlockEntity }) {
         onBlur={commit}
         placeholder={`Heading ${level}`}
         inputClassName={sizeClass}
-        onKeyDown={(e, md) => {
+        onKeyDown={(e, _md) => {
+          const md = _md;
+          // ── Arrow navigation ──────────────────────────────────────────────
+          if (!e.altKey) {
+            if (
+              (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
+              handleRef.current?.isCaretAtStart()
+            ) {
+              if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+              return;
+            }
+            if (
+              (e.key === "ArrowDown" || e.key === "ArrowRight") &&
+              handleRef.current?.isCaretAtEnd()
+            ) {
+              if (moveCaretToNextBlock(block.id)) e.preventDefault();
+              return;
+            }
+          }
+          // ── Backspace ─────────────────────────────────────────────────────
           if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
             if (md.length === 0) {
               if (prevBlock?.kind === "table") {
@@ -448,7 +570,26 @@ function QuoteLine({ block }: { block: BlockEntity }) {
           onBlur={commit}
           placeholder="Quote"
           inputClassName="text-base"
-          onKeyDown={(e, md) => {
+          onKeyDown={(e, _md) => {
+            const md = _md;
+            // ── Arrow navigation ────────────────────────────────────────────
+            if (!e.altKey) {
+              if (
+                (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
+                handleRef.current?.isCaretAtStart()
+              ) {
+                if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+                return;
+              }
+              if (
+                (e.key === "ArrowDown" || e.key === "ArrowRight") &&
+                handleRef.current?.isCaretAtEnd()
+              ) {
+                if (moveCaretToNextBlock(block.id)) e.preventDefault();
+                return;
+              }
+            }
+            // ── Backspace ───────────────────────────────────────────────────
             if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
               if (md.length === 0) {
                 if (prevBlock?.kind === "table") {
@@ -503,7 +644,25 @@ function CodeLine({ block }: { block: BlockEntity }) {
           toolbar={false}
           placeholder="Code"
           inputClassName="font-mono text-sm"
-          onKeyDown={(e, md) => {
+          onKeyDown={(e, _md) => {
+            const md = _md;
+            // ── Arrow navigation ────────────────────────────────────────────
+            // code-block is multiline; only ArrowLeft/ArrowRight cross-block;
+            // ArrowUp/ArrowDown are intentionally left to native inside multiline.
+            if (!e.altKey) {
+              if (
+                e.key === "ArrowLeft" &&
+                handleRef.current?.isCaretAtStart()
+              ) {
+                if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+                return;
+              }
+              if (e.key === "ArrowRight" && handleRef.current?.isCaretAtEnd()) {
+                if (moveCaretToNextBlock(block.id)) e.preventDefault();
+                return;
+              }
+            }
+            // ── Backspace ───────────────────────────────────────────────────
             if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
               if (md.length === 0) {
                 if (prevBlock?.kind === "table") {
@@ -663,6 +822,10 @@ function ListLine({ block }: { block: BlockEntity }) {
             onMergeIntoAbove={undefined}
             onMoveUp={(fresh) => moveItem(0, -1, fresh)}
             onMoveDown={(fresh) => moveItem(0, 1, fresh)}
+            onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
+            onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
+            isFirstItem
+            isLastItem
           />
         ) : (
           items.map((item, idx) => (
@@ -685,6 +848,10 @@ function ListLine({ block }: { block: BlockEntity }) {
               }
               onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
               onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
+              onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
+              onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
+              isFirstItem={idx === 0}
+              isLastItem={idx === items.length - 1}
             />
           ))
         )}
@@ -705,6 +872,10 @@ function ListItem({
   onMergeIntoAbove,
   onMoveUp,
   onMoveDown,
+  onArrowPrevBlock,
+  onArrowNextBlock,
+  isFirstItem = false,
+  isLastItem = false,
 }: {
   ordered: boolean;
   index: number;
@@ -720,6 +891,16 @@ function ListItem({
   // freshValue: live in-editor text passed to prevent stale-items race.
   onMoveUp: (freshValue: string) => void;
   onMoveDown: (freshValue: string) => void;
+  /** Move caret to prev sibling block (called when first item caret at start).
+   *  Returns true when the adjacent block was found and caret moved. */
+  onArrowPrevBlock: () => boolean;
+  /** Move caret to next sibling block (called when last item caret at end).
+   *  Returns true when the adjacent block was found and caret moved. */
+  onArrowNextBlock: () => boolean;
+  /** Whether this is the first item in the list (enables prev-block navigation). */
+  isFirstItem?: boolean;
+  /** Whether this is the last item in the list (enables next-block navigation). */
+  isLastItem?: boolean;
 }) {
   const handleRef = useRef<InlineEditorHandle | null>(null);
   return (
@@ -747,6 +928,26 @@ function ListItem({
             if (e.altKey && e.key === "ArrowDown") {
               e.preventDefault();
               onMoveDown(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
+            // ── Arrow cross-block navigation ──────────────────────────────
+            // First item at start → move to prev sibling block.
+            // preventDefault only when the adjacent block was actually found in DOM.
+            if (
+              isFirstItem &&
+              (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
+              handleRef.current?.isCaretAtStart()
+            ) {
+              if (onArrowPrevBlock()) e.preventDefault();
+              return;
+            }
+            // Last item at end → move to next sibling block.
+            if (
+              isLastItem &&
+              (e.key === "ArrowDown" || e.key === "ArrowRight") &&
+              handleRef.current?.isCaretAtEnd()
+            ) {
+              if (onArrowNextBlock()) e.preventDefault();
               return;
             }
             if (e.key === "Enter" && !e.shiftKey) {
@@ -918,6 +1119,10 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             }
             onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
             onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
+            onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
+            onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
+            isFirstItem={idx === 0}
+            isLastItem={idx === list.length - 1}
           />
         ))}
       </ul>
@@ -937,6 +1142,10 @@ function ChecklistItem({
   onMergeIntoAbove,
   onMoveUp,
   onMoveDown,
+  onArrowPrevBlock,
+  onArrowNextBlock,
+  isFirstItem = false,
+  isLastItem = false,
 }: {
   value: string;
   done: boolean;
@@ -952,6 +1161,16 @@ function ChecklistItem({
   // freshValue: live in-editor text passed to prevent stale-items race.
   onMoveUp: (freshValue: string) => void;
   onMoveDown: (freshValue: string) => void;
+  /** Move caret to prev sibling block (called when first item caret at start).
+   *  Returns true when the adjacent block was found and caret moved. */
+  onArrowPrevBlock: () => boolean;
+  /** Move caret to next sibling block (called when last item caret at end).
+   *  Returns true when the adjacent block was found and caret moved. */
+  onArrowNextBlock: () => boolean;
+  /** Whether this is the first item in the checklist. */
+  isFirstItem?: boolean;
+  /** Whether this is the last item in the checklist. */
+  isLastItem?: boolean;
 }) {
   const handleRef = useRef<InlineEditorHandle | null>(null);
   return (
@@ -983,6 +1202,24 @@ function ChecklistItem({
             if (e.altKey && e.key === "ArrowDown") {
               e.preventDefault();
               onMoveDown(handleRef.current?.getMarkdown() ?? md);
+              return;
+            }
+            // ── Arrow cross-block navigation ──────────────────────────────
+            // preventDefault only when adjacent block found in DOM.
+            if (
+              isFirstItem &&
+              (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
+              handleRef.current?.isCaretAtStart()
+            ) {
+              if (onArrowPrevBlock()) e.preventDefault();
+              return;
+            }
+            if (
+              isLastItem &&
+              (e.key === "ArrowDown" || e.key === "ArrowRight") &&
+              handleRef.current?.isCaretAtEnd()
+            ) {
+              if (onArrowNextBlock()) e.preventDefault();
               return;
             }
             if (e.key === "Enter" && !e.shiftKey) {

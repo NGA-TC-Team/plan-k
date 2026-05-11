@@ -148,8 +148,10 @@ export function BacklogSheet() {
                 </Button>
               </div>
               {/* scroll parent — VirtualBlockList's getScrollElement points here */}
+              {/* data-backlog-sheet scopes block-navigation querySelectorAll to this sheet */}
               <div
                 ref={scrollRef}
+                data-backlog-sheet="true"
                 className="flex-1 overflow-y-auto px-12 py-10"
               >
                 <div className="mx-auto max-w-2xl">
