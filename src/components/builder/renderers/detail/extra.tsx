@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { inlineMdToHtml } from "@/components/builder/inline-editor";
 import { MarkdownView } from "@/components/builder/markdown/markdown-view";
 import { useMediaUrl } from "@/hooks/builder/use-media-url.hook";
 import { cn } from "@/lib/utils";
@@ -173,7 +174,14 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
                 key={i}
                 className="border-b border-border px-3 py-1.5 text-left font-semibold"
               >
-                {col || empty(`col ${i + 1}`)}
+                {col ? (
+                  <span
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: inlineMdToHtml escapes user input before inserting whitelisted tags only.
+                    dangerouslySetInnerHTML={{ __html: inlineMdToHtml(col) }}
+                  />
+                ) : (
+                  empty(`col ${i + 1}`)
+                )}
               </th>
             ))}
           </tr>
@@ -182,12 +190,18 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
           {rows.map((row, ri) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional.
             <tr key={ri} className="border-b border-border last:border-b-0">
-              {row.map((cell, ci) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional.
-                <td key={ci} className="px-3 py-1.5 align-top">
-                  {cell}
-                </td>
-              ))}
+              {row.map((cell, ci) => {
+                const html = inlineMdToHtml(cell);
+                return (
+                  <td
+                    // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional.
+                    key={ci}
+                    className="px-3 py-1.5 align-top"
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: inlineMdToHtml escapes user input before inserting whitelisted tags only.
+                    dangerouslySetInnerHTML={{ __html: html }}
+                  />
+                );
+              })}
             </tr>
           ))}
         </tbody>

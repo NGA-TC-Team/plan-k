@@ -493,6 +493,9 @@ function nodeToMarkdown(node: Node): string {
     case "em":
     case "i":
       return inner.length > 0 ? `*${inner}*` : "";
+    case "del":
+    case "s":
+      return inner.length > 0 ? `~~${inner}~~` : "";
     case "code":
       return inner.length > 0 ? `\`${inner}\`` : "";
     case "br":
@@ -532,6 +535,8 @@ export function inlineMdToHtml(md: string): string {
   h = h.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
   // *italic*  (avoid eating ** that was already replaced — those have <strong>)
   h = h.replace(/(^|[^\w*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+  // ~~strike~~
+  h = h.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
   // `code`
   h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
   // $math$ — inline math → KaTeX span (contenteditable=false).

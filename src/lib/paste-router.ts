@@ -76,13 +76,39 @@ const ALIGNMENT_CELL_RE = /^[\s\-:]+$/;
 /**
  * Split a markdown table row into trimmed cell strings.
  * Strips the leading and trailing `|` before splitting.
+ *
+ * Uses a char walker so that `\|` (escaped pipe) is treated as a literal `|`
+ * inside a cell and does NOT act as a column separator.
+ * Only `\|` is recognised as an escape sequence; other backslash combos are
+ * passed through verbatim (v1 scope — full GFM escape table is out of scope).
  */
 function splitTableRow(line: string): string[] {
-  return line
-    .replace(/^\|/, "")
-    .replace(/\|$/, "")
-    .split("|")
-    .map((c) => c.trim());
+  // Strip leading and trailing `|`.
+  const inner = line.replace(/^\|/, "").replace(/\|$/, "");
+
+  const cells: string[] = [];
+  let cur = "";
+
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    // `\|` → literal `|` in cell content; advance past both chars.
+    if (ch === "\\" && inner[i + 1] === "|") {
+      cur += "|";
+      i++;
+      continue;
+    }
+    // Unescaped `|` → column separator.
+    if (ch === "|") {
+      cells.push(cur.trim());
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  // Push the last (or only) cell.
+  cells.push(cur.trim());
+
+  return cells;
 }
 
 /**

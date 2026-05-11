@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { extractBlockText } from "@/builder/blocks/extract-text";
 import { routePaste } from "./paste-router";
 
 describe("routePaste", () => {
@@ -199,5 +200,99 @@ describe("routePaste", () => {
     const md = "  $$\n\\alpha\n$$  ";
     const result = routePaste(md);
     expect(result).toEqual({ kind: "math", tex: "\\alpha" });
+  });
+
+  // ─── Pipe-escape cases (splitTableRow char walker) ─────────────────────────
+
+  // Case A: escaped pipe `\|` in a cell is decoded to literal `|`.
+  test("case A — escaped pipe in cell is decoded to literal pipe", () => {
+    // | x\|y | z |
+    const md = "| Head1 | Head2 |\n| --- | --- |\n| x\\|y | z |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["Head1", "Head2"],
+      rows: [["x|y", "z"]],
+    });
+  });
+
+  // Case B: `\\|` (backslash then escaped pipe) — char walker sees the second
+  // backslash followed by `|`, so it fires the `\|` escape and yields a literal
+  // `|`. The preceding backslash is left verbatim. v1 does NOT implement `\\`
+  // → `\` reduction; `\|` is the only recognised escape sequence.
+  // Raw GFM string (JS source "a\\\\|b" = actual chars a \ \ | b, but "a\\|b"
+  // in the actual row = a \ | b → char walker: 'a', then '\' before '|' → '\|'
+  // escape → 'a\|' in the single cell).
+  test("case B — backslash before escaped pipe: \\\\| yields literal backslash+pipe in cell", () => {
+    // JS source `"a\\\\|b"` is 5 chars: a \ \ | b in the table row inner string.
+    // The row inner content is: a \ \ | b  (after stripping outer pipes)
+    // char walker walk:
+    //   'a'  → cur = "a"
+    //   '\'  → next is '\', not '|' → cur = "a\"
+    //   '\'  → next is '|' → escape hit → cur = "a\|", i++
+    //   'b'  → cur = "a\|b"
+    //   end  → cells = ["a|b" ... wait inner[i+1] when i=1 is '\' not '|' →
+    // Re-walk: inner = "a\\|b" (JS "a\\\\|b" → 4 chars: a \ \ | b? No:
+    //   "a\\\\|b" in JS → a + \\ + \\ + | + b = a \ \ | b (5 real chars)
+    //   i=0 ch='a' → cur="a"
+    //   i=1 ch='\', inner[2]='\'  (not '|') → cur="a\"
+    //   i=2 ch='\', inner[3]='|'  → escape! cur="a\|", i becomes 3
+    //   i=4 ch='b' → cur="a\|b"
+    //   end → cells = ["a\\|b".trim()] = ["a\\|b"]
+    // So the cell value is the 4-char string: a \ | b.
+    const md = "| H1 | H2 |\n| --- | --- |\n| a\\\\|b |";
+    const result = routePaste(md);
+    // Cell value: "a\|b" — one cell (a + backslash + pipe + b).
+    // The row parser sees this as a SINGLE cell because the `\|` in the middle
+    // of `\\|` is consumed as an escape by the char walker.
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["H1", "H2"],
+      rows: [["a\\|b", ""]],
+    });
+  });
+
+  // Case C: ordinary cells without any escapes — baseline regression.
+  test("case C — ordinary cells (no escapes) behave as before", () => {
+    const md = "| A | B |\n| --- | --- |\n| foo | bar |";
+    const result = routePaste(md);
+    expect(result).toEqual({
+      kind: "table",
+      columns: ["A", "B"],
+      rows: [["foo", "bar"]],
+    });
+  });
+
+  // ─── Round-trip: extractBlockText → routePaste ─────────────────────────────
+
+  // Case D: cells containing `|` survive serialize → parse → same cell values.
+  test("case D — round-trip: cell with pipe serializes and parses back correctly", () => {
+    // Build a minimal BlockEntity-shaped object for the table kind.
+    const block = {
+      id: "rt-1",
+      kind: "table" as const,
+      data: {
+        columns: ["Name", "Value"],
+        rows: [
+          ["a|b", "c"],
+          ["d", "e|f|g"],
+        ],
+      },
+      // Cast via unknown: only `kind` and `data` are read by extractBlockText;
+      // the full BlockEntity shape requires extra fields we don't need here.
+    } as unknown as Parameters<typeof extractBlockText>[0];
+
+    const serialized = extractBlockText(block);
+    // serialized should have \| in cells with pipes.
+    expect(serialized).toContain("\\|");
+
+    // Now parse the serialized GFM back.
+    const parsed = routePaste(serialized);
+    expect(parsed.kind).toBe("table");
+    if (parsed.kind === "table") {
+      expect(parsed.columns).toEqual(["Name", "Value"]);
+      expect(parsed.rows[0]).toEqual(["a|b", "c"]);
+      expect(parsed.rows[1]).toEqual(["d", "e|f|g"]);
+    }
   });
 });

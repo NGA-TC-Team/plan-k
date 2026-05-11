@@ -18,6 +18,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { BlockEntity } from "@/builder/types/entity";
 import { useBuilderDispatch } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
+import {
+  applyInlineMath,
+  editorToMarkdown,
+  inlineMdToHtml,
+  wrapLastBacktickPair,
+} from "./inline-editor";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -317,15 +323,36 @@ export function EditableTable({
 
   // ── JSX ──────────────────────────────────────────────────────────────────────
 
+  // Delegate math-inline click → raw $tex$ toggle (same pattern as InlineEditor).
+  function handleTableClick(e: React.MouseEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    const span = target.closest?.(".math-inline") as HTMLElement | null;
+    if (!span) return;
+    const rawTex = span.dataset.tex ?? "";
+    const text = document.createTextNode(`$${rawTex}$`);
+    span.replaceWith(text);
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.setStartAfter(text);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+
   return (
     // Outer wrapper: relative so row/col handles can be positioned.
     // outerSelected adds ring-2 for the 2-step table deletion first stage.
+    // biome-ignore lint/a11y/noStaticElementInteractions: click-delegation toggles math-inline span back to raw text — not a navigable interaction.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: math-inline toggle is a pointing-device convenience only; keyboard path is typing raw $tex$.
     <div
       className={cn(
         "group/table relative overflow-x-auto rounded-md border",
         outerSelected &&
           "ring-2 ring-primary/60 ring-offset-2 ring-offset-background",
       )}
+      onClick={handleTableClick}
     >
       <table
         className="border-collapse text-sm"
@@ -597,15 +624,16 @@ function FloatingMenu({
 // ── EditableCell ──────────────────────────────────────────────────────────────
 
 /**
- * Uncontrolled contentEditable cell.
+ * Uncontrolled contentEditable cell with inline markdown rendering.
  *
  * Safety guarantees:
- * - Initial value injected via `textContent` (not innerHTML) — XSS impossible.
+ * - External re-sync uses `inlineMdToHtml` (escapeHtml + whitelist tags) — XSS safe.
  * - While the cell is focused, the DOM is never touched from outside.
  * - When an external `value` prop changes and the cell is NOT focused,
- *   `useLayoutEffect` compares `el.textContent` with the new prop and patches
+ *   `useLayoutEffect` compares `el.innerHTML` with the rendered result and patches
  *   only when they differ — avoids spurious cursor resets.
- * - blur / Enter commits `innerText` (preserves \n from Shift+Enter) to `onCommit`.
+ * - onInput: wraps backtick pairs immediately (same as InlineEditor / NotionWriter).
+ * - onBlur: applies KaTeX math, then serialises to markdown, commits only on change.
  */
 function EditableCell({
   value,
@@ -626,10 +654,10 @@ function EditableCell({
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || focusedRef.current) return;
-    // Only patch when the committed value diverges from what the DOM shows.
-    // This guards against cursor resets on unrelated parent re-renders.
-    if (el.textContent !== value) {
-      el.textContent = value;
+    // Re-sync: render markdown to HTML and patch only when it has changed.
+    const nextHtml = inlineMdToHtml(value);
+    if (el.innerHTML !== nextHtml) {
+      el.innerHTML = nextHtml;
     }
   }, [value]);
 
@@ -645,11 +673,17 @@ function EditableCell({
       onFocus={() => {
         focusedRef.current = true;
       }}
+      onInput={(e) => {
+        // Immediate backtick-pair wrap — same algorithm as InlineEditor / NotionWriter.
+        wrapLastBacktickPair(e.currentTarget as HTMLDivElement);
+      }}
       onBlur={(e) => {
         focusedRef.current = false;
-        // innerText preserves newlines introduced by Shift+Enter.
-        const next = e.currentTarget.innerText;
-        if (next !== value) onCommit(next);
+        const el = e.currentTarget as HTMLDivElement;
+        // Apply KaTeX math conversion before serialising (same as InlineEditor).
+        applyInlineMath(el);
+        const md = editorToMarkdown(el);
+        if (md !== value) onCommit(md);
       }}
       onKeyDown={(e) => {
         // Enter without Shift commits (blur); Shift+Enter falls through to
