@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAiFlashStore } from "@/services/stores";
 import { BlockShell } from "./block-shell";
+import { BookmarkCard } from "./blocks/bookmark-card";
 import { InlineEditor, type InlineEditorHandle } from "./inline-editor";
 
 type Props = {
@@ -38,6 +39,12 @@ export function EditableBlock({ blockId }: Props) {
       return <ListLine block={block} />;
     case "checklist":
       return <ChecklistLine block={block} />;
+    case "link-card":
+      return (
+        <BlockFrame blockId={blockId}>
+          <BookmarkCard block={block} />
+        </BlockFrame>
+      );
     default:
       return <BlockShell blockId={blockId} />;
   }

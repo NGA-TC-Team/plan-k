@@ -27,4 +27,9 @@ export const queryKeys = {
     detail: (planId: string, versionId: string) =>
       [...queryKeys.planVersions.all, "detail", planId, versionId] as const,
   },
+  bookmarks: {
+    all: ["bookmarks"] as const,
+    preview: (url: string) =>
+      [...queryKeys.bookmarks.all, "preview", url] as const,
+  },
 } as const;

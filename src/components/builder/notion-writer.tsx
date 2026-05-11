@@ -13,6 +13,7 @@ import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
+import { routePaste } from "@/lib/paste-router";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -328,9 +329,28 @@ export function NotionWriter({ parentId }: Props) {
           onInput={handleInput}
           onKeyDown={handleKeyDown}
           onPaste={(e) => {
-            // Paste as plain text — strip rich formatting from external sources.
-            e.preventDefault();
             const t = e.clipboardData.getData("text/plain");
+            const routed = routePaste(t);
+
+            if (routed.kind === "url") {
+              e.preventDefault();
+              // Commit any pending writer content first, then insert link-card.
+              const md = editorToMarkdown(editorRef.current);
+              if (md.trim().length > 0) {
+                commitCurrent(md);
+              }
+              // Insert link-card block with empty meta (BookmarkCard will fetch).
+              insertBlock("link-card", {
+                url: routed.url,
+                title: "",
+                description: "",
+                faviconUrl: "",
+              });
+              return;
+            }
+
+            // kind === "text" — paste as plain text (strip rich formatting).
+            e.preventDefault();
             document.execCommand("insertText", false, t);
           }}
           className={cn(
