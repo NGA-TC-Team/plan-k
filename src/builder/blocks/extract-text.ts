@@ -8,6 +8,23 @@
 
 import type { BlockEntity } from "@/builder/types/entity";
 
+/** Serializes a `table` block to a GFM table string.
+ *  Exported so sectionToMarkdown can reuse without duplicating escapeCell logic. */
+export function serializeTableBlock(block: BlockEntity): string {
+  const data = (block.data ?? {}) as Record<string, unknown>;
+  const cols = (data.columns as string[] | undefined) ?? [];
+  const rows = (data.rows as string[][] | undefined) ?? [];
+  // Escape `|` inside cell values so GFM column separators are not broken.
+  const escapeCell = (cell: string) => cell.replace(/\|/g, "\\|");
+  const out: string[] = [];
+  if (cols.length) out.push(`| ${cols.map(escapeCell).join(" | ")} |`);
+  if (cols.length) out.push(`| ${cols.map(() => "---").join(" | ")} |`);
+  for (const r of rows) {
+    out.push(`| ${cols.map((_, i) => escapeCell(r[i] ?? "")).join(" | ")} |`);
+  }
+  return out.join("\n");
+}
+
 export function extractBlockText(block: BlockEntity): string {
   const data = (block.data ?? {}) as Record<string, unknown>;
   switch (block.kind) {
@@ -107,21 +124,8 @@ export function extractBlockText(block: BlockEntity): string {
     }
     case "agent-step":
       return [data.role, JSON.stringify(data.spec ?? {})].join(" ");
-    case "table": {
-      const cols = (data.columns as string[] | undefined) ?? [];
-      const rows = (data.rows as string[][] | undefined) ?? [];
-      // Escape `|` inside cell values so GFM column separators are not broken.
-      const escapeCell = (cell: string) => cell.replace(/\|/g, "\\|");
-      const out: string[] = [];
-      if (cols.length) out.push(`| ${cols.map(escapeCell).join(" | ")} |`);
-      if (cols.length) out.push(`| ${cols.map(() => "---").join(" | ")} |`);
-      for (const r of rows) {
-        out.push(
-          `| ${cols.map((_, i) => escapeCell(r[i] ?? "")).join(" | ")} |`,
-        );
-      }
-      return out.join("\n");
-    }
+    case "table":
+      return serializeTableBlock(block);
     default:
       return "";
   }

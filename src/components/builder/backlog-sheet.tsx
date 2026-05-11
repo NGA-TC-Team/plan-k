@@ -1,8 +1,15 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Ellipsis, FileDown, Trash2 } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +20,8 @@ import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
+import { copyToClipboard } from "@/lib/clipboard";
+import { sectionToMarkdown } from "@/lib/section-to-markdown";
 import { useBacklogStore } from "@/services/stores";
 import { EditableBlock } from "./editable-block";
 import { NotionWriter } from "./notion-writer";
@@ -51,6 +60,8 @@ export function BacklogSheet() {
   );
   const blocks = useBuilderState((s) => s.state.blocks);
   const childBlockIds = childIds.filter((id) => Boolean(blocks[id]));
+  // Full AppState snapshot — needed for sectionToMarkdown serialization.
+  const appState = useBuilderState((s) => s.state);
   const dispatch = useBuilderDispatch();
 
   // scrollRef: the overflow-y-auto container that acts as the virtual scroll
@@ -87,6 +98,24 @@ export function BacklogSheet() {
     dispatch({ type: "DELETE_SECTION", sectionId: section.id });
     unregister(section.planId, section.id);
     setOpenSheet(null);
+  };
+
+  const onCopyMarkdown = async () => {
+    if (!section) return;
+    const md = sectionToMarkdown(appState, section.id);
+    const ok = await copyToClipboard(md);
+    if (ok) {
+      toast("콘텐츠를 클립보드에 복사했습니다");
+    } else {
+      toast.error("복사 실패: 클립보드 접근 권한을 확인하세요");
+    }
+  };
+
+  const onExportPdf = () => {
+    if (!section) return;
+    const url = `/api/exports/pdf?planId=${section.planId}&sectionId=${section.id}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    toast("PDF 새 탭에서 생성 중…");
   };
 
   // ── Sheet-level keydown: handles table 2-step deletion + ESC dismiss ────
@@ -132,20 +161,48 @@ export function BacklogSheet() {
           >
             {/* biome-ignore lint/a11y/noStaticElementInteractions: sheet content captures keyboard for table 2-step delete */}
             <div className="contents" onKeyDown={handleSheetKeyDown}>
-              <div className="flex items-center justify-end gap-1 border-b px-4 py-1.5">
-                {section ? (
-                  <EntityStatusChip entityId={section.id} variant="pill" />
-                ) : null}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={onDelete}
-                  aria-label="Delete"
-                  title="Delete"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+              {/* pr-12: leaves room for SheetContent's absolute X close button (top-3 right-3 ≈ 44px) */}
+              <div className="flex items-center justify-between gap-2 border-b px-4 py-1.5 pr-12">
+                {/* Left: entity status chip */}
+                <EntityStatusChip entityId={section.id} variant="pill" />
+
+                {/* Right: more actions dropdown + delete */}
+                <div className="flex items-center gap-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="더 보기"
+                          title="더 보기"
+                        >
+                          <Ellipsis className="size-4" />
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" side="bottom">
+                      <DropdownMenuItem onSelect={onCopyMarkdown}>
+                        콘텐츠 복사하기
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={onExportPdf}>
+                        <FileDown className="size-4" />
+                        PDF로 내보내기
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={onDelete}
+                    aria-label="Delete"
+                    title="Delete"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
               </div>
               {/* scroll parent — VirtualBlockList's getScrollElement points here */}
               {/* data-backlog-sheet scopes block-navigation querySelectorAll to this sheet */}
