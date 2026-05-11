@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAiFlashStore } from "@/services/stores";
 import { BacklogSelectionContext } from "./backlog-sheet";
+import { matchBlockMacro } from "./block-macros";
 import { BlockShell } from "./block-shell";
 import { BookmarkCard } from "./blocks/bookmark-card";
 import { MathBlock } from "./blocks/math-block";
@@ -399,6 +400,12 @@ function BlockFrame({
   );
 }
 
+// Dynamic placeholder text for focused empty paragraphs. Using a module-level
+// constant avoids creating a new string reference on every render.
+const FOCUSED_EMPTY_PLACEHOLDER =
+  "Type, '/' for blocks, '#' for heading, '- ' for bullet…";
+const DEFAULT_PARAGRAPH_PLACEHOLDER = "Empty paragraph";
+
 function ParagraphLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
   const value = (block.data.markdown as string) ?? "";
@@ -408,6 +415,17 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
     prevSiblingId ? s.state.blocks[prevSiblingId] : undefined,
   );
   const { setSelectedTableId } = useContext(BacklogSelectionContext);
+
+  // Track focus state so we can show a richer placeholder on empty blocks.
+  const [isFocused, setIsFocused] = useState(false);
+
+  // isEmpty is derived from the committed value — no extra state needed.
+  const isEmpty = value.length === 0;
+
+  const dynamicPlaceholder =
+    isEmpty && isFocused
+      ? FOCUSED_EMPTY_PLACEHOLDER
+      : DEFAULT_PARAGRAPH_PLACEHOLDER;
 
   const commit = (md: string) => {
     if (md === value) return;
@@ -423,8 +441,38 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
       <InlineEditor
         ref={handleRef}
         value={value}
-        onBlur={commit}
-        placeholder="Empty paragraph"
+        onFocus={() => setIsFocused(true)}
+        onBlur={(md) => {
+          setIsFocused(false);
+          commit(md);
+        }}
+        onChange={(md) => {
+          // ── Macro detection: only when current committed value is empty ──
+          // Guard: skip when value is non-empty so we never transform blocks
+          // that already have text content. The block is only "empty" when the
+          // last-committed value is ""; mid-typing the md will grow from "".
+          if (value.length !== 0) return;
+
+          const macro = matchBlockMacro(md);
+          if (!macro) return;
+
+          // Race guard: block must still exist in state at dispatch time.
+          // UPDATE_BLOCK reducer returns null when the nodeId is not found,
+          // so the dispatch is safely a no-op in that case. We still guard
+          // here to avoid firing the RAF focus after a stale block.
+          dispatch({
+            type: "UPDATE_BLOCK",
+            nodeId: block.id,
+            patch: { kind: macro.kind, data: macro.data },
+          });
+
+          // Focus the converted block's first contenteditable after the DOM
+          // has updated. RAF ensures the React commit has finished.
+          requestAnimationFrame(() => {
+            focusBlockAtOffset(block.id, 0);
+          });
+        }}
+        placeholder={dynamicPlaceholder}
         onKeyDown={(e, _md) => {
           const md = _md;
           // ── Arrow navigation: cross-block caret movement ─────────────────

@@ -32,6 +32,7 @@ type Props = {
   value: string;
   onChange?: (md: string) => void;
   onBlur?: (md: string) => void;
+  onFocus?: () => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>, md: string) => void;
   placeholder?: string;
   className?: string;
@@ -53,6 +54,7 @@ export function InlineEditor({
   value,
   onChange,
   onBlur,
+  onFocus,
   onKeyDown,
   placeholder,
   className,
@@ -221,6 +223,7 @@ export function InlineEditor({
         data-empty={isEmpty ? "true" : "false"}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onFocus={() => onFocus?.()}
         onBlur={() => {
           // Apply inline math conversion before serialising to markdown.
           applyInlineMath(editorRef.current);
