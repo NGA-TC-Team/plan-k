@@ -243,7 +243,29 @@ export function NotionWriter({ parentId }: Props) {
           numberedSeqRef.current = 1;
           clearEditor();
           focusEditor();
+          return;
         }
+        if (mode === "paragraph") {
+          // Notion-style: empty Enter in paragraph mode inserts a blank paragraph block.
+          const empty: BlockEntity = {
+            id: crypto.randomUUID(),
+            parentId,
+            kind: "paragraph",
+            context: "docs",
+            data: { ...defaultDataFor("paragraph"), markdown: "" },
+          };
+          dispatch({
+            type: "INSERT_BLOCK",
+            parentId,
+            block: empty,
+            index: lastIndex,
+          });
+          // Writer stays in paragraph mode; focus stays in writer for next input.
+          clearEditor();
+          focusEditor();
+          return;
+        }
+        // heading / quote / code with empty Enter → no-op (existing behaviour).
         return;
       }
       commitCurrent(md);

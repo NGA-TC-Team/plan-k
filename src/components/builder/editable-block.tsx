@@ -2,7 +2,7 @@
 
 import { GripVertical } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BlockEntity } from "@/builder/types/entity";
 import {
   useBuilderDispatch,
@@ -229,6 +229,21 @@ function ListLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
   const items = ((block.data.items as string[]) ?? []).slice();
   const ordered = block.kind === "numbered-list";
+  // Tracks which item index should receive autoFocus after a split.
+  // Initialise to 0 when the block mounts with a single empty item
+  // (slash-menu or markdown-shortcut creation) so the first item gets focus.
+  const isFreshBlock = items.length === 1 && items[0] === "";
+  const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(
+    isFreshBlock ? 0 : null,
+  );
+
+  // Reset pendingFocusIdx one animation frame after the focused item mounts.
+  // This prevents the flag from persisting across unrelated re-renders.
+  useEffect(() => {
+    if (pendingFocusIdx === null) return;
+    const raf = requestAnimationFrame(() => setPendingFocusIdx(null));
+    return () => cancelAnimationFrame(raf);
+  }, [pendingFocusIdx]);
 
   const updateItem = (idx: number, md: string) => {
     if (items[idx] === md) return;
@@ -248,6 +263,8 @@ function ListLine({ block }: { block: BlockEntity }) {
       nodeId: block.id,
       patch: { data: { ...block.data, items: next } },
     });
+    // Request autoFocus on the newly inserted item (idx + 1).
+    setPendingFocusIdx(idx + 1);
   };
 
   const removeAt = (idx: number) => {
@@ -271,6 +288,7 @@ function ListLine({ block }: { block: BlockEntity }) {
             ordered={ordered}
             index={0}
             value=""
+            autoFocus={pendingFocusIdx === 0}
             onCommit={(md) => updateItem(0, md)}
             onEnter={() => splitAt(0)}
             onBackspaceEmpty={() => removeAt(0)}
@@ -282,6 +300,7 @@ function ListLine({ block }: { block: BlockEntity }) {
               ordered={ordered}
               index={idx}
               value={item}
+              autoFocus={pendingFocusIdx === idx}
               onCommit={(md) => updateItem(idx, md)}
               onEnter={() => splitAt(idx)}
               onBackspaceEmpty={() => removeAt(idx)}
@@ -297,6 +316,7 @@ function ListItem({
   ordered,
   index,
   value,
+  autoFocus = false,
   onCommit,
   onEnter,
   onBackspaceEmpty,
@@ -304,6 +324,7 @@ function ListItem({
   ordered: boolean;
   index: number;
   value: string;
+  autoFocus?: boolean;
   onCommit: (md: string) => void;
   onEnter: () => void;
   onBackspaceEmpty: () => void;
@@ -318,6 +339,7 @@ function ListItem({
         <InlineEditor
           ref={handleRef}
           value={value}
+          autoFocus={autoFocus}
           onBlur={onCommit}
           placeholder="List item"
           inputClassName="text-base"
@@ -348,6 +370,21 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
   const items = (
     (block.data.items as Array<{ text: string; done: boolean }>) ?? []
   ).slice();
+  // Tracks which item index should receive autoFocus after a split.
+  // Initialise to 0 when the block mounts with a single empty item
+  // (slash-menu or markdown-shortcut creation) so the first item gets focus.
+  const isFreshBlock =
+    items.length === 1 && items[0]?.text === "" && !items[0]?.done;
+  const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(
+    isFreshBlock ? 0 : null,
+  );
+
+  // Reset pendingFocusIdx one animation frame after the focused item mounts.
+  useEffect(() => {
+    if (pendingFocusIdx === null) return;
+    const raf = requestAnimationFrame(() => setPendingFocusIdx(null));
+    return () => cancelAnimationFrame(raf);
+  }, [pendingFocusIdx]);
 
   const setItems = (next: typeof items) => {
     dispatch({
@@ -380,6 +417,8 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
       ...items.slice(idx + 1),
     ];
     setItems(next);
+    // Request autoFocus on the newly inserted item (idx + 1).
+    setPendingFocusIdx(idx + 1);
   };
 
   const removeAt = (idx: number) => {
@@ -400,6 +439,7 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             key={`${block.id}-${idx}`}
             value={item.text}
             done={item.done}
+            autoFocus={pendingFocusIdx === idx}
             onToggle={() => updateItem(idx, { done: !item.done })}
             onCommit={(md) => updateItem(idx, { text: md })}
             onEnter={() => splitAt(idx)}
@@ -414,6 +454,7 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
 function ChecklistItem({
   value,
   done,
+  autoFocus = false,
   onToggle,
   onCommit,
   onEnter,
@@ -421,6 +462,7 @@ function ChecklistItem({
 }: {
   value: string;
   done: boolean;
+  autoFocus?: boolean;
   onToggle: () => void;
   onCommit: (md: string) => void;
   onEnter: () => void;
@@ -441,6 +483,7 @@ function ChecklistItem({
         <InlineEditor
           ref={handleRef}
           value={value}
+          autoFocus={autoFocus}
           onBlur={onCommit}
           placeholder="To-do"
           inputClassName="text-base"
