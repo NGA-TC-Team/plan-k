@@ -3,6 +3,7 @@
 import { GripVertical } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useContext, useEffect, useRef, useState } from "react";
+import { defaultDataFor } from "@/builder/defaults";
 import type { BlockEntity } from "@/builder/types/entity";
 import {
   useBuilderDispatch,
@@ -445,11 +446,14 @@ function BlockFrame({
   );
 }
 
-// Dynamic placeholder text for focused empty paragraphs. Using a module-level
-// constant avoids creating a new string reference on every render.
-const FOCUSED_EMPTY_PLACEHOLDER =
+// Stable empty array for Zustand selectors — avoids "getSnapshot should be
+// cached" warning when a parentId has no children entry yet.
+const EMPTY_SIBLINGS: string[] = [];
+
+// Placeholder shown only when a paragraph block is focused and empty.
+// Module-level constant avoids new string reference on every render.
+const PARAGRAPH_FOCUSED_PLACEHOLDER =
   "Type, '/' for blocks, '#' for heading, '- ' for bullet…";
-const DEFAULT_PARAGRAPH_PLACEHOLDER = "Empty paragraph";
 
 function ParagraphLine({ block }: { block: BlockEntity }) {
   const dispatch = useBuilderDispatch();
@@ -467,10 +471,10 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
   // isEmpty is derived from the committed value — no extra state needed.
   const isEmpty = value.length === 0;
 
+  // Show placeholder only when focused and empty. Passing undefined suppresses
+  // the placeholder entirely (InlineEditor: showPlaceholder = isEmpty && !!placeholder).
   const dynamicPlaceholder =
-    isEmpty && isFocused
-      ? FOCUSED_EMPTY_PLACEHOLDER
-      : DEFAULT_PARAGRAPH_PLACEHOLDER;
+    isEmpty && isFocused ? PARAGRAPH_FOCUSED_PLACEHOLDER : undefined;
 
   const commit = (md: string) => {
     if (md === value) return;
@@ -579,6 +583,17 @@ function HeadingLine({ block }: { block: BlockEntity }) {
   );
   const { setSelectedTableId } = useContext(BacklogSelectionContext);
 
+  // Compute the insertion index for a new block right after this heading.
+  // Hoisted to module-level EMPTY_SIBLINGS constant to keep getSnapshot stable
+  // and prevent the "infinite loop" Zustand warning.
+  const insertAfterIndex = useBuilderState((s) => {
+    const siblings = s.state.children[block.parentId] ?? EMPTY_SIBLINGS;
+    const selfIdx = siblings.indexOf(block.id);
+    // Guard: indexOf returns -1 when block isn't found (race during deletion).
+    // Fallback to 0 so the new block is still inserted rather than silently dropped.
+    return selfIdx === -1 ? 0 : selfIdx + 1;
+  });
+
   const commit = (md: string) => {
     if (md === value) return;
     dispatch({
@@ -621,6 +636,30 @@ function HeadingLine({ block }: { block: BlockEntity }) {
               if (moveCaretToNextBlock(block.id)) e.preventDefault();
               return;
             }
+          }
+          // ── Enter: insert a new paragraph block right after this heading ──
+          // Shift+Enter falls through to native (line break inside heading).
+          // isComposing guard prevents firing mid-IME composition (Korean etc.).
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            // Flush any in-flight text before inserting the new block.
+            commit(md);
+            const newBlock: BlockEntity = {
+              id: crypto.randomUUID(),
+              parentId: block.parentId,
+              kind: "paragraph",
+              context: block.context,
+              data: { ...defaultDataFor("paragraph"), markdown: "" },
+            };
+            dispatch({
+              type: "INSERT_BLOCK",
+              parentId: block.parentId,
+              block: newBlock,
+              index: insertAfterIndex,
+            });
+            // RAF: wait for React to commit the new block to the DOM before focusing.
+            focusBlockAtOffset(newBlock.id, 0);
+            return;
           }
           // ── Backspace ─────────────────────────────────────────────────────
           if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
