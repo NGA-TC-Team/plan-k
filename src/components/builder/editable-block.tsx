@@ -87,7 +87,7 @@ export function moveCaretToNextBlock(currentBlockId: string): boolean {
 
   const sorted = getSortedBlockElements(currentEl);
   const idx = sorted.indexOf(currentEl);
-  if (idx < 0 || idx >= sorted.length - 1) return false; // already last block
+  if (idx < 0) return false;
 
   // Walk forwards until we find a block that contains a contenteditable.
   // table blocks expose their header cell as the first contenteditable,
@@ -101,6 +101,47 @@ export function moveCaretToNextBlock(currentBlockId: string): boolean {
     if (!editor) continue;
     editor.focus();
     placeCaretAtOffsetDOM(editor, 0); // start
+    return true;
+  }
+
+  // Fallback: no next sibling block — jump to the NotionWriter inside the same
+  // sheet so ArrowDown from the last block lands in the writer.
+  const sheetRoot = currentEl.closest<HTMLElement>("[data-backlog-sheet]");
+  const writerEditor = sheetRoot?.querySelector<HTMLElement>(
+    "[data-notion-writer='true'][contenteditable='true']",
+  );
+  if (writerEditor) {
+    writerEditor.focus();
+    placeCaretAtOffsetDOM(writerEditor, 0);
+    return true;
+  }
+  return false;
+}
+
+// Moves the caret to the last block's editor end position within the sheet that
+// contains scopeRoot. Used by NotionWriter when ArrowUp/ArrowLeft is pressed at
+// the very start of the writer.
+// Returns false when no editable block is found (safe no-op).
+export function moveCaretToLastBlock(scopeRoot: HTMLElement): boolean {
+  const sheetRoot =
+    scopeRoot.closest<HTMLElement>("[data-backlog-sheet]") ?? scopeRoot;
+  const all = Array.from(
+    sheetRoot.querySelectorAll<HTMLElement>("[data-block-id]"),
+  );
+  if (all.length === 0) return false;
+  // Sort by visual top so the "last" block is the one rendered lowest on screen.
+  all.sort(
+    (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+  );
+  // Iterate from last to first; skip blocks without a contenteditable child
+  // (e.g., link-card, math-block, figure).
+  for (let i = all.length - 1; i >= 0; i--) {
+    const editor = all[i]?.querySelector<HTMLElement>(
+      "[contenteditable='true']",
+    );
+    if (!editor) continue;
+    editor.focus();
+    placeCaretAtOffsetDOM(editor, Number.POSITIVE_INFINITY); // end
     return true;
   }
   return false;
@@ -132,7 +173,11 @@ function focusBlockAtOffset(blockId: string, charOffset: number): void {
 // placeCaretAtOffset in inline-editor.tsx but operates on any HTMLElement so
 // we don't need an InlineEditorHandle reference in this module.
 // Pass Number.POSITIVE_INFINITY to place caret at the very end of content.
-function placeCaretAtOffsetDOM(el: HTMLElement, charOffset: number): void {
+// Exported so that notion-writer.tsx can reuse it without reimplementing.
+export function placeCaretAtOffsetDOM(
+  el: HTMLElement,
+  charOffset: number,
+): void {
   const sel = window.getSelection();
   if (!sel) return;
   // Fast-path: infinity means "go to end".

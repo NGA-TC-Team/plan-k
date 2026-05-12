@@ -9,6 +9,7 @@ import {
   defaultDataFor,
 } from "@/builder/defaults";
 import type { BlockEntity, BlockKind } from "@/builder/types/entity";
+import { moveCaretToLastBlock } from "@/components/builder/editable-block";
 import {
   applyInlineMath,
   wrapLastBacktickPair,
@@ -227,6 +228,21 @@ export function NotionWriter({ parentId }: Props) {
       return;
     }
 
+    // Cross-block arrow nav: paragraph mode only (other modes handled in follow-up).
+    // ArrowUp / ArrowLeft at caret start → jump to the last block's editor end.
+    // Only fires in paragraph mode; other modes retain native multi-line behaviour.
+    if (
+      mode === "paragraph" &&
+      (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
+      isCaretAtStart(editorRef.current)
+    ) {
+      const el = editorRef.current;
+      if (el && moveCaretToLastBlock(el)) {
+        e.preventDefault();
+      }
+      return;
+    }
+
     if (
       e.key === "Backspace" &&
       mode !== "paragraph" &&
@@ -362,6 +378,7 @@ export function NotionWriter({ parentId }: Props) {
           role="textbox"
           aria-label="New block"
           aria-multiline="false"
+          data-notion-writer="true"
           data-placeholder={MODE_PLACEHOLDER[mode]}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
