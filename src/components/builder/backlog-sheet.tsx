@@ -1,7 +1,7 @@
 "use client";
 
 import { Ellipsis, FileDown, Trash2 } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,9 +64,13 @@ export function BacklogSheet() {
   const appState = useBuilderState((s) => s.state);
   const dispatch = useBuilderDispatch();
 
-  // scrollRef: the overflow-y-auto container that acts as the virtual scroll
-  // parent. VirtualBlockList's getScrollElement reads this ref.
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // scrollEl: the overflow-y-auto container that acts as the virtual scroll
+  // parent. Stored in state (not a ref) so that when the DOM node is first
+  // attached after mount, React re-renders and VirtualBlockList's virtualizer
+  // can attach its ResizeObserver/ScrollObserver on the real element.
+  // The ref-callback pattern (setScrollEl) guarantees the state flip happens
+  // synchronously in the same commit as the DOM attachment.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
 
   // ── Table outer-selection state ──────────────────────────────────────────
   // Two-step table deletion: first Backspace → ring highlight, second → DELETE.
@@ -204,10 +208,13 @@ export function BacklogSheet() {
                   </Button>
                 </div>
               </div>
-              {/* scroll parent — VirtualBlockList's getScrollElement points here */}
+              {/* scroll parent — VirtualBlockList's scrollElement prop points here.
+                  Using a ref-callback (setScrollEl) instead of useRef so that
+                  the state flip on DOM attachment triggers a re-render and the
+                  virtualizer initialises with the real element, not null. */}
               {/* data-backlog-sheet scopes block-navigation querySelectorAll to this sheet */}
               <div
-                ref={scrollRef}
+                ref={setScrollEl}
                 data-backlog-sheet="true"
                 className="flex-1 overflow-y-auto px-12 py-10"
               >
@@ -237,7 +244,7 @@ export function BacklogSheet() {
                       render={(id) => (
                         <EditableBlock blockId={id} parentId={section.id} />
                       )}
-                      scrollContainerRef={scrollRef}
+                      scrollElement={scrollEl}
                       estimateSize={48}
                       overscan={10}
                     />
