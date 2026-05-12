@@ -576,10 +576,12 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
             return;
           }
           // ── Backspace: delete / merge ─────────────────────────────────────
-          if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
-            if (md.length === 0) {
-              // Empty block Backspace: check if prev sibling is a table →
-              // enter table selected state instead of plain DELETE_BLOCK.
+          if (e.key === "Backspace") {
+            // isEmpty: trim strips browser-injected trailing "\n" from <br>
+            const isEmpty = md.replace(/\n/g, "").trim().length === 0;
+            if (isEmpty) {
+              // Empty block: delete regardless of caret position.
+              // Check if prev sibling is a table → enter table selected state.
               if (prevBlock?.kind === "table") {
                 e.preventDefault();
                 setSelectedTableId(prevBlock.id);
@@ -590,8 +592,8 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
               dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
               return;
             }
-            // Non-empty block at start: merge into prev sibling.
-            if (prevBlock) {
+            // Non-empty block at caret-start: merge into prev sibling.
+            if (handleRef.current?.isCaretAtStart() && prevBlock) {
               e.preventDefault();
               mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
               dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
@@ -694,8 +696,11 @@ function HeadingLine({ block }: { block: BlockEntity }) {
             return;
           }
           // ── Backspace ─────────────────────────────────────────────────────
-          if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
-            if (md.length === 0) {
+          if (e.key === "Backspace") {
+            // isEmpty: trim strips browser-injected trailing "\n" from <br>
+            const isEmpty = md.replace(/\n/g, "").trim().length === 0;
+            if (isEmpty) {
+              // Empty heading: delete regardless of caret position.
               if (prevBlock?.kind === "table") {
                 e.preventDefault();
                 setSelectedTableId(prevBlock.id);
@@ -706,7 +711,7 @@ function HeadingLine({ block }: { block: BlockEntity }) {
               dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
               return;
             }
-            if (prevBlock) {
+            if (handleRef.current?.isCaretAtStart() && prevBlock) {
               e.preventDefault();
               mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
               dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
@@ -765,8 +770,11 @@ function QuoteLine({ block }: { block: BlockEntity }) {
               }
             }
             // ── Backspace ───────────────────────────────────────────────────
-            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
-              if (md.length === 0) {
+            if (e.key === "Backspace") {
+              // isEmpty: trim strips browser-injected trailing "\n" from <br>
+              const isEmpty = md.replace(/\n/g, "").trim().length === 0;
+              if (isEmpty) {
+                // Empty quote: delete regardless of caret position.
                 if (prevBlock?.kind === "table") {
                   e.preventDefault();
                   setSelectedTableId(prevBlock.id);
@@ -777,7 +785,7 @@ function QuoteLine({ block }: { block: BlockEntity }) {
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                 return;
               }
-              if (prevBlock) {
+              if (handleRef.current?.isCaretAtStart() && prevBlock) {
                 e.preventDefault();
                 mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
@@ -838,8 +846,11 @@ function CodeLine({ block }: { block: BlockEntity }) {
               }
             }
             // ── Backspace ───────────────────────────────────────────────────
-            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
-              if (md.length === 0) {
+            if (e.key === "Backspace") {
+              // isEmpty: trim strips browser-injected trailing "\n" from <br>
+              const isEmpty = md.replace(/\n/g, "").trim().length === 0;
+              if (isEmpty) {
+                // Empty code block: delete regardless of caret position.
                 if (prevBlock?.kind === "table") {
                   e.preventDefault();
                   setSelectedTableId(prevBlock.id);
@@ -850,7 +861,7 @@ function CodeLine({ block }: { block: BlockEntity }) {
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                 return;
               }
-              if (prevBlock) {
+              if (handleRef.current?.isCaretAtStart() && prevBlock) {
                 e.preventDefault();
                 mergeIntoBlock(prevBlock, md, dispatch, setSelectedTableId);
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
@@ -1181,23 +1192,28 @@ function ListItem({
               onEnter();
               return;
             }
-            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
-              if (md.length === 0) {
+            if (e.key === "Backspace") {
+              // isEmpty: trim strips browser-injected trailing "\n" from <br>
+              const isEmpty = md.replace(/\n/g, "").trim().length === 0;
+              if (isEmpty) {
+                // Empty item: delete regardless of caret position.
                 e.preventDefault();
                 onBackspaceEmpty();
                 return;
               }
               // Non-empty at caret start: merge into item above (same list) or
               // into prev block (first item only).
-              if (onMergeIntoAbove) {
-                e.preventDefault();
-                onCommit(md); // flush before mutating items
-                onMergeIntoAbove(md);
-                return;
-              }
-              if (onBackspaceStart) {
-                e.preventDefault();
-                onBackspaceStart(md);
+              if (handleRef.current?.isCaretAtStart()) {
+                if (onMergeIntoAbove) {
+                  e.preventDefault();
+                  onCommit(md); // flush before mutating items
+                  onMergeIntoAbove(md);
+                  return;
+                }
+                if (onBackspaceStart) {
+                  e.preventDefault();
+                  onBackspaceStart(md);
+                }
               }
             }
           }}
@@ -1500,21 +1516,26 @@ function ChecklistItem({
               onEnter();
               return;
             }
-            if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {
-              if (md.length === 0) {
+            if (e.key === "Backspace") {
+              // isEmpty: trim strips browser-injected trailing "\n" from <br>
+              const isEmpty = md.replace(/\n/g, "").trim().length === 0;
+              if (isEmpty) {
+                // Empty item: delete regardless of caret position.
                 e.preventDefault();
                 onBackspaceEmpty();
                 return;
               }
-              if (onMergeIntoAbove) {
-                e.preventDefault();
-                onCommit(md);
-                onMergeIntoAbove(md);
-                return;
-              }
-              if (onBackspaceStart) {
-                e.preventDefault();
-                onBackspaceStart(md);
+              if (handleRef.current?.isCaretAtStart()) {
+                if (onMergeIntoAbove) {
+                  e.preventDefault();
+                  onCommit(md);
+                  onMergeIntoAbove(md);
+                  return;
+                }
+                if (onBackspaceStart) {
+                  e.preventDefault();
+                  onBackspaceStart(md);
+                }
               }
             }
           }}
