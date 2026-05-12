@@ -138,7 +138,9 @@ export function InlineEditor({
   const handleInput = () => {
     const el = editorRef.current;
     if (!el) return;
-    const text = el.innerText;
+    // Use textContent (ignores <br> nodes) and trim to avoid false non-empty
+    // when the browser auto-inserts a trailing <br> into an empty contentEditable.
+    const text = (el.textContent ?? "").replace(/​/g, "").trim();
     setIsEmpty(text.length === 0);
     // Inline code backtick immediate wrap — same algorithm as notion-writer.
     wrapLastBacktickPair(el);
@@ -208,6 +210,11 @@ export function InlineEditor({
     onKeyDown?.(e, editorToMarkdown(editorRef.current));
   };
 
+  // Explicit React render for placeholder avoids relying on CSS attr() + ::before,
+  // which breaks when the browser inserts a stray <br> into an empty contentEditable
+  // and flips data-empty to "false" before the next React paint.
+  const showPlaceholder = isEmpty && !!placeholder;
+
   return (
     <div ref={wrapRef} className={cn("relative", className)}>
       {/* biome-ignore lint/a11y/useFocusableInteractive: contentEditable is focusable. */}
@@ -219,8 +226,6 @@ export function InlineEditor({
         role="textbox"
         aria-label={placeholder || "Editable content"}
         aria-multiline={multiline ? "true" : "false"}
-        data-placeholder={placeholder}
-        data-empty={isEmpty ? "true" : "false"}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={() => onFocus?.()}
@@ -255,10 +260,20 @@ export function InlineEditor({
         }}
         className={cn(
           "min-h-[1.25em] w-full whitespace-pre-wrap break-words border-0 bg-transparent px-0 outline-none",
-          "[&[data-empty='true']:before]:pointer-events-none [&[data-empty='true']:before]:text-muted-foreground/40 [&[data-empty='true']:before]:content-[attr(data-placeholder)]",
           inputClassName,
         )}
       />
+      {showPlaceholder ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-0 select-none text-muted-foreground/40",
+            inputClassName,
+          )}
+        >
+          {placeholder}
+        </span>
+      ) : null}
       {toolbar && toolbarPos ? (
         <FloatingToolbar
           x={toolbarPos.x}
