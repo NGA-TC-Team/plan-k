@@ -465,6 +465,16 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
   );
   const { setSelectedTableId } = useContext(BacklogSelectionContext);
 
+  // Insertion index for a new paragraph right after this block.
+  // Mirrors the HeadingLine pattern — uses EMPTY_SIBLINGS constant to avoid
+  // a fresh array reference on every render (Zustand getSnapshot stability).
+  const insertAfterIndex = useBuilderState((s) => {
+    const siblings = s.state.children[block.parentId] ?? EMPTY_SIBLINGS;
+    const selfIdx = siblings.indexOf(block.id);
+    // selfIdx === -1 race guard: fallback to 0 so INSERT_BLOCK still fires.
+    return selfIdx === -1 ? 0 : selfIdx + 1;
+  });
+
   // Track focus state so we can show a richer placeholder on empty blocks.
   const [isFocused, setIsFocused] = useState(false);
 
@@ -542,6 +552,28 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
               if (moveCaretToNextBlock(block.id)) e.preventDefault();
               return;
             }
+          }
+          // ── Enter: insert a new paragraph block right after this one ────
+          // Shift+Enter falls through to native (line break inside paragraph).
+          // isComposing guard prevents firing mid-IME (Korean, Japanese, etc.).
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            commit(md);
+            const newBlock: BlockEntity = {
+              id: crypto.randomUUID(),
+              parentId: block.parentId,
+              kind: "paragraph",
+              context: block.context,
+              data: { ...defaultDataFor("paragraph"), markdown: "" },
+            };
+            dispatch({
+              type: "INSERT_BLOCK",
+              parentId: block.parentId,
+              block: newBlock,
+              index: insertAfterIndex,
+            });
+            focusBlockAtOffset(newBlock.id, 0);
+            return;
           }
           // ── Backspace: delete / merge ─────────────────────────────────────
           if (e.key === "Backspace" && handleRef.current?.isCaretAtStart()) {

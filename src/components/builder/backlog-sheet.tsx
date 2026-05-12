@@ -3,6 +3,8 @@
 import { Ellipsis, FileDown, Trash2 } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { defaultDataFor } from "@/builder/defaults";
+import type { BlockEntity } from "@/builder/types/entity";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,7 +26,6 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { sectionToMarkdown } from "@/lib/section-to-markdown";
 import { useBacklogStore } from "@/services/stores";
 import { EditableBlock } from "./editable-block";
-import { NotionWriter } from "./notion-writer";
 import { EntityStatusChip } from "./status-chip";
 import { VirtualBlockList } from "./virtual-block-list";
 
@@ -63,6 +64,29 @@ export function BacklogSheet() {
   // Full AppState snapshot — needed for sectionToMarkdown serialization.
   const appState = useBuilderState((s) => s.state);
   const dispatch = useBuilderDispatch();
+
+  // ── Empty-section seed ───────────────────────────────────────────────────
+  // When a section has no child blocks (e.g. freshly created or pre-existing
+  // empty), insert a single blank paragraph so there is always an editable
+  // entry point. Re-runs only when section identity or child count changes;
+  // the length > 0 guard makes it a no-op after the seed block is added.
+  useEffect(() => {
+    if (!section) return;
+    if (childBlockIds.length > 0) return;
+    const seedBlock: BlockEntity = {
+      id: crypto.randomUUID(),
+      parentId: section.id,
+      kind: "paragraph",
+      context: "docs",
+      data: { ...defaultDataFor("paragraph"), markdown: "" },
+    };
+    dispatch({
+      type: "INSERT_BLOCK",
+      parentId: section.id,
+      block: seedBlock,
+      index: 0,
+    });
+  }, [section, childBlockIds.length, dispatch]);
 
   // scrollEl: the overflow-y-auto container that acts as the virtual scroll
   // parent. Stored in state (not a ref) so that when the DOM node is first
@@ -236,9 +260,7 @@ export function BacklogSheet() {
                   />
 
                   <div className="mt-8">
-                    {/* VirtualBlockList: only DOM-renders visible blocks.
-                        NotionWriter sits outside the virtual container so it
-                        is always accessible regardless of scroll position. */}
+                    {/* VirtualBlockList: only DOM-renders visible blocks. */}
                     <VirtualBlockList
                       ids={childBlockIds}
                       render={(id) => (
@@ -248,7 +270,6 @@ export function BacklogSheet() {
                       estimateSize={48}
                       overscan={10}
                     />
-                    <NotionWriter parentId={section.id} />
                   </div>
                 </div>
               </div>
