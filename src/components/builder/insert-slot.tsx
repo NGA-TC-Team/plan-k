@@ -1,95 +1,154 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { inferContextForParent } from "@/builder/decider/structure";
-import { type BlockKindSpec, blockKindsForContext } from "@/builder/defaults";
 import type { BlockKind } from "@/builder/types/entity";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useBuilderState } from "@/hooks/builder/use-builder-store.hook";
+import {
+  useBuilderDispatch,
+  useBuilderState,
+} from "@/hooks/builder/use-builder-store.hook";
 import { useInsertSlot } from "@/hooks/builder/use-insert-slot.hook";
 import { cn } from "@/lib/utils";
+import { useBlockDragStore } from "@/services/stores";
+import { BlockKindPicker } from "./block-kind-picker";
 
 type Props = {
   parentId: string;
   index?: number;
   variant?: "between" | "trailing";
+  orientation?: "horizontal" | "vertical";
 };
 
-export function InsertSlot({ parentId, index, variant = "between" }: Props) {
+export function InsertSlot({
+  parentId,
+  index,
+  variant = "between",
+  orientation = "vertical",
+}: Props) {
   const [open, setOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const insert = useInsertSlot(parentId);
+  const dispatch = useBuilderDispatch();
+
+  const draggingId = useBlockDragStore((s) => s.draggingId);
+  const dragContext = useBlockDragStore((s) => s.context);
+  const fromAncestorPath = useBlockDragStore((s) => s.fromAncestorPath);
+  const endDrag = useBlockDragStore((s) => s.end);
 
   const context = useBuilderState((s) =>
     inferContextForParent(s.state, parentId),
   );
+
+  // Guard: don't activate the drop zone if the drop would be cyclic.
+  // - draggingId !== parentId: don't drop immediately above/below self
+  //   (already existing check, meaningful for same-parent moves).
+  // - !fromAncestorPath.includes(parentId): don't allow dropping into a
+  //   descendant container of the dragging block.
+  const dragActive =
+    draggingId !== null &&
+    dragContext === context &&
+    draggingId !== parentId &&
+    !fromAncestorPath.includes(parentId);
+
   const planKind = useBuilderState(
     (s) => Object.values(s.state.plans)[0]?.kind ?? null,
   );
   const platform: "mobile" | "web" = planKind === "mobile" ? "mobile" : "web";
 
-  const specs = useMemo(
-    () => blockKindsForContext(context, platform),
-    [context, platform],
-  );
-
-  const grouped = useMemo(() => {
-    const byGroup = new Map<string, BlockKindSpec[]>();
-    for (const s of specs) {
-      const list = byGroup.get(s.group) ?? [];
-      list.push(s);
-      byGroup.set(s.group, list);
-    }
-    return Array.from(byGroup.entries());
-  }, [specs]);
-
-  // Map shortcut letters to specs for fast lookup while the popover is open.
-  const shortcutMap = useMemo(() => {
-    const map = new Map<string, BlockKindSpec>();
-    for (const s of specs) {
-      if (s.shortcut) map.set(s.shortcut.toUpperCase(), s);
-    }
-    return map;
-  }, [specs]);
-
-  const contentRef = useRef<HTMLDivElement | null>(null);
-
-  // Auto-focus the popover content when it opens so it can receive keypresses.
-  useEffect(() => {
-    if (open && contentRef.current) {
-      contentRef.current.focus();
-    }
-  }, [open]);
-
   const handlePick = (kind: BlockKind) => {
+    // MRU push is handled inside BlockKindPicker before calling onPick.
     insert(kind, index);
     setOpen(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key.length !== 1) return;
-    const spec = shortcutMap.get(e.key.toUpperCase());
-    if (!spec) return;
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    handlePick(spec.kind);
+    e.stopPropagation();
+    setDragOver(false);
+    const blockId = e.dataTransfer.getData("application/x-block-id");
+    if (!blockId) {
+      endDrag();
+      return;
+    }
+    const targetIndex = index ?? 0;
+    // Same-parent drops: indices in the reducer are computed against the
+    // sibling list with the dragged node already filtered out, so dropping
+    // at the slot position is correct as-is.
+    dispatch({
+      type: "MOVE_BLOCK",
+      nodeId: blockId,
+      toParentId: parentId,
+      index: targetIndex,
+    });
+    endDrag();
   };
 
+  const isHorizontal = orientation === "horizontal";
+
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: drop target is purely visual; pointer/keyboard insertion uses the popover trigger.
     <div
       className={cn(
-        "group/slot relative flex items-center justify-center",
-        variant === "between" ? "h-1" : "h-10",
+        "group/slot relative flex items-center justify-center transition-[width,height,background-color]",
+        isHorizontal
+          ? [
+              "flex-row",
+              variant === "between"
+                ? dragActive
+                  ? "w-5 h-full"
+                  : "w-1 h-full"
+                : "w-10 h-full",
+              dragOver && "w-10 h-full",
+            ]
+          : [
+              "flex-col",
+              variant === "between" ? (dragActive ? "h-5" : "h-1") : "h-10",
+              dragOver && "h-10",
+            ],
       )}
+      onDragOver={
+        dragActive
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.dataTransfer.dropEffect = "move";
+              if (!dragOver) setDragOver(true);
+            }
+          : undefined
+      }
+      onDragLeave={dragActive ? () => setDragOver(false) : undefined}
+      onDrop={dragActive ? handleDrop : undefined}
     >
+      {/* dragActive (drag started, not yet over this slot): dim placeholder */}
+      {dragActive && !dragOver ? (
+        isHorizontal ? (
+          // Thin vertical bar — mirrors the dragOver bar shape but at low opacity
+          <div className="pointer-events-none absolute inset-y-2 left-1/2 w-1.5 -translate-x-1/2 rounded bg-primary/30 ring-1 ring-primary/60" />
+        ) : (
+          // Thin horizontal bar — low-opacity hint that this slot is a drop target
+          <div className="pointer-events-none absolute inset-x-2 top-1/2 h-1.5 -translate-y-1/2 rounded bg-primary/30 ring-1 ring-primary/60" />
+        )
+      ) : null}
+      {/* dragOver: strong indicator confirming the active drop target */}
+      {dragOver ? (
+        isHorizontal ? (
+          // Vertical bar indicator for horizontal slots
+          <div className="pointer-events-none absolute inset-y-2 left-1/2 w-1 -translate-x-1/2 rounded-full bg-primary" />
+        ) : (
+          // Horizontal bar indicator for vertical slots
+          <div className="pointer-events-none absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary" />
+        )
+      ) : null}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-opacity",
+            "flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground transition-opacity",
             "hover:bg-accent hover:text-accent-foreground",
             variant === "between" &&
               "opacity-0 group-hover/slot:opacity-100 data-[popup-open]:opacity-100",
@@ -100,44 +159,16 @@ export function InsertSlot({ parentId, index, variant = "between" }: Props) {
           <Plus className="h-3.5 w-3.5" />
         </PopoverTrigger>
         <PopoverContent
-          ref={contentRef}
           className="w-72 max-h-[60vh] overflow-y-auto p-1 outline-none"
           sideOffset={6}
           tabIndex={-1}
-          onKeyDown={handleKeyDown}
         >
-          <div className="flex items-center justify-between px-2 py-1.5">
-            <div className="text-xs font-medium text-muted-foreground">
-              Insert {context} block
-            </div>
-            <div className="text-[10px] text-muted-foreground/70">
-              press a letter
-            </div>
-          </div>
-          {grouped.map(([group, groupSpecs]) => (
-            <div key={group} className="mb-1">
-              <div className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                {group}
-              </div>
-              <div className="flex flex-col">
-                {groupSpecs.map((spec) => (
-                  <button
-                    key={spec.kind}
-                    type="button"
-                    className="flex items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
-                    onClick={() => handlePick(spec.kind)}
-                  >
-                    <span>{spec.label}</span>
-                    {spec.shortcut ? (
-                      <kbd className="ml-2 rounded border border-border/60 bg-muted px-1 text-[10px] font-mono text-muted-foreground">
-                        {spec.shortcut}
-                      </kbd>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+          <BlockKindPicker
+            context={context}
+            platform={platform}
+            onPick={handlePick}
+            autoFocus={open}
+          />
         </PopoverContent>
       </Popover>
     </div>
