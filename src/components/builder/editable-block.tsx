@@ -6,12 +6,18 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { defaultDataFor } from "@/builder/defaults";
 import type { BlockEntity } from "@/builder/types/entity";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useAiFlashStore } from "@/services/stores";
 import { BacklogSelectionContext } from "./backlog-sheet";
+import { BlockKindPicker } from "./block-kind-picker";
 import { matchBlockMacro } from "./block-macros";
 import { BlockShell } from "./block-shell";
 import { BookmarkCard } from "./blocks/bookmark-card";
@@ -475,8 +481,20 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
     return selfIdx === -1 ? 0 : selfIdx + 1;
   });
 
+  // planKind → platform: mirrors insert-slot.tsx pattern.
+  // Primitive selector (string | null) is snapshot-safe without useShallow.
+  const planKind = useBuilderState(
+    (s) => Object.values(s.state.plans)[0]?.kind ?? null,
+  );
+  const platform: "mobile" | "web" = planKind === "mobile" ? "mobile" : "web";
+
   // Track focus state so we can show a richer placeholder on empty blocks.
   const [isFocused, setIsFocused] = useState(false);
+
+  // ── Slash menu state ──────────────────────────────────────────────────────
+  // Opens when the committed value is empty ("") and the first character typed
+  // is "/". Closed by picker selection, Esc, or outside click (Popover default).
+  const [slashOpen, setSlashOpen] = useState(false);
 
   // isEmpty is derived from the committed value — no extra state needed.
   const isEmpty = value.length === 0;
@@ -497,6 +515,44 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
 
   return (
     <BlockFrame blockId={block.id}>
+      {/* Popover anchor wraps the InlineEditor so the popup positions relative
+          to the paragraph row. The trigger is a zero-size invisible element;
+          open state is driven programmatically via slashOpen. */}
+      <Popover open={slashOpen} onOpenChange={(next) => setSlashOpen(next)}>
+        <PopoverTrigger className="sr-only" aria-label="블록 종류 선택 메뉴" />
+        <PopoverContent
+          className="w-72 max-h-[60vh] overflow-y-auto p-1 outline-none"
+          sideOffset={6}
+          side="bottom"
+          align="start"
+        >
+          <BlockKindPicker
+            // block.context is typed as optional in BlockEntity; backlog paragraphs
+            // always carry "docs" (seeded explicitly). Fallback guards against
+            // a hypothetical undefined — "docs" is the safest default here.
+            context={block.context ?? "docs"}
+            platform={platform}
+            autoFocus={slashOpen}
+            onPick={(kind) => {
+              // Replace current paragraph with the chosen block kind.
+              // Clears the "/" character that opened the menu via data reset.
+              dispatch({
+                type: "UPDATE_BLOCK",
+                nodeId: block.id,
+                patch: {
+                  kind,
+                  data: defaultDataFor(kind),
+                },
+              });
+              setSlashOpen(false);
+              // Focus the converted block after React commits.
+              requestAnimationFrame(() => {
+                focusBlockAtOffset(block.id, 0);
+              });
+            }}
+          />
+        </PopoverContent>
+      </Popover>
       <InlineEditor
         ref={handleRef}
         value={value}
@@ -506,6 +562,15 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
           commit(md);
         }}
         onChange={(md) => {
+          // ── Slash menu: only when committed value is empty and first char is "/" ──
+          // Guard: value.length === 0 ensures we are in a blank paragraph.
+          // md === "/" means the slash is the only character typed so far.
+          // "abc/" → value.length > 0 so the menu never fires for mid-content "/".
+          if (value.length === 0 && md === "/") {
+            setSlashOpen(true);
+            return;
+          }
+
           // ── Macro detection: only when current committed value is empty ──
           // Guard: skip when value is non-empty so we never transform blocks
           // that already have text content. The block is only "empty" when the
@@ -534,6 +599,15 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
         placeholder={dynamicPlaceholder}
         onKeyDown={(e, _md) => {
           const md = _md;
+
+          // ── Esc: close slash menu if open ─────────────────────────────────
+          // Prevent the sheet-level Esc handler from also triggering.
+          if (e.key === "Escape" && slashOpen) {
+            e.stopPropagation();
+            setSlashOpen(false);
+            return;
+          }
+
           // ── Arrow navigation: cross-block caret movement ─────────────────
           // Alt+Arrow is reserved for list item reorder (PR-A) — skip here.
           // preventDefault only when moveCaretTo* succeeds (adjacent block in DOM).
