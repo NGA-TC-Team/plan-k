@@ -69,7 +69,7 @@ export function BlockShell({ blockId }: { blockId: string }) {
       }}
       data-block-id={vm.id}
       className={cn(
-        "group/block relative rounded-md outline-none",
+        "group/block relative rounded-md outline-none first-of-type:mt-0",
         spacingClass,
         vm.isSelected && "ring-1 ring-ring/70",
         vm.isPending && "opacity-70",
@@ -115,10 +115,29 @@ export function BlockShell({ blockId }: { blockId: string }) {
             if (host) {
               e.dataTransfer.setDragImage(host, 8, 8);
             }
+            // Compute the ancestor id chain (nearest-first, excluding self).
+            // Reading state once outside of render via getState() — same pattern
+            // as resolveClickSelection above.
+            const fromAncestorPath: string[] = [];
+            if (storeHook) {
+              const blocks = storeHook.getState().state.blocks;
+              let cur = vm.parentId as string | null | undefined;
+              while (cur != null && cur in blocks) {
+                fromAncestorPath.push(cur);
+                cur = blocks[cur]?.parentId;
+              }
+              // If the immediate parent itself (a screen/section) is not in
+              // blocks, we still want it in the path for the drop-guard.
+              if (fromAncestorPath.length === 0 && vm.parentId !== vm.id) {
+                fromAncestorPath.push(vm.parentId);
+              }
+            }
             beginDrag({
               blockId: vm.id,
               parentId: vm.parentId,
               context: vm.context,
+              kind: vm.kind,
+              fromAncestorPath,
             });
           }}
           onDragEnd={() => endDrag()}
