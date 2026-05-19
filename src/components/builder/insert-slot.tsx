@@ -125,6 +125,17 @@ export function InsertSlot({
       onDragLeave={dragActive ? () => setDragOver(false) : undefined}
       onDrop={dragActive ? handleDrop : undefined}
     >
+      {/* dragActive (drag started, not yet over this slot): dim placeholder */}
+      {dragActive && !dragOver ? (
+        isHorizontal ? (
+          // Thin vertical bar — mirrors the dragOver bar shape but at low opacity
+          <div className="pointer-events-none absolute inset-y-2 left-1/2 w-1.5 -translate-x-1/2 rounded bg-primary/30 ring-1 ring-primary/60" />
+        ) : (
+          // Thin horizontal bar — low-opacity hint that this slot is a drop target
+          <div className="pointer-events-none absolute inset-x-2 top-1/2 h-1.5 -translate-y-1/2 rounded bg-primary/30 ring-1 ring-primary/60" />
+        )
+      ) : null}
+      {/* dragOver: strong indicator confirming the active drop target */}
       {dragOver ? (
         isHorizontal ? (
           // Vertical bar indicator for horizontal slots
