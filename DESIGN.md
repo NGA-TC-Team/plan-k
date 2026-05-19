@@ -1,291 +1,422 @@
-## Overview
+---
+name: plan-k
+description: Local planning workspace for web, mobile, and AI agent specs. Builder UI for a single craftsperson working alongside Claude Code.
+colors:
+  primary: "#5e6ad2"
+  primary-hover: "#828fff"
+  primary-focus: "#5e69d1"
+  on-primary: "#ffffff"
+  brand-secure: "#7a7fad"
+  canvas-light: "#ffffff"
+  surface-1-light: "#f7f8f8"
+  surface-2-light: "#e6e8ec"
+  surface-3-light: "#d0d6e0"
+  surface-4-light: "#b8bdc7"
+  hairline-light: "#e1e4e9"
+  hairline-strong-light: "#c8ccd3"
+  hairline-tertiary-light: "#eef0f3"
+  ink-light: "#010102"
+  ink-muted-light: "#2e3036"
+  ink-subtle-light: "#62666d"
+  ink-tertiary-light: "#8a8f98"
+  canvas-dark: "#010102"
+  surface-1-dark: "#0c0d10"
+  surface-2-dark: "#14161b"
+  surface-3-dark: "#1b1d23"
+  surface-4-dark: "#23252a"
+  hairline-dark: "#23252a"
+  hairline-strong-dark: "#2e3036"
+  hairline-tertiary-dark: "#1a1c20"
+  ink-dark: "#f7f8f8"
+  ink-muted-dark: "#d0d6e0"
+  ink-subtle-dark: "#8a8f98"
+  ink-tertiary-dark: "#62666d"
+  semantic-success-light: "#1f8a37"
+  semantic-success-dark: "#27a644"
+  semantic-destructive-light: "#d83a3a"
+  semantic-destructive-dark: "#e85a5a"
+typography:
+  display-xl:
+    fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
+    fontSize: "44px"
+    fontWeight: 600
+    lineHeight: 1.08
+    letterSpacing: "-0.0375em"
+  display-lg:
+    fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
+    fontSize: "32px"
+    fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: "-0.032em"
+  headline:
+    fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
+    fontSize: "22px"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "-0.021em"
+  card-title:
+    fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "-0.018em"
+  subhead:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 500
+    lineHeight: 1.4
+    letterSpacing: "-0.01em"
+  body:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.55
+    letterSpacing: "-0.003em"
+  body-sm:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "0em"
+  label:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "0em"
+  caption:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: 1.4
+    letterSpacing: "0.005em"
+  eyebrow:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "0.031em"
+  mono:
+    fontFamily: "var(--font-geist-mono), 'JetBrains Mono', ui-monospace, SF Mono, Menlo, monospace"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "0em"
+  button:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "0em"
+rounded:
+  xs: "4px"
+  sm: "6px"
+  md: "8px"
+  lg: "12px"
+  xl: "16px"
+  pill: "9999px"
+  full: "9999px"
+spacing:
+  xxs: "2px"
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "24px"
+  xxl: "32px"
+  rail: "44px"
+  pane: "320px"
+  section: "96px"
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-primary}"
+    typography: "{typography.button}"
+    rounded: "{rounded.md}"
+    padding: "6px 12px"
+    height: "30px"
+  button-primary-hover:
+    backgroundColor: "{colors.primary-hover}"
+    textColor: "{colors.on-primary}"
+  button-primary-active:
+    backgroundColor: "{colors.primary-focus}"
+    textColor: "{colors.on-primary}"
+  button-secondary:
+    backgroundColor: "{colors.surface-1-dark}"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.button}"
+    rounded: "{rounded.md}"
+    padding: "6px 12px"
+    height: "30px"
+  button-ghost:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-subtle-dark}"
+    typography: "{typography.button}"
+    rounded: "{rounded.sm}"
+    padding: "5px 8px"
+    height: "28px"
+  button-ghost-hover:
+    backgroundColor: "{colors.surface-2-dark}"
+    textColor: "{colors.ink-dark}"
+  input-text:
+    backgroundColor: "{colors.surface-1-dark}"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body}"
+    rounded: "{rounded.md}"
+    padding: "6px 10px"
+    height: "30px"
+  block-shell:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body}"
+    rounded: "{rounded.sm}"
+    padding: "0px"
+  block-shell-selected:
+    backgroundColor: "{colors.surface-1-dark}"
+    textColor: "{colors.ink-dark}"
+  canvas-shell:
+    backgroundColor: "{colors.canvas-dark}"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body}"
+    rounded: "{rounded.xl}"
+    padding: "32px 40px"
+  left-rail-item:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-subtle-dark}"
+    typography: "{typography.body-sm}"
+    rounded: "{rounded.sm}"
+    padding: "6px 8px"
+    height: "28px"
+  left-rail-item-active:
+    backgroundColor: "{colors.surface-2-dark}"
+    textColor: "{colors.ink-dark}"
+  sheet-panel:
+    backgroundColor: "{colors.surface-1-dark}"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body}"
+    rounded: "{rounded.lg}"
+    padding: "20px"
+  dropdown-menu:
+    backgroundColor: "{colors.surface-3-dark}"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body-sm}"
+    rounded: "{rounded.md}"
+    padding: "4px"
+  chat-message-user:
+    backgroundColor: "{colors.surface-2-dark}"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body-sm}"
+    rounded: "{rounded.lg}"
+    padding: "10px 14px"
+  chat-message-assistant:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-dark}"
+    typography: "{typography.body-sm}"
+    rounded: "{rounded.sm}"
+    padding: "8px 0px"
+  kbd-key:
+    backgroundColor: "{colors.surface-2-dark}"
+    textColor: "{colors.ink-muted-dark}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.xs}"
+    padding: "1px 5px"
+  status-badge:
+    backgroundColor: "{colors.surface-2-dark}"
+    textColor: "{colors.ink-muted-dark}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.pill}"
+    padding: "2px 8px"
+---
 
-Linear's marketing canvas is the deepest dark surface in this collection — `{colors.canvas}` is #010102, essentially pure black with a faint blue tint. On top sits a four-step surface ladder (`{colors.surface-1}` through `{colors.surface-4}`) for cards, panels, and lifted tiles, with hairline borders running from `{colors.hairline}` (#23252a) up through `{colors.hairline-strong}` and `{colors.hairline-tertiary}`. Light gray text (`{colors.ink}` #f7f8f8) carries the body and headlines.
+# Design System: plan-k
 
-The single chromatic accent is **Linear lavender-blue** `{colors.primary}` (#5e6ad2) — used on the brand mark, focus rings, and the primary CTA button. A lighter hover state (`{colors.primary-hover}` #828fff) and a focus-tinted variant (`{colors.primary-focus}` #5e69d1) extend the same hue. Linear avoids saturated greens, oranges, reds, etc. on the marketing canvas — the only semantic color is `{colors.semantic-success}` (#27a644) for status pills and the rare success indicator.
+## 1. Overview
 
-Display type runs Linear's custom sans (with `SF Pro Display` fallback) at weight 500–700 with negative letter-spacing scaling from -3.0px at 80px down to 0 at body. The body family is Linear's text cut, and a Linear Mono is reserved for code snippets in product screenshots.
+**Creative North Star: "The Drafting Surface."**
 
-The page rhythm is **dense product screenshots** — Linear's marketing leads with high-fidelity captures of the product UI (issue list, project view, dashboard) framed in `{colors.surface-1}` panels with `{rounded.xl}` 16px corners. The chrome is intentionally minimal so the app screenshots can do the heavy lifting.
+plan-k is the bench a single craftsperson sits at to draft plans, specs, and design docs alongside Claude Code. The interface behaves like a well-tooled drafting table, not a SaaS dashboard. Tools live at the edges of the room (the left rail, the right chat, the inspector) so the canvas in the middle can hold the work without competition. The page is quiet by design. Type is small, contrast is high, lavender appears once per screen, motion exists only to confirm state. The user is fluent. The interface does not over-explain itself.
+
+The system rejects four families drawn directly from PRODUCT.md anti-references: SaaS pastel palettes with dark blue-purple gradients and icon grids, Figma and Miro style colorful creative tools with playful emoji-and-color combinations, exaggerated animations and delight effects (sparkles, elastic bounces, parallax), and the generic Notion or Confluence document-tool aesthetic. plan-k looks like a tool that builds tools, not a meeting-notes app.
+
+Implementation is symmetric across light and dark. Both themes share the lavender accent unchanged and ride the same four-step surface ladder inverted around the canvas. The user toggles, the system does not assume.
 
 **Key Characteristics:**
-- **Dark-canvas marketing system** — `{colors.canvas}` (#010102) is the deepest dark in this collection.
-- **Lavender-blue brand accent** (`{colors.primary}` #5e6ad2) — used scarcely on brand mark, focus, and the primary CTA.
-- Four-step surface ladder (canvas → surface-1 → surface-2 → surface-3 → surface-4) carries hierarchy without shadow.
-- Display tracking pulls aggressively negative (-3.0px at 80px); body holds at -0.05px.
-- Cards use `{rounded.lg}` 12px corners with 1px hairline borders — never pill, rarely 16px.
-- **Product UI screenshots** dominate the page. The marketing chrome is a dark frame for the app.
-- No second chromatic color. No atmospheric gradients. No spotlight cards.
+- Single chromatic accent: Linear lavender-blue `#5e6ad2`, used on focus rings, the active rail item, the primary CTA, and the canvas AI-active glow.
+- Four-step surface ladder (canvas, surface-1, surface-2, surface-3, surface-4) carries hierarchy without drop shadows in either theme.
+- Density tuned for long sessions: 13 to 14px body, 6 to 8px control padding, 28 to 30px control heights. Compact but never cramped.
+- Geist Sans for everything; Geist Mono only inside code blocks and the kbd component.
+- Negative letter-spacing on display (-3.75% at the top step), positive tracking only on eyebrow labels (+3.1%).
+- Light and dark are mirrored; neither is the default. OS preference plus explicit toggle.
+- The central canvas is the protagonist. Chrome (rail, sheet, chat) recedes onto surface-1 or surface-2.
 
-## Colors
+## 2. Colors
 
-> Source pages: linear.app (home), /intake, /pricing, /contact/sales, /build.
+A monochromatic ladder in two themes, tied together by a single lavender hue. The faint blue tint in the dark canvas (`#010102`, not `#000`) and the warm grey hairlines on light are intentional. Accent saturation only appears where a state change demands it.
 
-### Brand & Accent
-- **Lavender-Blue** ({colors.primary}): The signature Linear accent — primary CTA, brand mark, link emphasis.
-- **Lavender Hover** ({colors.primary-hover}): Lighter lavender (#828fff) — hovered state of the primary CTA.
-- **Lavender Focus** ({colors.primary-focus}): Focus-ring tint (#5e69d1) — focused inputs, focused buttons.
-- **Brand Secure** ({colors.brand-secure}): Muted lavender-gray (#7a7fad) — used in "Linear Security" surfaces.
+### Primary
+- **Linear Lavender-Blue** (`#5e6ad2`, light + dark): The one chromatic color in the system. Used on the AI-active canvas glow, focus rings, the primary CTA fill, the active left-rail item indicator, and link emphasis. Never used as a section background, never as a card fill. Identical across themes; lavender is the brand signature, not a mode-dependent decoration.
+- **Lavender Hover** (`#828fff`): The lighter step. Applied to `:hover` on the primary CTA.
+- **Lavender Focus** (`#5e69d1`): The focus-ring tint, also the pressed state of the primary CTA.
 
-### Surface
-- **Canvas** ({colors.canvas}): Default page background — #010102, near-pure black with a faint blue tint.
-- **Surface 1** ({colors.surface-1}): One step above canvas — feature cards, pricing cards, product screenshot panels.
-- **Surface 2** ({colors.surface-2}): Two steps above — featured pricing card, hovered cards.
-- **Surface 3** ({colors.surface-3}): Three steps above — line-tertiary backgrounds, sub-nav.
-- **Surface 4** ({colors.surface-4}): Four steps above — bg-level-3, deepest lifted surface.
-- **Hairline** ({colors.hairline}): 1px borders on cards and dividers.
-- **Hairline Strong** ({colors.hairline-strong}): Stronger 1px borders — input focus rings.
-- **Hairline Tertiary** ({colors.hairline-tertiary}): Tertiary borders for nested surfaces.
-- **Inverse Canvas** ({colors.inverse-canvas}): Pure white — surface of the inverse pill CTA on a small set of section openers.
-- **Inverse Surface 1** ({colors.inverse-surface-1}): One step above inverse canvas.
-- **Inverse Surface 2** ({colors.inverse-surface-2}): Two steps above inverse canvas.
+### Neutral, Light Mode
+- **Paper Canvas** (`#ffffff`): The page background.
+- **Surface 1** (`#f7f8f8`): Cards, panels, sheet bodies, inputs.
+- **Surface 2** (`#e6e8ec`): Hovered cards, the active rail item background, muted backgrounds.
+- **Surface 3** (`#d0d6e0`): Dropdown menus, popovers.
+- **Surface 4** (`#b8bdc7`): The deepest lifted surface in light mode; rarely needed.
+- **Hairline** (`#e1e4e9`): Every 1px divider in light. Card borders. Table grid lines.
+- **Hairline Strong** (`#c8ccd3`): Input field outlines when focused, blockquote rules.
+- **Hairline Tertiary** (`#eef0f3`): Nested-surface hairlines.
+- **Ink** (`#010102`): All primary text. Same value as the dark canvas; the system inverts around it.
+- **Ink Muted** (`#2e3036`): Secondary text, meta information.
+- **Ink Subtle** (`#62666d`): Inactive labels, footnote text, disabled states.
+- **Ink Tertiary** (`#8a8f98`): Quaternary, used sparingly.
 
-### Text
-- **Ink** ({colors.ink}): All headlines and emphasized body type — light gray #f7f8f8.
-- **Ink Muted** ({colors.ink-muted}): Secondary type at #d0d6e0 — meta info on hero panels.
-- **Ink Subtle** ({colors.ink-subtle}): Tertiary type at #8a8f98 — deselected pricing tabs, footer columns.
-- **Ink Tertiary** ({colors.ink-tertiary}): Quaternary at #62666d — disabled, footnotes.
+### Neutral, Dark Mode
+- **Slate Canvas** (`#010102`): The page background. Faint blue undertone (not `#000` pure black). Long-session friendly under low ambient light.
+- **Surface 1** (`#0c0d10`), **Surface 2** (`#14161b`), **Surface 3** (`#1b1d23`), **Surface 4** (`#23252a`): The four lift steps. Each carries roughly the same role as its light-mode mirror.
+- **Hairline** (`#23252a`), **Hairline Strong** (`#2e3036`), **Hairline Tertiary** (`#1a1c20`): Borders and rules.
+- **Ink** (`#f7f8f8`), **Ink Muted** (`#d0d6e0`), **Ink Subtle** (`#8a8f98`), **Ink Tertiary** (`#62666d`): Text scale.
 
 ### Semantic
-- **Success Green** ({colors.semantic-success}): Status pills, success indicators. The only semantic color on marketing.
-- **Overlay** ({colors.semantic-overlay}): Pure black overlay scrim for modals.
+- **Success** (`#1f8a37` light, `#27a644` dark): Status pills, saved-state confirmations. The one chromatic exception to lavender-only.
+- **Destructive** (`#d83a3a` light, `#e85a5a` dark): Confirm-destructive dialogs, error inline messages. Used inside text and pill backgrounds; never as a full-surface fill.
 
-## Typography
+### Named Rules
+**The One Lavender Rule.** Lavender appears at most twice on any screen: once for the active focus or selection, once for the primary CTA or AI-active state. A third lavender on the same screen is a bug. If the design needs more emphasis, lift the surface or change the type weight, do not paint another lavender.
 
-### Font Family
+**The Anchor Inversion Rule.** Ink (`#010102` light, `#f7f8f8` dark) and Canvas swap on theme change; they are the same two values, inverted. Anything else (surfaces, hairlines, accents) follows the same hue ladder mirrored. Light is not a brighter dark, it is the mirror.
 
-- **Linear Display** — Linear's custom display sans; fallback `SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto`. Carries display-xl through subhead.
-- **Linear Text** — Linear's custom text sans (a slightly different cut tuned for body sizes); same fallback stack. Carries body sizes, button labels, captions.
-- **Linear Mono** — Linear's custom mono; fallback `ui-monospace, SF Mono, Menlo`. Used for code snippets in product screenshots and for status / ID tokens.
+**The No-Black Rule.** `#000000` and `#ffffff` true black or white are forbidden as token values for any role except `on-primary`. Every neutral carries a faint blue undertone matching the lavender brand hue.
 
-The marketing surface treats Display and Text as one continuous voice; the family change is silent.
+## 3. Typography
+
+**Display Font:** Geist Sans (with `SF Pro Display, -apple-system, system-ui` fallback).
+**Body Font:** Geist Sans (same family; one voice across the system).
+**Mono Font:** Geist Mono (with `JetBrains Mono, ui-monospace, SF Mono, Menlo` fallback).
+
+**Character:** One sans, two weights, aggressive negative tracking on display, no second display family. The font does not draw attention to itself. The user reads the words, not the typeface.
 
 ### Hierarchy
+- **Display XL** (600, 44px, line 1.08, tracking -3.75%): The largest headline a product page should carry, used at most on the project landing and section opener. Builder pages typically do not use this size.
+- **Display LG** (600, 32px, line 1.15, tracking -3.2%): Section openers inside the builder, sheet titles.
+- **Headline** (600, 22px, line 1.25, tracking -2.1%): Dialog titles, panel headings.
+- **Card Title** (600, 17px, line 1.3, tracking -1.8%): Inspector group headings, sheet-row titles.
+- **Subhead** (500, 15px, line 1.4, tracking -1.0%): Lead paragraph in docs context, callout headings.
+- **Body** (400, 14px, line 1.55, tracking -0.3%): Default text. Inputs. Block content.
+- **Body SM** (400, 13px, line 1.5, tracking 0): Compact UI. Chat messages. Left rail item labels.
+- **Label** (500, 12px, line 1.3, tracking 0): Form field labels, status pill text.
+- **Caption** (400, 11px, line 1.4, tracking +0.5%): Footnotes, save-status chip, slot meta info.
+- **Eyebrow** (500, 11px, line 1.3, tracking +3.1%): Section taxonomy labels, the rare positive-tracked element. Contrast against negative-tracked display marks the eyebrow as metadata.
+- **Mono** (400, 12px, line 1.5): Code blocks, kbd component, ID tokens.
 
-| Token | Size | Weight | Line Height | Letter Spacing | Use |
-|---|---|---|---|---|---|
-| `{typography.display-xl}` | 80px | 600 | 1.05 | -3.0px | Largest hero headline |
-| `{typography.display-lg}` | 56px | 600 | 1.10 | -1.8px | Section opener headlines |
-| `{typography.display-md}` | 40px | 600 | 1.15 | -1.0px | Sub-section headlines |
-| `{typography.headline}` | 28px | 600 | 1.20 | -0.6px | Pricing tier titles, CTA banner heading |
-| `{typography.card-title}` | 22px | 500 | 1.25 | -0.4px | Feature card title |
-| `{typography.subhead}` | 20px | 400 | 1.40 | -0.2px | Lead body, intro paragraphs |
-| `{typography.body-lg}` | 18px | 400 | 1.50 | -0.1px | Hero subhead, lead paragraphs |
-| `{typography.body}` | 16px | 400 | 1.50 | -0.05px | Default body |
-| `{typography.body-sm}` | 14px | 400 | 1.50 | 0 | Card body, footer columns |
-| `{typography.caption}` | 12px | 400 | 1.40 | 0 | Captions, meta, status |
-| `{typography.button}` | 14px | 500 | 1.20 | 0 | All button labels |
-| `{typography.eyebrow}` | 13px | 500 | 1.30 | 0.4px | Section eyebrow (slight positive tracking) |
-| `{typography.mono}` | 13px | 400 | 1.50 | 0 | Linear Mono for code in product screenshots |
+### Named Rules
+**The One Family Rule.** Geist Sans carries display through body. The product never pairs a display serif with a sans body. Hierarchy comes from size, weight, and tracking; not from family change.
 
-### Principles
+**The Tighter-Goes-Bigger Rule.** Letter-spacing scales negatively as size grows. Display XL holds -3.75%; body holds -0.3%. Eyebrow is the one exception, tracking positive +3.1% as taxonomy marker.
 
-- **Aggressive negative tracking on display** (-3.0px at 80px ≈ 4% of size).
-- **Single voice from display to body.** Display-xl at 600 → body at 400 — same family, narrower weights.
-- **Eyebrow uses positive tracking** (+0.4px) — contrast against the negative-tracked display marks the eyebrow as taxonomy.
-- **Mono only in code contexts.** Linear Mono lives inside product screenshots — not on marketing chrome.
+**The 14-Pixel Floor.** Default body is 14px. The 11px caption is a metadata size only; never paragraph body, never inline next to a 14px label unless the visual hierarchy demands it.
 
-### Note on Font Substitutes
+## 4. Elevation
 
-Linear's custom typeface isn't publicly distributed; the documented fallback `SF Pro Display, -apple-system, system-ui` is the recommended substitute on macOS. For cross-platform implementation, **Inter** at weight 500 / 600 / 700 is the closest free substitute. **Geist Sans** is also viable. For mono, **JetBrains Mono** or **Geist Mono** at weight 400 closely approximates Linear Mono.
+plan-k carries depth through the four-step surface ladder and 1px hairline borders. Drop shadows are not part of the system. The single decorative effect is the inset lavender glow on `.canvas-shell.ai-active`, used to signal an in-flight Claude run, not to manufacture depth.
 
-## Layout
+The surfaces stack predictably: canvas, then surface-1 (cards, sheets, inputs), then surface-2 (hovered cards, active rail items, kbd, status badges), then surface-3 (dropdown menus, popovers), then surface-4 (deepest lift, rare). Light and dark mirror this stack with equal step distances. No tonal shadow, no ambient glow except the canvas-active state.
 
-### Spacing System
+### Surface Ladder (used in place of shadow vocabulary)
+- **Level 0 (flat)**: Body type, the canvas itself, the page chrome at rest. No border, no fill.
+- **Level 1**: `surface-1` background, optional 1px `hairline` border. Cards, sheets, inputs.
+- **Level 2**: `surface-2` background, optional 1px `hairline-strong` border. Hovered cards, active rail items, the kbd component, status badges.
+- **Level 3**: `surface-3` background. Dropdown menus, popovers.
+- **Level 4**: `surface-4` background. The deepest lift, used rarely (deep modal-on-modal contexts).
+- **AI-Active Canvas Glow**: `inset 0 0 80px color-mix(in oklch, var(--primary) 18%, transparent)` plus a 1px lavender inset ring. Animated as a 2.4s `ease-in-out` pulse. The only ornamental effect in the system.
 
-- **Base unit**: 4px.
-- **Tokens (front matter)**: `{spacing.xxs}` 4px · `{spacing.xs}` 8px · `{spacing.sm}` 12px · `{spacing.md}` 16px · `{spacing.lg}` 24px · `{spacing.xl}` 32px · `{spacing.xxl}` 48px · `{spacing.section}` 96px.
-- Card interior padding: `{spacing.lg}` 24px on feature/pricing cards; `{spacing.xl}` 32px on testimonial cards; `{spacing.xxl}` 48px on CTA banners.
-- Pill button padding: 8px vertical · 14px horizontal — Linear's compact button spec.
-- Form input padding: 8px vertical · 12px horizontal.
+### Named Rules
+**The No-Shadow Rule.** Box-shadow as decoration is forbidden. Depth is communicated via surface lift only. The one exception is the canvas AI-active inset glow; if a designer reaches for `box-shadow: 0 4px 12px rgba(0,0,0,0.1)`, the answer is wrong, lift the surface instead.
 
-### Grid & Container
+**The Hairline Rule.** Every separating line is 1px, never 2px or thicker. Hairline tokens (`hairline`, `hairline-strong`, `hairline-tertiary`) own this; no ad-hoc `border-color` outside the token set.
 
-- Max content width sits around 1280px.
-- Card grids are 3-up at desktop, 2-up at tablet, 1-up at mobile.
-- Pricing tier grid is 3-up; comparison strip below shows checkmarks per tier.
-- Product screenshot panels span full content width — they're the protagonist.
+**The AI-Active Reservation.** The pulsing lavender canvas glow is reserved exclusively for in-flight Claude runs. Never used as a decorative or always-on effect. The pulse means "the assistant is thinking," and the moment the run ends the glow drops.
 
-### Whitespace Philosophy
+## 5. Components
 
-The dark canvas IS the whitespace. Sections separate by lift onto surface-1 panels, not by gaps in white. Within a panel, generous `{spacing.lg}` 24px gaps between content blocks; `{spacing.section}` 96px between sections.
-
-## Elevation & Depth
-
-| Level | Treatment | Use |
-|---|---|---|
-| 0 (flat) | No shadow, no border | Default for body type, hero text, footer |
-| 1 (charcoal lift) | `{colors.surface-1}` background on canvas, 1px `{colors.hairline}` | Default cards, product panels |
-| 2 (surface-2 lift) | `{colors.surface-2}` background, 1px `{colors.hairline-strong}` | Featured pricing card, hovered cards |
-| 3 (surface-3 lift) | `{colors.surface-3}` background | Sub-nav, dropdown menus |
-| 4 (focus ring) | 2px `{colors.primary-focus}` outline at 50% opacity | Focused input, focused button |
-
-Linear's depth is carried by surface ladder + hairline borders. The brand resists drop shadows on dark almost entirely.
-
-### Decorative Depth
-
-- **Product UI screenshots** dominate as decorative depth.
-- **No atmospheric gradients, no spotlight cards.**
-- **Subtle white edge highlight** on the top edge of lifted panels — gives the dark surface a faint "pixel rendered" feel.
-
-## Shapes
-
-### Border Radius Scale
-
-| Token | Value | Use |
-|---|---|---|
-| `{rounded.xs}` | 4px | Small chips, status badges |
-| `{rounded.sm}` | 6px | Inline tags |
-| `{rounded.md}` | 8px | All buttons, form inputs |
-| `{rounded.lg}` | 12px | Pricing cards, feature cards, testimonial cards |
-| `{rounded.xl}` | 16px | Product screenshot panels |
-| `{rounded.xxl}` | 24px | Oversized CTA banners (rare) |
-| `{rounded.pill}` | 9999px | Pricing tab toggles, status pills |
-| `{rounded.full}` | 9999px | Avatar circles |
-
-### Photography & Illustration Geometry
-
-- Product UI screenshots dominate; they sit in `{rounded.xl}` 16px tiles with `{spacing.lg}` 24px outer padding.
-- Customer logo tiles render at small sizes (~24px logo height) on `{colors.canvas}` with no border.
-- Avatar circles in testimonial cards use `{rounded.full}` at 32–40px sizes.
-
-## Components
+The builder is the protagonist. Chrome is muted; the canvas in the middle is where the user looks. Five primitive families plus three signature components carry the entire surface.
 
 ### Buttons
+- **Shape:** All buttons share `{rounded.md}` 8px corners. Never pill (except inside `kbd` and `status-badge`), never `{rounded.lg}` 12px. Heights step in 28 / 30 / 36 only.
+- **Primary:** `{colors.primary}` lavender background, `{colors.on-primary}` white text, `{typography.button}` 13/500. Padding 6 by 12, height 30px. Reserved for the single most important action on the screen.
+- **Secondary:** `{colors.surface-1}` background, `{colors.ink}` text. 1px `{colors.hairline}` border. The everyday button. Same 30px height.
+- **Ghost:** transparent background, `{colors.ink-subtle}` text. Hover lifts to `{colors.surface-2}` fill with `{colors.ink}` text. Height 28px. The compact toolbar variant.
+- **Hover / Focus:** Primary hover shifts to `{colors.primary-hover}` lighter lavender. Focus ring is a 2px `{colors.primary-focus}` outline at 50% opacity around the button, not a glow. 150ms `ease-out-quart` on background only; layout properties do not transition.
 
-**`button-primary`** — Lavender CTA. The default primary CTA across all pages.
-- Background `{colors.primary}`, text `{colors.on-primary}`, type `{typography.button}`, padding 8px 14px, rounded `{rounded.md}`.
-- Pressed state lives in `button-primary-pressed` (background shifts to `{colors.primary-focus}`).
-- Hover state lives in `button-primary-hover` (background shifts to `{colors.primary-hover}` lighter lavender).
+### Inputs and Fields
+- **Style:** `{colors.surface-1}` background, 1px `{colors.hairline}` border, `{rounded.md}` 8px corners. Padding 6 by 10, height 30px. Same `{typography.body}` 14/400 as paragraph text.
+- **Focus:** The border shifts to `{colors.hairline-strong}` and a 2px `{colors.primary-focus}` outline appears around the element. No glow, no scale, no transform.
+- **Error:** Border shifts to `{colors.semantic-destructive}`; inline message renders below at `{typography.caption}` in the same destructive ink. The input fill stays neutral; the surrounding state changes, not the surface.
+- **Disabled:** `{colors.ink-tertiary}` text, no border change, cursor `not-allowed`.
 
-**`button-secondary`** — Charcoal button. Used for secondary CTAs ("Sign in", "Read changelog").
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.button}`, padding 8px 14px, rounded `{rounded.md}`. 1px `{colors.hairline}` border.
+### Block Shell (signature)
+- **Style:** The container around any block in the builder. Default is a transparent shell with `{rounded.sm}` 6px corners. Padding is zero at the shell level; the block content owns its own breathing room via the `SPACING_DEFAULTS_BY_KIND` table in `src/builder/spacing.ts`.
+- **Selected:** `{colors.surface-1}` background fill plus a 1px `{colors.hairline}` border. No lavender unless the block is being explicitly focused for AI insertion.
+- **Drag Affordance:** A 6-dot handle appears at the top-left of the shell on hover. The handle uses `{colors.ink-tertiary}` ink, no border, no shadow.
+- **Insert Slot:** Between blocks, a 6px tall zero-content slot expands to 24px on hover and shows a 1px lavender dashed centerline. The slot is the only place a lavender dashed border is permitted in the system.
 
-**`button-tertiary`** — Plain text button.
-- Background `{colors.canvas}`, text `{colors.ink}`, type `{typography.button}`, rounded `{rounded.md}`, padding 8px 14px.
+### Canvas Shell (signature)
+- **Style:** The central work surface. `{colors.canvas}` background, `{rounded.xl}` 16px corners on the outer frame, 32 to 40px inner padding. The shell sits inside a `{colors.surface-1}` page chrome to give the canvas a faint visual lift without any shadow.
+- **AI-Active:** `.ai-active` class toggles the inset lavender glow described in Elevation. Pulse animates at 2.4s `ease-in-out`. `prefers-reduced-motion: reduce` disables the animation; the static glow remains so the in-flight state stays legible.
+- **Print Mode:** Inside `@media print`, the canvas drops to `background: white` and `color: black` and any `[data-frame]` blocks resolve `break-inside: avoid`. PDF and image exports inherit this rule.
 
-**`button-inverse`** — White-on-dark inverse CTA.
-- Background `{colors.inverse-canvas}`, text `{colors.inverse-ink}`, type `{typography.button}`, rounded `{rounded.md}`, padding 8px 14px.
+### Left Rail
+- **Style:** A 44px-wide fixed sidebar on `{colors.canvas}` with no border on the canvas side, a single 1px `{colors.hairline}` on the content side. Items render as 28px-tall buttons with 6 by 8 padding, `{typography.body-sm}` text.
+- **Default:** transparent fill, `{colors.ink-subtle}` text.
+- **Active:** `{colors.surface-2}` background fill, `{colors.ink}` text, plus a 2px lavender vertical bar on the right edge of the row, 16px tall, centered. The 2px lavender bar is the rail's exception to The One Lavender Rule (it is the persistent selection indicator).
+- **Hover:** background fills to `{colors.surface-1}` only. No scale, no color shift.
 
-### Pricing Tabs
+### Sheet Panel
+- **Style:** `{colors.surface-1}` background, `{rounded.lg}` 12px corners, 20px inner padding. Used for the backlog sheet, the print options popover body, the property value editor.
+- **Header:** 13px label in `{colors.ink-muted}`, 8px bottom margin. Body below.
+- **Close Affordance:** Top-right `button-ghost` with an X icon at 14px stroke.
 
-**`pricing-tab-default`** + **`pricing-tab-selected`** — Pill-toggle on `/pricing`.
-- Default: `{colors.canvas}` background, `{colors.ink-subtle}` text, rounded `{rounded.pill}`, padding 6px 14px.
-- Selected: `{colors.surface-2}` background, `{colors.ink}` text — selected = surface lift.
+### Dropdown Menu
+- **Style:** `{colors.surface-3}` background, 1px `{colors.hairline-strong}` border, `{rounded.md}` 8px corners, 4px padding. The surface lift to surface-3 is deliberate: dropdowns are above the sheet panels (surface-1) and inputs.
+- **Item:** 28px-tall row, 6 by 8 padding, `{typography.body-sm}` 13/400.
+- **Item Hover:** `{colors.surface-4}` fill, `{colors.ink}` text. No lavender on hover; only on the active selected item.
+- **Separator:** 1px `{colors.hairline}`, 4px vertical margin.
 
-### Cards & Containers
+### Chat Message
+- **User Bubble:** `{colors.surface-2}` background, `{rounded.lg}` 12px corners, 10 by 14 padding, `{typography.body-sm}` text. Right-aligned in the chat column.
+- **Assistant Body:** transparent background, no border, full-width column. Markdown renders through the `.prose-chat` CSS preset in `globals.css`: 13px body, tight margins, mono `code` inline at `{colors.surface-2}` background. The assistant message does not look like a chat bubble; it looks like a section of the document, because that is what it is.
 
-**`pricing-card`** — Each tier on `/pricing`.
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.body}`, rounded `{rounded.lg}`, padding 24px. 1px `{colors.hairline}` border.
+### Kbd
+- **Style:** `{colors.surface-2}` background, `{colors.ink-muted}` text, `{rounded.xs}` 4px corners, 1 by 5 padding, `{typography.caption}` mono. Used inside tooltips and the slash menu to show keystrokes. The kbd is the only place where the caption size is paired with mono.
 
-**`pricing-card-featured`** — Recommended tier — surface lift to surface-2.
-- Background `{colors.surface-2}`, otherwise identical structure.
+### Status Badge
+- **Style:** `{colors.surface-2}` background, `{colors.ink-muted}` text, `{rounded.pill}` corners, 2 by 8 padding, `{typography.caption}`. Used for save-status, block validity, slot type marker.
+- **Success State:** background `{colors.semantic-success}` at 12% opacity, text `{colors.semantic-success}` at full intensity. Same pattern for destructive.
 
-**`feature-card`** — Generic feature highlight tile.
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.body}`, rounded `{rounded.lg}`, padding 24px.
-
-**`product-screenshot-card`** — The dominant card type — frames a high-fidelity Linear app UI screenshot.
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.body}`, rounded `{rounded.xl}`, padding 24px.
-
-**`testimonial-card`** — Customer quote with avatar + name + role.
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.body-lg}`, rounded `{rounded.lg}`, padding 32px.
-
-**`customer-logo-tile`** — Small tile in the customer marquee.
-- Background `{colors.canvas}`, text `{colors.ink-subtle}`, type `{typography.caption}`, rounded `{rounded.xs}`, padding 16px.
-
-**`cta-banner`** — Closing CTA panel near page bottom.
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.headline}`, rounded `{rounded.lg}`, padding 48px.
-
-### Inputs & Forms
-
-**`text-input`** + **`text-input-focused`** — Form fields on `/contact/sales` and signup overlays.
-- Background `{colors.surface-1}`, text `{colors.ink}`, type `{typography.body}`, rounded `{rounded.md}`, padding 8px 12px.
-- Focused state retains the same surface; the focus ring is a 2px `{colors.primary-focus}` outline at 50% opacity.
-
-### Status & Build Page
-
-**`changelog-row`** — Each row in `/build` (changelog page) listing version, date, and changes.
-- Background `{colors.canvas}`, text `{colors.ink}`, type `{typography.body}`, rounded `{rounded.xs}`, padding 24px 0. 1px `{colors.hairline}` bottom rule.
-
-**`status-badge`** — Small status pill.
-- Background `{colors.surface-2}`, text `{colors.ink-muted}`, type `{typography.caption}`, rounded `{rounded.pill}`, padding 2px 8px.
-
-### Navigation
-
-**`top-nav`** — Sticky dark bar with the Linear wordmark left, primary nav links centered, and a `button-secondary` ("Sign in") + `button-primary` ("Get started") pair right.
-- Background `{colors.canvas}`, text `{colors.ink}`, type `{typography.body-sm}`, height 56px.
-
-### Footer
-
-**`footer`** — Dense link grid on `{colors.canvas}` with the Linear wordmark left.
-- Background `{colors.canvas}`, text `{colors.ink-subtle}`, type `{typography.caption}`, padding 64px 32px.
-
-## Do's and Don'ts
+## 6. Do's and Don'ts
 
 ### Do
-
-- Reserve `{colors.canvas}` (#010102) as the system's anchor surface — the faint blue tint is intentional.
-- Use `{colors.primary}` lavender ONLY for: brand mark, primary CTA, focus ring, link emphasis.
-- Use the four-step surface ladder for hierarchy. Avoid skipping levels.
-- Pair display weight 600 with body weight 400 — Linear resists 700+ display weights.
-- Apply negative letter-spacing aggressively on display.
-- Use product UI screenshots as the protagonist of every section.
-- Compose CTAs as `{rounded.md}` 8px corners.
+- **Do** lift the surface to communicate depth (`surface-1`, `surface-2`, `surface-3`), never reach for `box-shadow`.
+- **Do** reserve lavender `#5e6ad2` for at most two roles per screen: focus or selection, and primary CTA or AI-active glow.
+- **Do** pair `{typography.display-*}` weight 600 with body weight 400. Never 700+ display weights.
+- **Do** apply negative letter-spacing on display sizes (-1.0% to -3.75%) and positive only on eyebrow (+3.1%).
+- **Do** use 1px hairline borders everywhere; thicker rules are visual noise.
+- **Do** keep the canvas as the protagonist of every builder screen; rail, sheets, chat, inspector all step back onto surface-1 or surface-2.
+- **Do** mirror the dark and light themes exactly. Same hue ladder, inverted around ink and canvas.
+- **Do** respect `prefers-reduced-motion: reduce`. Drop the canvas AI-active pulse to a static glow, drop all transitions to 80ms or less, or remove them entirely.
+- **Do** use Geist Mono only inside code blocks and the kbd component.
 
 ### Don't
-
-- Don't ship a light-mode marketing page.
-- Don't use lavender as a section background or card fill.
-- Don't introduce a second chromatic accent (orange, pink, green for marketing).
-- Don't add atmospheric gradients or spotlight cards.
-- Don't pill-round CTAs.
-- Don't use `#000000` true black as the canvas.
-- Don't combine multiple bright accents in product screenshot mockups.
-
-## Responsive Behavior
-
-### Breakpoints
-
-| Name | Width | Key Changes |
-|---|---|---|
-| Desktop-XL | 1440px | Default desktop layout |
-| Desktop | 1280px | Card grid 3-up maintained |
-| Tablet | 1024px | Card grid 3-up → 2-up |
-| Mobile-Lg | 768px | Pricing comparison becomes accordion; nav hamburger |
-| Mobile | 480px | Single-column; display-xl scales 80px → ~36px |
-
-### Touch Targets
-
-- CTAs hold ≥40px tap height across viewports.
-- Pricing tab pills hold ≥36px tap height; touch viewports grow to ≥44px.
-- Form inputs hold ≥44px tap target on touch.
-
-### Collapsing Strategy
-
-- **Top nav**: links collapse to hamburger below 768px.
-- **Card grids**: 3-up → 2-up at 1024px → 1-up below 768px.
-- **Pricing comparison**: per-tier accordion below 768px.
-- **Display type**: `{typography.display-xl}` 80px scales toward `{typography.display-md}` 40px on mobile.
-
-### Image Behavior
-
-- Product UI screenshots maintain aspect ratio and never crop.
-- Customer logos in the marquee may collapse from 6-up to 3-up below 768px.
-
-## Iteration Guide
-
-1. Focus on ONE component at a time and reference it by its `components:` token name.
-2. When introducing a section, decide first which surface lift it lives on.
-3. Default body to `{typography.body}` at weight 400.
-4. Run `npx @google/design.md lint DESIGN.md` after edits.
-5. Add new variants as separate component entries.
-6. Treat lavender as scarce: brand mark, primary CTA, focus, link emphasis.
-7. Lead every section with a product UI screenshot.
-
-## Known Gaps
-
-- The four-step surface ladder values are extracted directly from Linear's `--color-bg-level-3`, `--color-line-tint`, etc. CSS variables; they are Linear's canonical surface spec.
-- Form-field error and validation styling is not visible on the inspected pages.
-- Light mode is not documented because the marketing site does not ship a light theme.
-- Linear's actual product UI uses a richer color-tag palette (red, orange, yellow, green, blue, purple) for issue priorities and project labels — those colors live in the in-product surfaces shown in mockups.
-- The custom display, text, and mono families are proprietary; an open-source substitute is acceptable.
+- **Don't** ship SaaS pastel plus dark-purple gradient plus icon-grid combinations. PRODUCT.md explicitly names this; the design system enforces it.
+- **Don't** introduce Figma or Miro style colorful creative-tool palettes. Multi-hue chips, rainbow color tags, playful emoji-and-color combinations are forbidden. The product is a planner, not a whiteboard.
+- **Don't** add exaggerated animations or delight effects. No sparkles, parallax, elastic bounces, or rotational motion. Motion conveys state, never decoration.
+- **Don't** dress the surface as a Notion or Confluence document tool. plan-k is a builder; flat document-grid layouts do not represent the canvas.
+- **Don't** use `#000000` or `#ffffff` for canvas, ink, surface, or hairline. Every neutral carries the lavender undertone via the token set.
+- **Don't** use side-stripe borders (`border-left` greater than 1px as a colored accent). The active rail item indicator is a 2px lavender bar centered inside a 28px row, not a stripe down the entire item. No other surface has a colored stripe.
+- **Don't** use gradient text. Emphasis is weight and size, not `background-clip: text`.
+- **Don't** use modals as a first thought. Most write actions belong inline in the builder or in a side sheet. Modal-on-modal is always wrong.
+- **Don't** pill-round CTAs. Pill-radius lives on `kbd` and `status-badge` only.
+- **Don't** introduce a second chromatic accent (orange, pink, teal). Lavender is the only chromatic role. Success green is semantic, not decorative.
+- **Don't** animate CSS layout properties (`width`, `height`, `margin`, `padding`). Animate `opacity`, `transform`, `background-color` only.
+- **Don't** ship a component without `:hover`, `:focus-visible`, `:active`, and `:disabled` states. The product register requires the full state vocabulary.

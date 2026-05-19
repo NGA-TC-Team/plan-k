@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-19T00:00:00Z",
+  "title": "Design System: plan-k",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Linear Lavender-Blue",
+        "canonical": "oklch(56% 0.14 274)",
+        "tonalRamp": [
+          "oklch(18% 0.06 274)",
+          "oklch(28% 0.10 274)",
+          "oklch(38% 0.13 274)",
+          "oklch(48% 0.14 274)",
+          "oklch(56% 0.14 274)",
+          "oklch(66% 0.13 274)",
+          "oklch(78% 0.10 274)",
+          "oklch(92% 0.04 274)"
+        ]
+      },
+      "canvas-dark": {
+        "role": "neutral",
+        "displayName": "Slate Canvas (dark)",
+        "canonical": "oklch(7% 0.005 274)",
+        "tonalRamp": [
+          "oklch(7% 0.005 274)",
+          "oklch(11% 0.006 274)",
+          "oklch(15% 0.007 274)",
+          "oklch(20% 0.007 274)",
+          "oklch(30% 0.008 274)",
+          "oklch(50% 0.008 274)",
+          "oklch(75% 0.006 274)",
+          "oklch(97% 0.004 274)"
+        ]
+      },
+      "canvas-light": {
+        "role": "neutral",
+        "displayName": "Paper Canvas (light)",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0.005 274)",
+          "oklch(25% 0.006 274)",
+          "oklch(40% 0.007 274)",
+          "oklch(58% 0.008 274)",
+          "oklch(72% 0.008 274)",
+          "oklch(86% 0.006 274)",
+          "oklch(96% 0.004 274)",
+          "oklch(100% 0 0)"
+        ]
+      },
+      "semantic-success-dark": {
+        "role": "semantic",
+        "displayName": "Success",
+        "canonical": "oklch(58% 0.15 145)"
+      },
+      "semantic-destructive-dark": {
+        "role": "semantic",
+        "displayName": "Destructive",
+        "canonical": "oklch(62% 0.20 25)"
+      }
+    },
+    "typographyMeta": {
+      "display-xl": { "displayName": "Display XL", "purpose": "Largest landing/section headline. Builder pages rarely use this size." },
+      "display-lg": { "displayName": "Display LG", "purpose": "Section openers inside the builder, sheet titles." },
+      "headline": { "displayName": "Headline", "purpose": "Dialog titles, panel headings." },
+      "card-title": { "displayName": "Card Title", "purpose": "Inspector group headings, sheet-row titles." },
+      "subhead": { "displayName": "Subhead", "purpose": "Lead paragraph in docs context, callout headings." },
+      "body": { "displayName": "Body", "purpose": "Default 14px text. Inputs. Block content." },
+      "body-sm": { "displayName": "Body SM", "purpose": "Compact UI. Chat. Left rail item labels." },
+      "label": { "displayName": "Label", "purpose": "Form field labels, status pill text." },
+      "caption": { "displayName": "Caption", "purpose": "Footnotes, save-status chip, slot meta info." },
+      "eyebrow": { "displayName": "Eyebrow", "purpose": "Positive-tracked taxonomy label. The one exception to negative tracking." },
+      "mono": { "displayName": "Mono", "purpose": "Geist Mono, only inside code blocks and the kbd component." },
+      "button": { "displayName": "Button", "purpose": "Universal button label. 13/500." }
+    },
+    "shadows": [
+      {
+        "name": "ai-active-canvas-glow",
+        "value": "inset 0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent), inset 0 0 80px 0 color-mix(in oklch, var(--primary) 18%, transparent)",
+        "purpose": "Reserved exclusively for the central canvas while a Claude run is in flight. Animated as a 2.4s ease-in-out pulse. Disabled by prefers-reduced-motion (static glow remains)."
+      }
+    ],
+    "motion": [
+      { "name": "ease-out-quart", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Default exponential ease-out for state changes (button hover, dropdown enter)." },
+      { "name": "duration-fast", "value": "120ms", "purpose": "Tooltip enter, focus ring appearance." },
+      { "name": "duration-state", "value": "150ms", "purpose": "Button hover, link emphasis, background fill transitions." },
+      { "name": "duration-panel", "value": "220ms", "purpose": "Sheet slide-in, dropdown menu enter." },
+      { "name": "duration-ai-pulse", "value": "2400ms", "purpose": "Canvas AI-active inset glow pulse cycle." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "768px" },
+      { "name": "default", "value": "1280px" },
+      { "name": "wide", "value": "1600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single most important CTA on a given screen. Lavender lavish, used sparingly.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Open plan</button>",
+      "css": ".ds-btn-primary { background: #5e6ad2; color: #ffffff; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.2; letter-spacing: 0; padding: 6px 12px; height: 30px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-primary:hover { background: #828fff; } .ds-btn-primary:active { background: #5e69d1; } .ds-btn-primary:focus-visible { outline: 2px solid rgba(94, 105, 209, 0.5); outline-offset: 2px; } .ds-btn-primary:disabled { background: #14161b; color: #62666d; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Everyday button. Surface-1 fill, hairline border, no chromatic accent.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Cancel</button>",
+      "css": ".ds-btn-secondary { background: #0c0d10; color: #f7f8f8; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.2; padding: 6px 12px; height: 30px; border: 1px solid #23252a; border-radius: 8px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.25, 1, 0.5, 1), border-color 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-secondary:hover { background: #14161b; border-color: #2e3036; } .ds-btn-secondary:focus-visible { outline: 2px solid rgba(94, 105, 209, 0.5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Compact toolbar variant. Transparent at rest, surface-2 fill on hover. 28px height.",
+      "html": "<button class=\"ds-btn-ghost\" type=\"button\">More</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #8a8f98; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 13px; font-weight: 500; padding: 5px 8px; height: 28px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.25, 1, 0.5, 1), color 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-ghost:hover { background: #14161b; color: #f7f8f8; } .ds-btn-ghost:focus-visible { outline: 2px solid rgba(94, 105, 209, 0.5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Surface-1 background, hairline border, 8px corners. Focus shifts border to hairline-strong with a 2px lavender outline.",
+      "html": "<input class=\"ds-input-text\" type=\"text\" placeholder=\"Plan title\" />",
+      "css": ".ds-input-text { background: #0c0d10; color: #f7f8f8; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 14px; line-height: 1.55; letter-spacing: -0.003em; padding: 6px 10px; height: 30px; border: 1px solid #23252a; border-radius: 8px; width: 100%; transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-input-text::placeholder { color: #62666d; } .ds-input-text:hover { border-color: #2e3036; } .ds-input-text:focus { border-color: #2e3036; outline: 2px solid rgba(94, 105, 209, 0.5); outline-offset: 0; }"
+    },
+    {
+      "name": "Block Shell",
+      "kind": "custom",
+      "refersTo": "block-shell",
+      "description": "Builder block container. Transparent at rest, surface-1 lift when selected.",
+      "html": "<div class=\"ds-block-shell\"><div class=\"ds-block-handle\" aria-hidden=\"true\"><svg width=\"10\" height=\"16\" viewBox=\"0 0 10 16\" fill=\"none\"><circle cx=\"2\" cy=\"3\" r=\"1\" fill=\"currentColor\"/><circle cx=\"2\" cy=\"8\" r=\"1\" fill=\"currentColor\"/><circle cx=\"2\" cy=\"13\" r=\"1\" fill=\"currentColor\"/><circle cx=\"8\" cy=\"3\" r=\"1\" fill=\"currentColor\"/><circle cx=\"8\" cy=\"8\" r=\"1\" fill=\"currentColor\"/><circle cx=\"8\" cy=\"13\" r=\"1\" fill=\"currentColor\"/></svg></div><div class=\"ds-block-content\"><p>A paragraph block sits here. Type below the handle.</p></div></div>",
+      "css": ".ds-block-shell { position: relative; padding: 4px 8px 4px 24px; border-radius: 6px; color: #f7f8f8; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 14px; line-height: 1.55; transition: background-color 120ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-block-shell:hover { background: #0c0d10; } .ds-block-shell:hover .ds-block-handle { opacity: 1; } .ds-block-shell:focus-within { background: #0c0d10; outline: 1px solid #23252a; outline-offset: -1px; } .ds-block-handle { position: absolute; left: 6px; top: 6px; color: #62666d; opacity: 0; transition: opacity 120ms cubic-bezier(0.25, 1, 0.5, 1); cursor: grab; } .ds-block-content p { margin: 0; }"
+    },
+    {
+      "name": "Canvas Shell (AI-Active)",
+      "kind": "custom",
+      "refersTo": "canvas-shell",
+      "description": "The central work surface, shown in the AI-active state with the inset lavender glow that signals an in-flight Claude run.",
+      "html": "<div class=\"ds-canvas-shell ai-active\"><div class=\"ds-canvas-eyebrow\">PLAN</div><h2 class=\"ds-canvas-title\">Onboarding flow</h2><p class=\"ds-canvas-body\">A draft of the onboarding screens. Claude is currently revising this section.</p></div>",
+      "css": ".ds-canvas-shell { background: #010102; color: #f7f8f8; border-radius: 16px; padding: 32px 40px; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; } .ds-canvas-shell.ai-active { box-shadow: inset 0 0 0 1px rgba(94, 105, 209, 0.5), inset 0 0 80px 0 rgba(94, 105, 209, 0.18); animation: ds-ai-pulse 2400ms ease-in-out infinite; } @keyframes ds-ai-pulse { 50% { box-shadow: inset 0 0 0 1px rgba(94, 105, 209, 0.65), inset 0 0 110px 0 rgba(94, 105, 209, 0.26); } } @media (prefers-reduced-motion: reduce) { .ds-canvas-shell.ai-active { animation: none; } } .ds-canvas-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.031em; color: #8a8f98; margin-bottom: 8px; } .ds-canvas-title { font-size: 32px; font-weight: 600; line-height: 1.15; letter-spacing: -0.032em; margin: 0 0 12px; } .ds-canvas-body { font-size: 14px; line-height: 1.55; letter-spacing: -0.003em; color: #d0d6e0; margin: 0; max-width: 65ch; }"
+    },
+    {
+      "name": "Left Rail Item",
+      "kind": "nav",
+      "refersTo": "left-rail-item",
+      "description": "Sidebar navigation row. Active state shows a 2px lavender bar on the right edge as the persistent selection indicator.",
+      "html": "<a class=\"ds-rail-item is-active\" href=\"#\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 14 14\" fill=\"none\" aria-hidden=\"true\"><rect x=\"2\" y=\"2\" width=\"10\" height=\"10\" rx=\"2\" stroke=\"currentColor\" stroke-width=\"1.25\"/><path d=\"M5 7h4M5 5h4M5 9h2\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\"/></svg><span>Onboarding</span></a>",
+      "css": ".ds-rail-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; height: 28px; border-radius: 6px; color: #8a8f98; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.5; text-decoration: none; position: relative; transition: background-color 120ms cubic-bezier(0.25, 1, 0.5, 1), color 120ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-rail-item:hover { background: #0c0d10; color: #f7f8f8; } .ds-rail-item.is-active { background: #14161b; color: #f7f8f8; } .ds-rail-item.is-active::after { content: \"\"; position: absolute; right: -1px; top: 50%; transform: translateY(-50%); width: 2px; height: 16px; background: #5e6ad2; border-radius: 1px; } .ds-rail-item:focus-visible { outline: 2px solid rgba(94, 105, 209, 0.5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "Compact pill for save-status, block validity, slot type. Neutral default, semantic success variant included.",
+      "html": "<span class=\"ds-status-badge\">Draft</span><span class=\"ds-status-badge is-success\">Saved</span>",
+      "css": ".ds-status-badge { display: inline-flex; align-items: center; background: #14161b; color: #d0d6e0; font-family: var(--font-geist-sans), -apple-system, system-ui, sans-serif; font-size: 11px; line-height: 1.4; letter-spacing: 0.005em; padding: 2px 8px; border-radius: 9999px; margin-right: 6px; } .ds-status-badge.is-success { background: rgba(39, 166, 68, 0.12); color: #27a644; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Drafting Surface",
+    "overview": "plan-k is the bench a single craftsperson sits at to draft plans, specs, and design docs alongside Claude Code. The interface behaves like a well-tooled drafting table, not a SaaS dashboard. Tools live at the edges of the room (the left rail, the right chat, the inspector) so the canvas in the middle can hold the work without competition. The page is quiet by design. Type is small, contrast is high, lavender appears once per screen, motion exists only to confirm state. The user is fluent. The interface does not over-explain itself.\n\nThe system rejects four families drawn directly from PRODUCT.md anti-references: SaaS pastel palettes with dark blue-purple gradients and icon grids, Figma and Miro style colorful creative tools, exaggerated animations and delight effects, and the generic Notion or Confluence document-tool aesthetic. plan-k looks like a tool that builds tools, not a meeting-notes app.\n\nImplementation is symmetric across light and dark. Both themes share the lavender accent unchanged and ride the same four-step surface ladder inverted around the canvas. The user toggles, the system does not assume.",
+    "keyCharacteristics": [
+      "Single chromatic accent: Linear lavender-blue #5e6ad2, used on focus rings, the active rail item, the primary CTA, and the canvas AI-active glow.",
+      "Four-step surface ladder (canvas, surface-1, surface-2, surface-3, surface-4) carries hierarchy without drop shadows in either theme.",
+      "Density tuned for long sessions: 13 to 14px body, 6 to 8px control padding, 28 to 30px control heights.",
+      "Geist Sans for everything; Geist Mono only inside code blocks and the kbd component.",
+      "Negative letter-spacing on display (-3.75% at the top step), positive tracking only on eyebrow labels (+3.1%).",
+      "Light and dark are mirrored; neither is the default. OS preference plus explicit toggle.",
+      "The central canvas is the protagonist. Chrome recedes onto surface-1 or surface-2."
+    ],
+    "rules": [
+      { "name": "The One Lavender Rule", "body": "Lavender appears at most twice on any screen: once for the active focus or selection, once for the primary CTA or AI-active state. A third lavender is a bug.", "section": "colors" },
+      { "name": "The Anchor Inversion Rule", "body": "Ink and Canvas swap on theme change; they are the same two values, inverted. Everything else follows the same hue ladder mirrored.", "section": "colors" },
+      { "name": "The No-Black Rule", "body": "#000000 and #ffffff are forbidden as token values for any role except on-primary. Every neutral carries a faint blue undertone matching the lavender brand hue.", "section": "colors" },
+      { "name": "The One Family Rule", "body": "Geist Sans carries display through body. The product never pairs a display serif with a sans body. Hierarchy comes from size, weight, and tracking; not from family change.", "section": "typography" },
+      { "name": "The Tighter-Goes-Bigger Rule", "body": "Letter-spacing scales negatively as size grows. Display XL holds -3.75%; body holds -0.3%. Eyebrow is the one exception at +3.1%.", "section": "typography" },
+      { "name": "The 14-Pixel Floor", "body": "Default body is 14px. The 11px caption is a metadata size only; never paragraph body.", "section": "typography" },
+      { "name": "The No-Shadow Rule", "body": "Box-shadow as decoration is forbidden. Depth is communicated via surface lift only. The one exception is the canvas AI-active inset glow.", "section": "elevation" },
+      { "name": "The Hairline Rule", "body": "Every separating line is 1px, never 2px or thicker. Hairline tokens own this; no ad-hoc border-color outside the token set.", "section": "elevation" },
+      { "name": "The AI-Active Reservation", "body": "The pulsing lavender canvas glow is reserved exclusively for in-flight Claude runs. Never decorative or always-on.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do lift the surface to communicate depth, never reach for box-shadow.",
+      "Do reserve lavender #5e6ad2 for at most two roles per screen.",
+      "Do pair display weight 600 with body weight 400. Never 700+ display weights.",
+      "Do apply negative letter-spacing on display sizes and positive only on eyebrow.",
+      "Do use 1px hairline borders everywhere; thicker rules are visual noise.",
+      "Do keep the canvas as the protagonist of every builder screen.",
+      "Do mirror the dark and light themes exactly.",
+      "Do respect prefers-reduced-motion: reduce.",
+      "Do use Geist Mono only inside code blocks and the kbd component."
+    ],
+    "donts": [
+      "Don't ship SaaS pastel plus dark-purple gradient plus icon-grid combinations.",
+      "Don't introduce Figma or Miro style colorful creative-tool palettes.",
+      "Don't add exaggerated animations or delight effects.",
+      "Don't dress the surface as a Notion or Confluence document tool.",
+      "Don't use #000000 or #ffffff for canvas, ink, surface, or hairline.",
+      "Don't use side-stripe borders (border-left greater than 1px as a colored accent).",
+      "Don't use gradient text.",
+      "Don't use modals as a first thought.",
+      "Don't pill-round CTAs.",
+      "Don't introduce a second chromatic accent.",
+      "Don't animate CSS layout properties.",
+      "Don't ship a component without :hover, :focus-visible, :active, and :disabled states."
+    ]
+  }
+}
