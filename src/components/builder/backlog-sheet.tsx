@@ -26,6 +26,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { sectionToMarkdown } from "@/lib/section-to-markdown";
 import { useBacklogStore } from "@/services/stores";
 import { EditableBlock } from "./editable-block";
+import { InsertSlot } from "./insert-slot";
 import { EntityStatusChip } from "./status-chip";
 import { VirtualBlockList } from "./virtual-block-list";
 
@@ -260,12 +261,35 @@ export function BacklogSheet() {
                   />
 
                   <div className="mt-8">
-                    {/* VirtualBlockList: only DOM-renders visible blocks. */}
+                    {/* VirtualBlockList: only DOM-renders visible blocks.
+                        Each row includes a leading InsertSlot (between) so the
+                        user can insert before any block, plus a trailing InsertSlot
+                        on the final row so there is always an append target.
+                        measureElement reads the full row height (InsertSlot +
+                        EditableBlock [+ trailing]) automatically. */}
                     <VirtualBlockList
                       ids={childBlockIds}
-                      render={(id) => (
-                        <EditableBlock blockId={id} parentId={section.id} />
-                      )}
+                      render={(id) => {
+                        const idx = childBlockIds.indexOf(id);
+                        const isLast = idx === childBlockIds.length - 1;
+                        return (
+                          <>
+                            <InsertSlot
+                              parentId={section.id}
+                              index={idx}
+                              variant="between"
+                            />
+                            <EditableBlock blockId={id} parentId={section.id} />
+                            {isLast && (
+                              <InsertSlot
+                                parentId={section.id}
+                                index={childBlockIds.length}
+                                variant="trailing"
+                              />
+                            )}
+                          </>
+                        );
+                      }}
                       scrollElement={scrollEl}
                       estimateSize={48}
                       overscan={10}
