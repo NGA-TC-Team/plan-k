@@ -117,6 +117,8 @@ export const BLOCK_ICONS: Record<BlockKind, LucideIcon> = {
   sheet: PanelTop,
   // agent
   "agent-step": CircleDot,
+  // shared structure
+  layout: LayoutGrid,
 };
 
 export function iconForBlock(kind: BlockKind): LucideIcon {

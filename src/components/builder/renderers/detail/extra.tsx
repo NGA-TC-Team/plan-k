@@ -164,7 +164,7 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
   if (columns.length === 0 && rows.length === 0)
     return <div className="py-1 text-sm">{empty("Empty table")}</div>;
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="min-w-0 overflow-x-auto rounded-md border">
       <table className="w-full border-collapse text-sm">
         <thead className="bg-muted/40">
           <tr>
@@ -223,14 +223,14 @@ export const FigureDetail: BlockRenderer = ({ vm }) => {
   // Resolve "media:<id>" refs to /api/media/<id>/raw; raw URLs pass through unchanged.
   const resolvedSrc = useMediaUrl(ref);
   return (
-    <figure className="my-2 space-y-1">
+    <figure className="my-2 max-w-full space-y-1">
       {resolvedSrc ? (
         // biome-ignore lint/performance/noImgElement: arbitrary remote URLs.
         <img
           src={resolvedSrc}
           alt={alt || "figure"}
           style={width ? { width } : undefined}
-          className="rounded border"
+          className="max-w-full rounded border"
         />
       ) : (
         <div className="flex h-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
@@ -832,7 +832,7 @@ export const ImageDetail: BlockRenderer = ({ vm }) => {
         height,
         objectFit: fit as "cover" | "contain",
       }}
-      className="rounded border"
+      className="max-w-full rounded border"
     />
   );
 };

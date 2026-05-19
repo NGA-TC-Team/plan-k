@@ -70,6 +70,7 @@ export function BlockShell({ blockId }: { blockId: string }) {
       data-block-id={vm.id}
       className={cn(
         "group/block relative rounded-md outline-none first-of-type:mt-0",
+        "min-w-0",
         spacingClass,
         vm.isSelected && "ring-1 ring-ring/70",
         vm.isPending && "opacity-70",
@@ -156,7 +157,8 @@ export function BlockShell({ blockId }: { blockId: string }) {
       <ContextMenu>
         <ContextMenuTrigger className="contents">
           <Renderer vm={vm} handlers={handlers} />
-          <BlockChildren parentId={vm.id} />
+          {/* layout blocks manage their own children + InsertSlots internally */}
+          {vm.kind !== "layout" ? <BlockChildren parentId={vm.id} /> : null}
         </ContextMenuTrigger>
         {planId ? (
           <ContextMenuContent>

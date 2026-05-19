@@ -30,6 +30,7 @@ import {
 import { FormWireframe } from "./form";
 import { HeaderWireframe } from "./header";
 import { HeroWireframe } from "./hero";
+import { LayoutWireframe } from "./layout";
 import { ListWireframe } from "./list";
 import { NavWireframe } from "./nav";
 import { TextWireframe } from "./text";
@@ -43,6 +44,7 @@ const realDocs: ContextRegistry = {
   "numbered-list": ListWireframe,
   table: TableWireframe,
   stat: StatWireframe,
+  layout: LayoutWireframe,
 };
 
 const realApp: ContextRegistry = {
@@ -74,6 +76,7 @@ const realApp: ContextRegistry = {
   "list-row": ListRowWireframe,
   fab: FabWireframe,
   sheet: SheetWireframe,
+  layout: LayoutWireframe,
 };
 
 const realAgent: ContextRegistry = {

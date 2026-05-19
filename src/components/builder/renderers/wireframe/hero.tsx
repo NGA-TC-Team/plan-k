@@ -6,7 +6,7 @@ import { KindBadge, WireBar, WireBox } from "./primitives";
 export const HeroWireframe: BlockRenderer = ({ vm }) => {
   const hasCta = Boolean((vm.displayValue.cta as string)?.length);
   return (
-    <WireBox className="space-y-3 px-6 py-8">
+    <WireBox className="min-w-0 w-full space-y-3 px-6 py-8">
       <KindBadge kind="hero" />
       <WireBar className="h-5 w-3/4" />
       <WireBar className="h-3 w-2/3" />

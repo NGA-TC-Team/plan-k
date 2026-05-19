@@ -64,3 +64,73 @@ describe("blockManifests", () => {
     }
   });
 });
+
+describe("layout manifest", () => {
+  it("layout manifest exists in blockManifests", () => {
+    expect(blockManifests.layout).toBeDefined();
+  });
+
+  it("layout manifest has correct schema keys (mode, cols, gap)", () => {
+    const m = manifestFor("layout");
+    const shape = (m.schema as { shape?: Record<string, unknown> }).shape;
+    expect(shape).toBeDefined();
+    expect(shape?.mode).toBeDefined();
+    expect(shape?.cols).toBeDefined();
+    expect(shape?.gap).toBeDefined();
+  });
+
+  it("layout defaults parse correctly via schema", () => {
+    const m = manifestFor("layout");
+    const parsed = m.schema.safeParse(m.defaults);
+    expect(parsed.success).toBe(true);
+  });
+
+  it("layout manifest default mode is vstack and gap is md", () => {
+    const defaults = defaultDataFor("layout");
+    expect(defaults.mode).toBe("vstack");
+    expect(defaults.gap).toBe("md");
+    expect(defaults.cols).toBeUndefined();
+  });
+
+  it("layout schema rejects invalid mode", () => {
+    const m = manifestFor("layout");
+    const result = m.schema.safeParse({ mode: "diagonal", gap: "md" });
+    expect(result.success).toBe(false);
+  });
+
+  it("layout schema rejects cols out of range (0 and 7)", () => {
+    const m = manifestFor("layout");
+    expect(
+      m.schema.safeParse({ mode: "grid", gap: "sm", cols: 0 }).success,
+    ).toBe(false);
+    expect(
+      m.schema.safeParse({ mode: "grid", gap: "sm", cols: 7 }).success,
+    ).toBe(false);
+  });
+
+  it("layout schema accepts boundary cols (1 and 6)", () => {
+    const m = manifestFor("layout");
+    expect(
+      m.schema.safeParse({ mode: "grid", gap: "sm", cols: 1 }).success,
+    ).toBe(true);
+    expect(
+      m.schema.safeParse({ mode: "grid", gap: "sm", cols: 6 }).success,
+    ).toBe(true);
+  });
+
+  it("layout appears in docs context registry", () => {
+    const docsKinds = blockKindsForContext("docs");
+    expect(docsKinds.find((s) => s.kind === "layout")).toBeDefined();
+  });
+
+  it("layout appears in app context registry", () => {
+    const appKinds = blockKindsForContext("app");
+    expect(appKinds.find((s) => s.kind === "layout")).toBeDefined();
+  });
+
+  it("layout summaryFor returns a string", () => {
+    const summary = summaryFor("layout", defaultDataFor("layout"));
+    expect(typeof summary).toBe("string");
+    expect(summary.length).toBeGreaterThan(0);
+  });
+});

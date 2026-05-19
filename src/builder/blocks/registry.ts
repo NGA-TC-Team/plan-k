@@ -13,6 +13,9 @@ import {
   type HeaderValues,
   HeroSchema,
   type HeroValues,
+  LAYOUT_DEFAULTS,
+  LayoutSchema,
+  type LayoutValues,
   LIST_DEFAULTS,
   ListSchema,
   type ListValues,
@@ -1100,6 +1103,36 @@ const agentStepManifest = manifest({
   summary: (v) => `[${v.role}] step`,
 });
 
+// ────────────────────────────── layout ──────────────────────────────
+
+// docs context layout manifest.
+// Shortcut "X" (unused in docs context).
+const layoutDocsManifest = manifest<LayoutValues>({
+  context: "docs",
+  kind: "layout",
+  label: "Layout",
+  group: "Structure",
+  shortcut: "X",
+  schema: LayoutSchema,
+  defaults: LAYOUT_DEFAULTS,
+  summary: (v) =>
+    `${v.mode}${v.mode === "grid" ? ` (${v.cols ?? 2} cols)` : ""} — ${v.gap} gap`,
+});
+
+// app context layout manifest.
+// Shortcut "J" (unused in app context).
+const layoutAppManifest = manifest<LayoutValues>({
+  context: "app",
+  kind: "layout",
+  label: "Layout",
+  group: "Structure",
+  shortcut: "J",
+  schema: LayoutSchema,
+  defaults: LAYOUT_DEFAULTS,
+  summary: (v) =>
+    `${v.mode}${v.mode === "grid" ? ` (${v.cols ?? 2} cols)` : ""} — ${v.gap} gap`,
+});
+
 // ────────────────────────────── aggregate ──────────────────────────────
 
 export const blockManifests = {
@@ -1128,6 +1161,9 @@ export const blockManifests = {
   "journey-step": journeyStepManifest,
   "api-endpoint": apiEndpointManifest,
   "math-block": mathBlockManifest,
+  // shared structure — docs context is the canonical manifest; renderer maps
+  // register layout in both docs and app explicitly.
+  layout: layoutDocsManifest,
   // app
   "page-header": pageHeaderManifest,
   sidebar: sidebarManifest,
@@ -1200,17 +1236,29 @@ export type BlockKindSpec = {
 
 const KIND_ORDER: BlockKind[] = Object.keys(blockManifests) as BlockKind[];
 
-export const BLOCK_KIND_REGISTRY: BlockKindSpec[] = KIND_ORDER.map((kind) => {
-  const m = blockManifests[kind];
-  return {
-    context: m.context,
-    kind: m.kind,
-    label: m.label,
-    group: m.group,
-    platform: m.platform,
-    shortcut: m.shortcut,
-  };
-});
+export const BLOCK_KIND_REGISTRY: BlockKindSpec[] = [
+  ...KIND_ORDER.map((kind) => {
+    const m = blockManifests[kind];
+    return {
+      context: m.context,
+      kind: m.kind,
+      label: m.label,
+      group: m.group,
+      platform: m.platform,
+      shortcut: m.shortcut,
+    };
+  }),
+  // layout appears in both docs (via blockManifests) and app.
+  // The app-context entry is registered explicitly here so insert slots
+  // and kind pickers include it without duplicating the manifest object.
+  {
+    context: "app" as BlockContext,
+    kind: "layout" as BlockKind,
+    label: layoutAppManifest.label,
+    group: layoutAppManifest.group,
+    shortcut: layoutAppManifest.shortcut,
+  },
+];
 
 export function blockKindsForContext(
   context: BlockContext,

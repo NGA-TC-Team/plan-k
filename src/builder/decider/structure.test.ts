@@ -325,3 +325,56 @@ describe("decideStructure.context validation", () => {
     expect(out).toEqual({ ok: false, reason: "WRONG_MODE" });
   });
 });
+
+// ── layout block context inheritance ──────────────────────────────────────────
+
+import { inferContextForParent } from "./structure";
+
+describe("inferContextForParent — layout block child context", () => {
+  it("child inserted into a docs-context layout block inherits docs context", () => {
+    const sectionState = makeEmptyState({
+      sections: {
+        sec1: {
+          id: "sec1",
+          planId: "p1",
+          parentId: null,
+          kind: "overview",
+          title: "Ov",
+        },
+      },
+    });
+    const stateWithLayout = withBlocks(sectionState, [
+      { id: "layout1", parentId: "sec1", kind: "layout" },
+    ]);
+    // Manually stamp context "docs" — makeBlock defaults to "app"; we override here.
+    const stateWithDocsLayout = {
+      ...stateWithLayout,
+      blocks: {
+        ...stateWithLayout.blocks,
+        layout1: {
+          ...(stateWithLayout.blocks.layout1 ?? {}),
+          context: "docs" as const,
+          id: "layout1",
+          parentId: "sec1",
+          kind: "layout" as const,
+          data: {},
+        },
+      },
+    };
+
+    const ctx = inferContextForParent(stateWithDocsLayout, "layout1");
+    expect(ctx).toBe("docs");
+  });
+
+  it("child inserted into an app-context layout block inherits app context", () => {
+    const screen = makeEmptyState({
+      screens: { s1: { id: "s1", planId: "p1", title: "Home" } },
+    });
+    const stateWithLayout = withBlocks(screen, [
+      { id: "layout1", parentId: "s1", kind: "layout" },
+    ]);
+    // makeBlock sets context "app" by default — no override needed.
+    const ctx = inferContextForParent(stateWithLayout, "layout1");
+    expect(ctx).toBe("app");
+  });
+});

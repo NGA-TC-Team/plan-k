@@ -11,7 +11,7 @@ export const CardGridWireframe: BlockRenderer = ({ vm }) => {
   const cards = (vm.displayValue.cards as unknown[]) ?? [];
   const cardCount = Math.max(cards.length || columns * 2, columns);
   return (
-    <WireBox className="space-y-3 px-3 py-3">
+    <WireBox className="min-w-0 w-full space-y-3 px-3 py-3">
       <div className="flex items-center justify-between">
         <KindBadge kind="card grid" />
         <span className="text-[10px] text-ink-subtle">{columns} cols</span>

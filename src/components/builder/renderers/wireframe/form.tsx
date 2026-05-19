@@ -7,7 +7,7 @@ export const FormWireframe: BlockRenderer = ({ vm }) => {
   const fields = (vm.displayValue.fields as unknown[]) ?? [];
   const count = Math.max(fields.length || 3, 2);
   return (
-    <WireBox className="space-y-3 px-3 py-3">
+    <WireBox className="min-w-0 w-full space-y-3 px-3 py-3">
       <KindBadge kind="form" />
       <div className="space-y-2.5">
         {Array.from({ length: count }).map((_, i) => (

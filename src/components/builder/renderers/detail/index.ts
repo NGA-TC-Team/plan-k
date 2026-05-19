@@ -49,6 +49,7 @@ import {
 import { FormDetail } from "./form";
 import { HeaderDetail } from "./header";
 import { HeroDetail } from "./hero";
+import { LayoutDetail } from "./layout";
 import { ListDetail } from "./list";
 import { NavDetail } from "./nav";
 import { TextDetail } from "./text";
@@ -81,6 +82,7 @@ const realDocs: ContextRegistry = {
   "journey-step": JourneyStepDetail,
   "api-endpoint": ApiEndpointDetail,
   stat: StatDetail,
+  layout: LayoutDetail,
 };
 
 const realApp: ContextRegistry = {
@@ -112,6 +114,7 @@ const realApp: ContextRegistry = {
   "list-row": ListRowDetail,
   fab: FabDetail,
   sheet: SheetDetail,
+  layout: LayoutDetail,
 };
 
 const realAgent: ContextRegistry = {

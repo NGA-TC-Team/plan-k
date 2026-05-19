@@ -28,6 +28,7 @@ import { ImageEditor } from "./image-editor";
 import { InputEditor } from "./input-editor";
 import { JourneyStepEditor } from "./journey-step-editor";
 import { JsonFallbackEditor } from "./json-fallback-editor";
+import { LayoutEditor } from "./layout-editor";
 import { LinkCardEditor } from "./link-card-editor";
 import { ListEditor } from "./list-editor";
 import { ListRowEditor } from "./list-row-editor";
@@ -78,6 +79,7 @@ const docs: ContextRegistry = {
   "journey-step": JourneyStepEditor,
   "api-endpoint": ApiEndpointEditor,
   stat: StatEditor,
+  layout: LayoutEditor,
 };
 
 const app: ContextRegistry = {
@@ -109,6 +111,7 @@ const app: ContextRegistry = {
   "list-row": ListRowEditor,
   fab: FabEditor,
   sheet: SheetEditor,
+  layout: LayoutEditor,
 };
 
 const agent: ContextRegistry = {

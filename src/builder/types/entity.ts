@@ -29,7 +29,8 @@ export type DocsBlockKind =
   | "color-swatch"
   | "journey-step"
   | "api-endpoint"
-  | "math-block";
+  | "math-block"
+  | "layout";
 
 export type AppBlockKind =
   | "page-header"
@@ -59,7 +60,8 @@ export type AppBlockKind =
   | "fab"
   | "sheet"
   // legacy alias kept for the existing nav renderer (commit 3 transition)
-  | "nav";
+  | "nav"
+  | "layout";
 
 export type AgentBlockKind = "agent-step";
 

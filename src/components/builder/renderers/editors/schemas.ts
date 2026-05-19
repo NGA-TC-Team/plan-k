@@ -46,6 +46,16 @@ export const NavSchema = z.object({
   items: z.array(NavItemSchema),
 });
 
+export const LayoutSchema = z.object({
+  mode: z.enum(["vstack", "hstack", "grid"]).default("vstack"),
+  cols: z.number().int().min(1).max(6).optional(),
+  gap: z.enum(["sm", "md", "lg"]).default("md"),
+});
+
+export type LayoutValues = z.infer<typeof LayoutSchema>;
+
+export const LAYOUT_DEFAULTS: LayoutValues = { mode: "vstack", gap: "md" };
+
 export const AgentStepSchema = z.object({
   role: z.enum(["input", "tool", "llm", "output"]),
   specJson: z.string(),
