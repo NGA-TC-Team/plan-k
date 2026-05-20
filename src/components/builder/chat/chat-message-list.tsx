@@ -218,7 +218,7 @@ function MessageBubble({
   };
 
   const bubbleStyles = cn(
-    "max-w-[92%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed shadow-sm",
+    "max-w-[92%] rounded-2xl px-4 py-3 text-body-sm leading-relaxed shadow-sm",
     isUser &&
       "rounded-br-md border border-primary/30 bg-primary/15 text-foreground",
     isAssistant && "rounded-bl-md border border-border bg-card text-foreground",

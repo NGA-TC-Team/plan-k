@@ -166,17 +166,17 @@ export const CodeBlockDetail: BlockRenderer = ({ vm }) => {
       {code ? (
         highlighted ? (
           <div
-            className="code-block-shiki overflow-x-auto px-3 py-3 font-mono text-[13px] leading-relaxed [&_pre]:bg-transparent [&_pre]:p-0"
+            className="code-block-shiki overflow-x-auto px-3 py-3 font-mono text-body-sm leading-relaxed [&_pre]:bg-transparent [&_pre]:p-0"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki output is HTML escaped by the highlighter.
             dangerouslySetInnerHTML={{ __html: highlighted }}
           />
         ) : (
-          <pre className="overflow-x-auto bg-muted/30 px-3 py-3 font-mono text-[13px] leading-relaxed">
+          <pre className="overflow-x-auto bg-muted/30 px-3 py-3 font-mono text-body-sm leading-relaxed">
             <code>{code}</code>
           </pre>
         )
       ) : (
-        <pre className="overflow-x-auto bg-muted/30 px-3 py-3 font-mono text-[13px] leading-relaxed">
+        <pre className="overflow-x-auto bg-muted/30 px-3 py-3 font-mono text-body-sm leading-relaxed">
           <code>{empty("// empty")}</code>
         </pre>
       )}
@@ -219,10 +219,10 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
   const columns = (vm.displayValue.columns as string[]) ?? [];
   const rows = (vm.displayValue.rows as string[][]) ?? [];
   if (columns.length === 0 && rows.length === 0)
-    return <div className="py-1 text-[14px]">{empty("Empty table")}</div>;
+    return <div className="py-1 text-body">{empty("Empty table")}</div>;
   return (
     <div className="min-w-0 overflow-x-auto rounded-lg border border-hairline">
-      <table className="w-full border-collapse text-[14px]">
+      <table className="w-full border-collapse text-body">
         <thead className="border-b border-hairline-strong bg-surface-2/60">
           <tr>
             {columns.map((col, i) => (
@@ -300,7 +300,7 @@ export const FigureDetail: BlockRenderer = ({ vm }) => {
         </div>
       )}
       {caption ? (
-        <figcaption className="mt-2 text-[13px] italic text-muted-foreground">
+        <figcaption className="mt-2 text-body-sm italic text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}
@@ -332,7 +332,7 @@ export const LinkCardDetail: BlockRenderer = ({ vm }) => {
         </span>
       </div>
       {description ? (
-        <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
+        <p className="mt-1 line-clamp-2 text-body-sm text-muted-foreground">
           {description}
         </p>
       ) : null}
@@ -389,14 +389,14 @@ export const DecisionDetail: BlockRenderer = ({ vm }) => {
         >
           {status}
         </span>
-        <span className="text-[17px] font-semibold leading-snug text-foreground">
+        <span className="text-card-title font-semibold leading-snug text-foreground">
           {question || empty("Question")}
         </span>
       </div>
       {ctx ? (
         <div>
           <div className={eyebrowCls}>Context</div>
-          <p className="mt-1 whitespace-pre-wrap text-[14px] text-muted-foreground">
+          <p className="mt-1 whitespace-pre-wrap text-body text-muted-foreground">
             {ctx}
           </p>
         </div>
@@ -407,7 +407,7 @@ export const DecisionDetail: BlockRenderer = ({ vm }) => {
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: option order is stable.
               key={i}
-              className="rounded-md border border-hairline p-3 text-[13px]"
+              className="rounded-md border border-hairline p-3 text-body-sm"
             >
               <div className="font-semibold text-foreground">
                 {opt.label || `Option ${i + 1}`}
@@ -429,19 +429,19 @@ export const DecisionDetail: BlockRenderer = ({ vm }) => {
       {decision ? (
         <div>
           <div className={eyebrowCls}>Decision</div>
-          <p className="mt-1 whitespace-pre-wrap text-[14px]">{decision}</p>
+          <p className="mt-1 whitespace-pre-wrap text-body">{decision}</p>
         </div>
       ) : null}
       {rationale ? (
         <div>
           <div className={eyebrowCls}>Rationale</div>
-          <p className="mt-1 whitespace-pre-wrap text-[14px]">{rationale}</p>
+          <p className="mt-1 whitespace-pre-wrap text-body">{rationale}</p>
         </div>
       ) : null}
       {consequences ? (
         <div>
           <div className={eyebrowCls}>Consequences</div>
-          <p className="mt-1 whitespace-pre-wrap text-[14px]">{consequences}</p>
+          <p className="mt-1 whitespace-pre-wrap text-body">{consequences}</p>
         </div>
       ) : null}
     </div>
@@ -501,19 +501,19 @@ export const PersonaDetail: BlockRenderer = ({ vm }) => {
             {name || empty("Persona")}
           </div>
           {role ? (
-            <div className="truncate text-[13px] text-muted-foreground">
+            <div className="truncate text-body-sm text-muted-foreground">
               {role}
             </div>
           ) : null}
           {demographics ? (
-            <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
+            <p className="mt-1 line-clamp-2 text-body-sm text-muted-foreground">
               {demographics}
             </p>
           ) : null}
         </div>
       </div>
       {quote ? (
-        <blockquote className="my-3 border-l-2 border-hairline-strong pl-3 text-[13px] italic text-muted-foreground">
+        <blockquote className="my-3 border-l-2 border-hairline-strong pl-3 text-body-sm italic text-muted-foreground">
           {quote}
         </blockquote>
       ) : null}
@@ -531,9 +531,9 @@ function PersonaList({ title, items }: { title: string; items: string[] }) {
     <div>
       <div className={eyebrowCls}>{title}</div>
       {items.length === 0 ? (
-        <div className="text-[13px] italic text-muted-foreground/70">—</div>
+        <div className="text-body-sm italic text-muted-foreground/70">—</div>
       ) : (
-        <ul className="mt-1 space-y-1 pl-4 list-disc marker:text-muted-foreground/50 text-[13px]">
+        <ul className="mt-1 space-y-1 pl-4 list-disc marker:text-muted-foreground/50 text-body-sm">
           {items.map((item, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: stable list.
             <li key={i}>{item}</li>
@@ -569,7 +569,7 @@ export const UserStoryDetail: BlockRenderer = ({ vm }) => {
           {priority}
         </span>
         {estimate ? (
-          <span className="text-[13px] text-muted-foreground">{estimate}</span>
+          <span className="text-body-sm text-muted-foreground">{estimate}</span>
         ) : null}
       </div>
       <p className="text-subhead leading-relaxed">
@@ -590,7 +590,7 @@ export const UserStoryDetail: BlockRenderer = ({ vm }) => {
       {acceptance.length > 0 ? (
         <div>
           <div className={eyebrowCls}>Acceptance</div>
-          <ul className="mt-1 space-y-1 ml-4 list-disc marker:text-muted-foreground/50 text-[13px]">
+          <ul className="mt-1 space-y-1 ml-4 list-disc marker:text-muted-foreground/50 text-body-sm">
             {acceptance.map((c, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: stable list.
               <li key={i}>{c}</li>
@@ -645,12 +645,12 @@ export const RiskDetail: BlockRenderer = ({ vm }) => {
         ) : null}
       </div>
       {impact ? (
-        <p className="text-[13px] text-muted-foreground">{impact}</p>
+        <p className="text-body-sm text-muted-foreground">{impact}</p>
       ) : null}
       {mitigation ? (
         <div>
           <div className={eyebrowCls}>Mitigation</div>
-          <p className="mt-1 text-[14px]">{mitigation}</p>
+          <p className="mt-1 text-body">{mitigation}</p>
         </div>
       ) : null}
     </div>
@@ -689,13 +689,15 @@ export const MetricDetail: BlockRenderer = ({ vm }) => {
         />
       </div>
       <div className="mt-2 flex items-baseline gap-1">
-        <span className="text-[28px] font-semibold tracking-display-lg tabular-nums">
+        <span className="text-display-sm font-semibold tracking-display-lg tabular-nums">
           {current || "—"}
         </span>
         {unit ? (
-          <span className="text-[13px] text-muted-foreground ml-1">{unit}</span>
+          <span className="text-body-sm text-muted-foreground ml-1">
+            {unit}
+          </span>
         ) : null}
-        <span className="ml-2 text-[13px] text-muted-foreground">
+        <span className="ml-2 text-body-sm text-muted-foreground">
           {TREND_GLYPH[trend] ?? "→"} target {target || "—"}
         </span>
       </div>
@@ -1385,13 +1387,13 @@ export const MilestoneDetail: BlockRenderer = ({ vm }) => {
           </span>
         </div>
         {scope ? (
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-body-sm text-muted-foreground">
             <span className="font-medium text-foreground">Scope · </span>
             {scope}
           </p>
         ) : null}
         {exitCriteria ? (
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-body-sm text-muted-foreground">
             <span className="font-medium text-foreground">Done when · </span>
             {exitCriteria}
           </p>
@@ -1432,15 +1434,15 @@ export const ReleaseNoteDetail: BlockRenderer = ({ vm }) => {
   return (
     <div className={cardCls}>
       <header className="mb-4 flex flex-wrap items-baseline gap-2 border-b border-hairline pb-3">
-        <span className="font-mono text-[17px] font-semibold tabular-nums text-foreground">
+        <span className="font-mono text-card-title font-semibold tabular-nums text-foreground">
           {version || empty("v0.0.0")}
         </span>
         {date ? (
-          <span className="text-[13px] text-muted-foreground">{date}</span>
+          <span className="text-body-sm text-muted-foreground">{date}</span>
         ) : null}
       </header>
       {highlights ? (
-        <p className="mb-4 text-[13px] text-muted-foreground">{highlights}</p>
+        <p className="mb-4 text-body-sm text-muted-foreground">{highlights}</p>
       ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         {RELEASE_BUCKETS.map((b) => {
@@ -1451,11 +1453,11 @@ export const ReleaseNoteDetail: BlockRenderer = ({ vm }) => {
                 {b.label} ({items.length})
               </div>
               {items.length === 0 ? (
-                <div className="mt-1 text-[13px] text-muted-foreground/70">
+                <div className="mt-1 text-body-sm text-muted-foreground/70">
                   —
                 </div>
               ) : (
-                <ul className="mt-1 space-y-1 text-[13px]">
+                <ul className="mt-1 space-y-1 text-body-sm">
                   {items.map((item, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: positional list.
                     <li key={i} className="flex gap-1">
@@ -1519,11 +1521,11 @@ export const JourneyStepDetail: BlockRenderer = ({ vm }) => {
         <span className="rounded bg-foreground px-1.5 py-0.5 font-mono text-caption text-background">
           STEP {step}
         </span>
-        <span className="text-[13px] text-muted-foreground">
+        <span className="text-body-sm text-muted-foreground">
           {persona || empty("(persona)")}
         </span>
       </header>
-      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-[13px]">
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-body-sm">
         <dt className={eyebrowCls}>Action</dt>
         <dd className="text-muted-foreground">{action || empty("—")}</dd>
         <dt className={eyebrowCls}>System</dt>
@@ -1604,7 +1606,7 @@ export const ApiEndpointDetail: BlockRenderer = ({ vm }) => {
         >
           {method}
         </span>
-        <code className="font-mono text-[14px] text-foreground">
+        <code className="font-mono text-body text-foreground">
           {path || empty("/path")}
         </code>
         {auth ? (
@@ -1614,7 +1616,7 @@ export const ApiEndpointDetail: BlockRenderer = ({ vm }) => {
         ) : null}
       </header>
       {summary ? (
-        <p className="border-b border-hairline px-4 py-2.5 text-[13px] text-muted-foreground">
+        <p className="border-b border-hairline px-4 py-2.5 text-body-sm text-muted-foreground">
           {summary}
         </p>
       ) : null}
@@ -1631,7 +1633,7 @@ export const ApiEndpointDetail: BlockRenderer = ({ vm }) => {
       {errors.length > 0 ? (
         <div className="border-t border-hairline px-4 py-3">
           <div className={cn(eyebrowCls, "mb-1.5")}>Errors</div>
-          <ul className="space-y-1 text-[13px]">
+          <ul className="space-y-1 text-body-sm">
             {errors.map((e, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: positional list.
               <li key={i} className="flex gap-2">
