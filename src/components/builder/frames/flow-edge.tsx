@@ -88,7 +88,7 @@ export function FlowEdge({
           x={midX}
           y={(from.y + to.y) / 2 - 6}
           textAnchor="middle"
-          className="fill-foreground/70 text-[10px]"
+          className="fill-foreground/70 text-caption"
         >
           {label}
         </text>

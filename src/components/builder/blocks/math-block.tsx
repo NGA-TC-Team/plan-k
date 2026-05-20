@@ -85,7 +85,7 @@ export function MathBlock({ block }: Props) {
             }
           }}
         />
-        <p className="mt-1 text-[10px] text-muted-foreground">
+        <p className="mt-1 text-caption text-muted-foreground">
           Shift+Enter or blur to render
         </p>
       </div>

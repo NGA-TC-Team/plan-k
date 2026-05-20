@@ -120,7 +120,7 @@ export function ChatComposer() {
           {pendingMentions.map((m) => (
             <span
               key={`${m.kind}:${m.id}`}
-              className="inline-flex items-center gap-1 rounded-sm bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+              className="inline-flex items-center gap-1 rounded-sm bg-primary/15 px-1.5 py-0.5 text-caption font-medium text-primary"
             >
               @{m.label}
               <button
@@ -140,7 +140,7 @@ export function ChatComposer() {
           {pendingAttachments.map((a) => (
             <span
               key={a.id}
-              className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              className="inline-flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-caption text-muted-foreground"
             >
               📎 {a.originalName}
               <button
@@ -197,7 +197,7 @@ export function ChatComposer() {
             >
               <Paperclip className="size-3.5" />
             </Button>
-            <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+            <label className="flex cursor-pointer items-center gap-1 text-caption text-muted-foreground">
               <input
                 type="checkbox"
                 checked={autoTagOnSelect}
@@ -213,7 +213,7 @@ export function ChatComposer() {
                 void handleModelChange(e.target.value as ClaudeModel)
               }
               disabled={!currentSession || runState !== "idle"}
-              className="rounded-md border bg-background px-1.5 py-0.5 text-[10px] font-medium text-foreground disabled:opacity-60"
+              className="rounded-md border bg-background px-1.5 py-0.5 text-caption font-medium text-foreground disabled:opacity-60"
               title="Claude model"
             >
               <option value="opus">Opus</option>
@@ -226,7 +226,7 @@ export function ChatComposer() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-6 px-2 text-[10px]"
+                className="h-6 px-2 text-caption"
                 onClick={() => void cancel()}
               >
                 Cancel
@@ -234,13 +234,13 @@ export function ChatComposer() {
             ) : null}
             <Button
               size="sm"
-              className="h-6 gap-1 px-2 text-[10px]"
+              className="h-6 gap-1 px-2 text-caption"
               onClick={() => void send()}
               disabled={!composerText.trim() || runState !== "idle"}
             >
               <Send className="size-3" />
               Send
-              <kbd className="ml-1 rounded-sm bg-primary-foreground/20 px-1 text-[9px]">
+              <kbd className="ml-1 rounded-sm bg-primary-foreground/20 px-1 text-caption">
                 ↵
               </kbd>
             </Button>

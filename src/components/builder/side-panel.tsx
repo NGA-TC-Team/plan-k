@@ -87,11 +87,11 @@ export function SidePanel() {
         className="flex h-full min-h-0 flex-col gap-0"
       >
         <TabsList variant="line" className="mx-4 mt-3 self-start">
-          <TabsTrigger value="chat" className="gap-1.5 text-[11px]">
+          <TabsTrigger value="chat" className="gap-1.5 text-caption">
             <MessageSquare className="size-3" />
             Chat
           </TabsTrigger>
-          <TabsTrigger value="properties" className="gap-1.5 text-[11px]">
+          <TabsTrigger value="properties" className="gap-1.5 text-caption">
             <Settings2 className="size-3" />
             Properties
           </TabsTrigger>
@@ -226,11 +226,11 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
         <div className="divide-y divide-hairline [&>*]:py-5 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
           <header className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] gap-1">
+              <Badge variant="outline" className="text-caption gap-1">
                 <BlockIcon className="size-3" />
                 <span>{manifest.label}</span>
               </Badge>
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
                 {manifest.group}
               </span>
               {vm.isPending ? (
@@ -250,7 +250,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
           </section>
 
           <section>
-            <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
               <Settings2 className="size-3" />
               <span>Properties</span>
             </h2>
@@ -275,7 +275,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
           <BacklinksPanel dstId={vm.id} />
 
           <section>
-            <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
               <Tag className="size-3" />
               <span>Meta</span>
             </h2>
@@ -284,7 +284,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
                 {
                   label: "id",
                   value: (
-                    <code className="font-mono text-[11px]">
+                    <code className="font-mono text-caption">
                       {vm.id.slice(0, 8)}…
                     </code>
                   ),
@@ -292,7 +292,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
                 {
                   label: "parent",
                   value: (
-                    <code className="font-mono text-[11px]">
+                    <code className="font-mono text-caption">
                       {vm.parentId.slice(0, 8)}…
                     </code>
                   ),
@@ -300,7 +300,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
                 {
                   label: "sync",
                   value: (
-                    <span className="text-[11px]">
+                    <span className="text-caption">
                       {vm.isPending ? "⏳ pending" : "✓ saved"}
                     </span>
                   ),
@@ -326,7 +326,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
             <span>Delete</span>
           </Button>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-caption text-muted-foreground">
           <kbd>Enter</kbd> to edit · <kbd>Delete</kbd> to remove · <kbd>⌘Z</kbd>{" "}
           to undo
         </p>
@@ -358,7 +358,7 @@ function MultiPane({ count }: { count: number }) {
     <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto p-5 space-y-5">
         <header className="space-y-1">
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-caption">
             {count} selected
           </Badge>
           <p className="text-xs text-muted-foreground">
@@ -367,14 +367,14 @@ function MultiPane({ count }: { count: number }) {
           </p>
         </header>
         <section>
-          <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-3 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
             <Tag className="size-3" />
             <span>Distribution</span>
           </h2>
           <PropertyTable
             rows={Array.from(byKind.entries()).map(([kind, n]) => ({
               label: kind,
-              value: <span className="text-[11px]">{n}</span>,
+              value: <span className="text-caption">{n}</span>,
             }))}
           />
         </section>
@@ -424,7 +424,7 @@ function MultiPane({ count }: { count: number }) {
             <span>Delete all</span>
           </Button>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-caption text-muted-foreground">
           <kbd>⌘C</kbd> 복사 · <kbd>⌘V</kbd> 붙여넣기 · <kbd>⌘D</kbd> 복제 ·{" "}
           <kbd>Delete</kbd> 일괄 삭제
         </p>

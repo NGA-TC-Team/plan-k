@@ -159,7 +159,7 @@ export function ChatMessageList() {
         <button
           type="button"
           onClick={() => scrollToBottom("smooth")}
-          className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[10px] text-foreground shadow-sm transition-colors hover:bg-muted"
+          className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-caption text-foreground shadow-sm transition-colors hover:bg-muted"
         >
           <ChevronDown className="size-3" />
           <span>
@@ -242,7 +242,7 @@ function MessageBubble({
             {message.mentions.map((m) => (
               <span
                 key={`${m.kind}:${m.id}`}
-                className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] font-medium text-primary"
+                className="rounded-md bg-primary/20 px-2 py-0.5 text-caption font-medium text-primary"
               >
                 @{m.label}
               </span>
@@ -283,7 +283,7 @@ function MessageBubble({
       </div>
       <div
         className={cn(
-          "flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/msg:opacity-100",
+          "flex items-center gap-1.5 px-1 text-caption text-muted-foreground opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/msg:opacity-100",
           isUser ? "flex-row-reverse" : "flex-row",
         )}
       >
@@ -336,18 +336,18 @@ function StagedDiffCard({ staged }: { staged: StagedIntent }) {
   return (
     <div className="rounded-md border bg-background p-1.5">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
           {staged.status === "staged" ? "Staged change" : staged.status}
         </span>
       </div>
-      <pre className="mb-1.5 max-h-24 overflow-auto rounded-sm bg-muted/40 p-1 text-[10px] text-muted-foreground">
+      <pre className="mb-1.5 max-h-24 overflow-auto rounded-sm bg-muted/40 p-1 text-caption text-muted-foreground">
         {summary}
       </pre>
       {staged.status === "staged" ? (
         <div className="flex gap-1.5">
           <Button
             size="sm"
-            className="h-6 px-2 text-[10px]"
+            className="h-6 px-2 text-caption"
             onClick={handleApply}
           >
             Apply
@@ -355,7 +355,7 @@ function StagedDiffCard({ staged }: { staged: StagedIntent }) {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[10px]"
+            className="h-6 px-2 text-caption"
             onClick={handleReject}
           >
             Reject
@@ -418,12 +418,12 @@ function AttachmentBadge({
   const isPending = promote.isPending;
 
   return (
-    <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+    <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-0.5 text-caption text-muted-foreground">
       <span className="max-w-[120px] truncate">
         📎 {attachment.originalName}
       </span>
       {isPromoted ? (
-        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
+        <span className="flex items-center gap-0.5 text-caption text-muted-foreground/70">
           <Check className="size-2.5" />
           In library
         </span>
@@ -434,7 +434,7 @@ function AttachmentBadge({
           onClick={handlePromote}
           aria-label={`Use ${attachment.originalName} in plan`}
           title="Use in plan"
-          className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+          className="flex items-center gap-0.5 rounded px-1 py-0.5 text-caption text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
         >
           {isPending ? (
             <span className="size-2.5 animate-spin rounded-full border border-primary border-t-transparent" />

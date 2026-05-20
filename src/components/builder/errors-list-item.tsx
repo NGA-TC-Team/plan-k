@@ -90,14 +90,14 @@ export function ErrorsListItem({ error }: ErrorsListItemProps) {
           </p>
           <div className="mt-0.5 flex items-center gap-1.5">
             <span
-              className={`inline-flex items-center rounded px-1 py-px text-[10px] font-medium ${SEVERITY_BADGE_CLASS[error.severity]}`}
+              className={`inline-flex items-center rounded px-1 py-px text-caption font-medium ${SEVERITY_BADGE_CLASS[error.severity]}`}
             >
               {error.severity}
             </span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-caption text-muted-foreground">
               {error.source}
             </span>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-caption text-muted-foreground">
               · {formatRelative(error.at)}
             </span>
           </div>

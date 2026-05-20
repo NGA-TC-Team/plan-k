@@ -97,7 +97,7 @@ function SessionGroup({
     <section className="mb-4 rounded-md border bg-muted/30">
       <header className="flex items-center gap-2 border-b px-3 py-2">
         <span className="flex-1 truncate text-xs font-medium">{title}</span>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-caption text-muted-foreground">
           {open.length}/{staged.length} pending
         </span>
         <button
@@ -111,7 +111,7 @@ function SessionGroup({
       </header>
       <div className="space-y-2 p-2">
         {staged.length === 0 ? (
-          <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">
+          <p className="px-2 py-3 text-center text-caption text-muted-foreground">
             Waiting for the model…
           </p>
         ) : (
@@ -161,11 +161,11 @@ function StagedDiffRow({
   return (
     <div className="rounded-md border bg-background p-2">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
           {status}
         </span>
       </div>
-      <pre className="mb-2 max-h-32 overflow-auto rounded-sm bg-muted/40 p-1.5 text-[10px] text-muted-foreground">
+      <pre className="mb-2 max-h-32 overflow-auto rounded-sm bg-muted/40 p-1.5 text-caption text-muted-foreground">
         {summary}
       </pre>
       {status === "staged" ? (

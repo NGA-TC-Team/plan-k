@@ -285,10 +285,10 @@ function Column({
     >
       <header className="flex items-center justify-between border-b bg-background/40 px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide">
+          <span className="text-caption font-semibold uppercase tracking-eyebrow">
             {COLUMN_LABEL[status]}
           </span>
-          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <span className="rounded bg-muted px-1.5 py-0.5 text-caption text-muted-foreground">
             {entities.length}
           </span>
         </div>
@@ -339,14 +339,14 @@ function Column({
           onDrop={(e) => handleDropAtIndex(e, entities.length)}
         />
         {entities.length === 0 && !dragActive ? (
-          <div className="rounded-md border border-dashed py-6 text-center text-[11px] text-muted-foreground">
+          <div className="rounded-md border border-dashed py-6 text-center text-caption text-muted-foreground">
             empty
           </div>
         ) : null}
         {entities.length === 0 && dragActive ? (
           <div
             className={cn(
-              "rounded-md border-2 border-dashed py-6 text-center text-[11px] transition-colors",
+              "rounded-md border-2 border-dashed py-6 text-center text-caption transition-colors",
               columnHover
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-muted-foreground/30 text-muted-foreground",
@@ -449,7 +449,7 @@ function TrackedCard({ entity }: { entity: TrackedEntity }) {
         </span>
       </div>
       {entity.path ? (
-        <div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+        <div className="mt-0.5 truncate text-caption text-muted-foreground">
           {entity.path}
         </div>
       ) : null}

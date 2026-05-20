@@ -38,7 +38,7 @@ function SuggestionCard({
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
         <span className="text-sm font-medium leading-none">{item.label}</span>
         {item.shortcut && (
-          <kbd className="ml-auto rounded border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+          <kbd className="ml-auto rounded border bg-muted px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
             {item.shortcut}
           </kbd>
         )}
@@ -69,7 +69,7 @@ export function EmptyStateCards({ context, onPick }: Props) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
           Quick-start
         </p>
         <p className="mt-1 text-sm text-muted-foreground">

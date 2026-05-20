@@ -384,7 +384,7 @@ function FloatingToolbar({
                     }}
                   >
                     {c.value === null ? (
-                      <span className="block text-center text-[10px] leading-[1.1] text-muted-foreground">
+                      <span className="block text-center text-caption leading-[1.1] text-muted-foreground">
                         ✕
                       </span>
                     ) : null}

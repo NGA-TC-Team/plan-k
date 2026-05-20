@@ -40,7 +40,7 @@ export function ChatMessageSteps({
   };
 
   return (
-    <div className="mb-2 rounded-md border border-border/60 bg-muted/30 text-[11px]">
+    <div className="mb-2 rounded-md border border-border/60 bg-muted/30 text-caption">
       <button
         type="button"
         onClick={onToggle}
@@ -55,7 +55,7 @@ export function ChatMessageSteps({
           {steps.length} {steps.length === 1 ? "step" : "steps"}
         </span>
         {streaming ? (
-          <span className="ml-1 inline-flex items-center gap-1 text-[10px] text-primary">
+          <span className="ml-1 inline-flex items-center gap-1 text-caption text-primary">
             <span className="size-1 animate-pulse rounded-full bg-primary" />
             running
           </span>

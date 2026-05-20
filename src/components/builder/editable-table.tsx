@@ -281,7 +281,7 @@ export function EditableTable({
           type="button"
           aria-label={`Add column left of column ${colIdx + 1}`}
           title="Add column left"
-          className="flex h-5 items-center gap-0.5 rounded border bg-background px-1 text-[10px] shadow-sm hover:bg-accent"
+          className="flex h-5 items-center gap-0.5 rounded border bg-background px-1 text-caption shadow-sm hover:bg-accent"
           onMouseDown={(e) => {
             e.preventDefault();
             addColLeft(colIdx);
@@ -295,7 +295,7 @@ export function EditableTable({
           type="button"
           aria-label={`Add column right of column ${colIdx + 1}`}
           title="Add column right"
-          className="flex h-5 items-center gap-0.5 rounded border bg-background px-1 text-[10px] shadow-sm hover:bg-accent"
+          className="flex h-5 items-center gap-0.5 rounded border bg-background px-1 text-caption shadow-sm hover:bg-accent"
           onMouseDown={(e) => {
             e.preventDefault();
             addColRight(colIdx);
@@ -492,7 +492,7 @@ export function EditableTable({
         title="Add row"
         className={cn(
           "flex w-full items-center justify-center gap-1 border-t border-border py-1",
-          "text-[11px] text-muted-foreground/60 opacity-0 transition-opacity",
+          "text-caption text-muted-foreground/60 opacity-0 transition-opacity",
           "group-hover/table:opacity-100 hover:bg-muted/30 hover:text-foreground",
         )}
         onMouseDown={(e) => {

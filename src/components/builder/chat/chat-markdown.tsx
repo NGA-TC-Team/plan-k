@@ -56,7 +56,7 @@ function CodeBlock({
         type="button"
         onClick={onCopy}
         aria-label="Copy code"
-        className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded bg-background/80 px-1.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:text-foreground"
+        className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded bg-background/80 px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:text-foreground"
       >
         {copied ? (
           <Check className="size-2.5" />
@@ -65,7 +65,7 @@ function CodeBlock({
         )}
         <span>{copied ? "Copied" : "Copy"}</span>
       </button>
-      <pre ref={ref} className="overflow-x-auto p-2 text-[11px]" {...rest}>
+      <pre ref={ref} className="overflow-x-auto p-2 text-caption" {...rest}>
         {children}
       </pre>
     </div>

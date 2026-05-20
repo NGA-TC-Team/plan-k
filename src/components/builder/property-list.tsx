@@ -92,7 +92,7 @@ function Value({ value }: { value: unknown }) {
     ));
     return (
       <div className="space-y-1">
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-caption text-muted-foreground">
           {value.length} items
         </span>
         <ul className="ml-4 list-disc space-y-0.5 marker:text-muted-foreground/60">

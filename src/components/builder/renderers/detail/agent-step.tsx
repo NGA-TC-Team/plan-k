@@ -16,10 +16,10 @@ export const AgentStepDetail: BlockRenderer = ({ vm }) => {
   const cls = ROLE_STYLES[role] ?? "border-hairline bg-surface-1";
   return (
     <div className={cn("rounded-md border-2 p-3", cls)}>
-      <div className="mb-1 text-xs font-semibold uppercase tracking-wide">
+      <div className="mb-1 text-caption font-semibold uppercase tracking-eyebrow">
         {role}
       </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap text-[11px] leading-snug">
+      <pre className="overflow-x-auto whitespace-pre-wrap text-caption leading-snug">
         {JSON.stringify(spec, null, 2)}
       </pre>
     </div>

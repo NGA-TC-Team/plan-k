@@ -17,7 +17,7 @@ export function ScreenInspector({ vm }: Props) {
         <div className="divide-y divide-hairline [&>*]:py-5 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
           <header className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] gap-1">
+              <Badge variant="outline" className="text-caption gap-1">
                 <Monitor className="size-3" />
                 <span>Screen</span>
               </Badge>
@@ -30,7 +30,7 @@ export function ScreenInspector({ vm }: Props) {
           </section>
 
           <section>
-            <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
               <Tag className="size-3" />
               <span>Meta</span>
             </h2>
@@ -39,21 +39,21 @@ export function ScreenInspector({ vm }: Props) {
                 {
                   label: "id",
                   value: (
-                    <code className="font-mono text-[11px]">
+                    <code className="font-mono text-caption">
                       {vm.id.slice(0, 8)}…
                     </code>
                   ),
                 },
                 {
                   label: "title",
-                  value: <span className="text-[11px]">{vm.title}</span>,
+                  value: <span className="text-caption">{vm.title}</span>,
                 },
                 ...(vm.route
                   ? [
                       {
                         label: "route",
                         value: (
-                          <code className="font-mono text-[11px]">
+                          <code className="font-mono text-caption">
                             {vm.route}
                           </code>
                         ),

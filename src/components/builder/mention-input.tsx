@@ -137,11 +137,11 @@ export const MentionInput = forwardRef<HTMLTextAreaElement, Props>(
                       i === activeIdx ? "bg-accent" : "hover:bg-accent/60",
                     )}
                   >
-                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
+                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-caption uppercase text-muted-foreground">
                       {c.badge}
                     </span>
                     <span className="flex-1 truncate">{c.label}</span>
-                    <code className="font-mono text-[10px] text-muted-foreground">
+                    <code className="font-mono text-caption text-muted-foreground">
                       {c.id}
                     </code>
                   </button>

@@ -103,7 +103,7 @@ export function TopBar() {
           <Home className="size-3.5" />
           <span>plan-k</span>
         </Link>
-        <Badge variant="secondary" className="uppercase tracking-wide">
+        <Badge variant="secondary" className="uppercase tracking-eyebrow">
           {kind}
         </Badge>
         <div className="min-w-0">
@@ -118,7 +118,7 @@ export function TopBar() {
           )}
           <div className="flex items-center gap-2">
             {planMeta?.id ? (
-              <span className="truncate text-[10px] text-muted-foreground">
+              <span className="truncate text-caption text-muted-foreground">
                 {planMeta.id}
               </span>
             ) : null}
@@ -306,7 +306,7 @@ function ProjectMetaEditor({
           </div>
 
           {planId ? (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-caption text-muted-foreground">
               plan id: <code>{planId}</code>
             </div>
           ) : null}

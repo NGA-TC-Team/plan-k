@@ -22,9 +22,9 @@ export const LayoutWireframe: BlockRenderer = ({ vm }) => {
       <div className="flex items-center justify-between">
         <KindBadge kind={`layout · ${safeMode}`} />
         {isGrid ? (
-          <span className="text-[10px] text-ink-subtle">{cols} cols</span>
+          <span className="text-caption text-ink-subtle">{cols} cols</span>
         ) : null}
-        <span className="text-[10px] text-ink-subtle">gap {gap}</span>
+        <span className="text-caption text-ink-subtle">gap {gap}</span>
       </div>
       <div
         className={

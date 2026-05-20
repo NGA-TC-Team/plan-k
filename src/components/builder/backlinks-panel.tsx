@@ -34,7 +34,7 @@ export function BacklinksPanel({ dstId, onSelect }: Props) {
 
   return (
     <section>
-      <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 className="mb-3 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
         <Link2 className="size-3" />
         <span>Backlinks ({refs.length})</span>
       </h2>
@@ -55,12 +55,12 @@ export function BacklinksPanel({ dstId, onSelect }: Props) {
               <span className="flex-1 min-w-0">
                 <span className="block truncate font-medium">{row.label}</span>
                 {row.path.length > 0 ? (
-                  <span className="block truncate text-[10px] text-muted-foreground">
+                  <span className="block truncate text-caption text-muted-foreground">
                     {row.path.join(" › ")}
                   </span>
                 ) : null}
               </span>
-              <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <span className="rounded bg-background px-1.5 py-0.5 font-mono text-caption text-muted-foreground">
                 {KIND_BADGE[row.kind] ?? row.kind}
               </span>
             </button>

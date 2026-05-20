@@ -62,7 +62,7 @@ export function MediaUsagePopover({
       <PopoverTrigger
         aria-label={`사용 중인 블록 ${triggerLabel}개 — 목록 보기`}
         className={cn(
-          "rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium leading-none text-white",
+          "rounded bg-black/60 px-1 py-0.5 text-caption font-medium leading-none text-white",
           "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           triggerClassName,
         )}
@@ -115,7 +115,7 @@ export function MediaUsagePopover({
                       {label}
                     </span>
                     {path ? (
-                      <span className="block truncate text-[10px] text-muted-foreground">
+                      <span className="block truncate text-caption text-muted-foreground">
                         {path}
                       </span>
                     ) : null}

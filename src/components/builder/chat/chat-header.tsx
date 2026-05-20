@@ -58,7 +58,7 @@ export function ChatHeader() {
       <Button
         size="sm"
         variant={current?.mode === "approval" ? "default" : "outline"}
-        className="h-7 px-2 text-[11px]"
+        className="h-7 px-2 text-caption"
         onClick={handleModeToggle}
         disabled={!current}
         title="Toggle Auto / Approval"

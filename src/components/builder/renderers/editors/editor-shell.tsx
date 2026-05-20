@@ -40,11 +40,11 @@ export function EditorShell({
       className="flex h-full flex-col gap-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
           {title}
         </div>
         {isPending ? (
-          <span className="inline-flex items-center gap-1 rounded-sm bg-ring/15 px-1.5 py-0.5 text-[10px] font-medium text-ring">
+          <span className="inline-flex items-center gap-1 rounded-sm bg-ring/15 px-1.5 py-0.5 text-caption font-medium text-ring">
             <span className="size-1 rounded-full bg-ring animate-pulse" />
             Saving…
           </span>
@@ -52,7 +52,7 @@ export function EditorShell({
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto">{children}</div>
       <div className="flex items-center justify-between gap-2 border-t pt-3">
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-caption text-muted-foreground">
           ⌘/Ctrl+Enter to apply · Esc to cancel
         </span>
         <div className="flex gap-2">

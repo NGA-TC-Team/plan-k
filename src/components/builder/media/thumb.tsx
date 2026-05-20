@@ -79,7 +79,7 @@ export function MediaThumb({
           ) : (
             <span
               title={`Used in ${count} block${count === 1 ? "" : "s"}`}
-              className="rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium leading-none text-white"
+              className="rounded bg-black/60 px-1 py-0.5 text-caption font-medium leading-none text-white"
             >
               {count}
             </span>

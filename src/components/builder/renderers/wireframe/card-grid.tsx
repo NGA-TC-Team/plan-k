@@ -14,7 +14,7 @@ export const CardGridWireframe: BlockRenderer = ({ vm }) => {
     <WireBox className="min-w-0 w-full space-y-3 px-3 py-3">
       <div className="flex items-center justify-between">
         <KindBadge kind="card grid" />
-        <span className="text-[10px] text-ink-subtle">{columns} cols</span>
+        <span className="text-caption text-ink-subtle">{columns} cols</span>
       </div>
       <div
         className="grid gap-2"

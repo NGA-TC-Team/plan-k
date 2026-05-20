@@ -117,7 +117,7 @@ export const AvatarWireframe: BlockRenderer = () => (
 );
 
 export const BadgeWireframe: BlockRenderer = () => (
-  <span className="inline-flex items-center rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+  <span className="inline-flex items-center rounded-full bg-surface-2 px-2 py-0.5 text-caption font-medium text-ink-muted">
     badge
   </span>
 );
@@ -203,7 +203,7 @@ export const EmptyStateWireframe: BlockRenderer = () => (
 // ────── mobile
 
 export const StatusBarWireframe: BlockRenderer = () => (
-  <div className="flex items-center justify-between bg-surface-2 px-2 py-1 text-[9px] text-ink-subtle">
+  <div className="flex items-center justify-between bg-surface-2 px-2 py-1 text-caption text-ink-subtle">
     <span>9:41</span>
     <KindBadge kind="status-bar" />
   </div>

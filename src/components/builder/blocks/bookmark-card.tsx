@@ -153,7 +153,7 @@ export function BookmarkCard({ block }: Props) {
         {/* Truncated URL */}
         {url ? (
           <span
-            className="ml-2 hidden flex-shrink-0 truncate text-[10px] text-muted-foreground sm:block"
+            className="ml-2 hidden flex-shrink-0 truncate text-caption text-muted-foreground sm:block"
             style={{ maxWidth: "12rem" }}
           >
             {url}

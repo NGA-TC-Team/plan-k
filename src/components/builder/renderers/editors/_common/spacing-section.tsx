@@ -71,19 +71,19 @@ export function SpacingSection({ blockId, kind, data }: Props) {
   return (
     <section className="space-y-2 rounded-md border border-hairline p-3">
       <header className="flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
           Spacing
         </h3>
         {isOverridden ? (
           <button
             type="button"
             onClick={reset}
-            className="text-[10px] text-muted-foreground hover:text-foreground"
+            className="text-caption text-muted-foreground hover:text-foreground"
           >
             Reset to default
           </button>
         ) : (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-caption text-muted-foreground">
             Defaults applied
           </span>
         )}

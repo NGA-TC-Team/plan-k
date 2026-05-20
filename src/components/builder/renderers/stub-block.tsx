@@ -14,7 +14,7 @@ export const StubBlock: BlockRenderer = ({ vm }: RendererProps) => {
   const summary = summarize(vm.displayValue);
   return (
     <div className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 p-3 text-xs">
-      <div className="mb-1 font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="mb-1 text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
         {label}
       </div>
       {summary ? (

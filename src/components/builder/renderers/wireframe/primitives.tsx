@@ -25,7 +25,7 @@ export function WireBar({ className }: { className?: string }) {
 
 export function KindBadge({ kind }: { kind: string }) {
   return (
-    <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-ink-subtle">
+    <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-caption font-medium uppercase tracking-eyebrow text-ink-subtle">
       {kind}
     </span>
   );

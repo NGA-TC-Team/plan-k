@@ -103,7 +103,7 @@ export function BlockKindPicker({
         <div className="text-xs font-medium text-muted-foreground">
           Insert {context} block
         </div>
-        <div className="text-[10px] text-muted-foreground/70">
+        <div className="text-caption text-muted-foreground/70">
           {query ? "filtered" : "press a letter"}
         </div>
       </div>
@@ -150,7 +150,7 @@ export function BlockKindPicker({
                   <span className="flex items-center gap-2">
                     <BlockIcon className="size-3.5 text-muted-foreground" />
                     <span>{spec.label}</span>
-                    <span className="text-[10px] text-muted-foreground/70">
+                    <span className="text-caption text-muted-foreground/70">
                       {spec.group}
                     </span>
                   </span>
@@ -162,7 +162,7 @@ export function BlockKindPicker({
       ) : null}
       {!filteredSpecs && recentSpecs.length > 0 ? (
         <div className="mb-1">
-          <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+          <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground/70">
             <span>Recent</span>
           </div>
           <div className="flex flex-col">
@@ -180,7 +180,7 @@ export function BlockKindPicker({
                     <span>{spec.label}</span>
                   </span>
                   {spec.shortcut ? (
-                    <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-[10px] font-mono text-muted-foreground">
+                    <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-caption font-mono text-muted-foreground">
                       {spec.shortcut}
                     </kbd>
                   ) : null}
@@ -195,7 +195,7 @@ export function BlockKindPicker({
           const GroupIcon = iconForGroup(group);
           return (
             <div key={group} className="mb-1">
-              <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+              <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground/70">
                 <GroupIcon className="size-3" />
                 <span>{group}</span>
               </div>
@@ -214,7 +214,7 @@ export function BlockKindPicker({
                         <span>{spec.label}</span>
                       </span>
                       {spec.shortcut ? (
-                        <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-[10px] font-mono text-muted-foreground">
+                        <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-caption font-mono text-muted-foreground">
                           {spec.shortcut}
                         </kbd>
                       ) : null}

@@ -350,12 +350,12 @@ function ScreenCard({
           <X className="size-3" />
         </button>
       </div>
-      <div className="flex h-[calc(100%-1.75rem)] items-center justify-center px-3 text-center text-[10px] text-muted-foreground">
+      <div className="flex h-[calc(100%-1.75rem)] items-center justify-center px-3 text-center text-caption text-muted-foreground">
         {kind === "web" ? "Browser" : "Mobile"} screen · double-click to open
         {screen.route ? (
           <>
             <br />
-            <code className="text-[10px]">{screen.route}</code>
+            <code className="text-caption">{screen.route}</code>
           </>
         ) : null}
       </div>

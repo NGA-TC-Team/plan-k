@@ -485,7 +485,7 @@ export function NotionWriter({ parentId }: Props) {
             const GroupIcon = iconForGroup(group);
             return (
               <div key={group} className="mb-1">
-                <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                <div className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground/70">
                   <GroupIcon className="size-3" />
                   <span>{group}</span>
                 </div>
@@ -508,7 +508,7 @@ export function NotionWriter({ parentId }: Props) {
                           <span>{spec.label}</span>
                         </span>
                         {spec.shortcut ? (
-                          <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-[10px] font-mono text-muted-foreground">
+                          <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-caption font-mono text-muted-foreground">
                             {spec.shortcut}
                           </kbd>
                         ) : null}
@@ -623,7 +623,7 @@ function InlineToolbar({
                     }}
                   >
                     {c.value === null ? (
-                      <span className="block text-center text-[10px] leading-[1.1] text-muted-foreground">
+                      <span className="block text-center text-caption leading-[1.1] text-muted-foreground">
                         ✕
                       </span>
                     ) : null}

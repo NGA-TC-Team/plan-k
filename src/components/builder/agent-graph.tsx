@@ -192,7 +192,7 @@ export function AgentGraph() {
                 }
               }}
             >
-              <div className="flex items-center justify-between border-b px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <div className="flex items-center justify-between border-b px-2 py-1 text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
                 <span>{node.role}</span>
                 <button
                   type="button"

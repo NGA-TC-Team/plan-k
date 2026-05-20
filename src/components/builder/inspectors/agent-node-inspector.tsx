@@ -24,11 +24,11 @@ export function AgentNodeInspector({ vm }: Props) {
         <div className="divide-y divide-hairline [&>*]:py-5 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
           <header className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] gap-1">
+              <Badge variant="outline" className="text-caption gap-1">
                 <Bot className="size-3" />
                 <span>Agent Node</span>
               </Badge>
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
                 {ROLE_LABEL[vm.role]}
               </span>
             </div>
@@ -40,7 +40,7 @@ export function AgentNodeInspector({ vm }: Props) {
           </section>
 
           <section>
-            <h2 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="mb-3 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
               <Tag className="size-3" />
               <span>Meta</span>
             </h2>
@@ -49,19 +49,19 @@ export function AgentNodeInspector({ vm }: Props) {
                 {
                   label: "id",
                   value: (
-                    <code className="font-mono text-[11px]">
+                    <code className="font-mono text-caption">
                       {vm.id.slice(0, 8)}…
                     </code>
                   ),
                 },
                 {
                   label: "label",
-                  value: <span className="text-[11px]">{vm.label}</span>,
+                  value: <span className="text-caption">{vm.label}</span>,
                 },
                 {
                   label: "role",
                   value: (
-                    <code className="font-mono text-[11px]">{vm.role}</code>
+                    <code className="font-mono text-caption">{vm.role}</code>
                   ),
                 },
               ]}

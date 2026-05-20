@@ -16,7 +16,7 @@ export const AgentStepWireframe: BlockRenderer = ({ vm }) => {
   return (
     <WireBox className="flex items-center gap-3 px-3 py-3">
       <span className={`size-3 shrink-0 rounded-full ${dot}`} />
-      <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-ink-subtle">
+      <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-caption font-medium uppercase tracking-eyebrow text-ink-subtle">
         {role}
       </span>
       <div className="flex-1 space-y-1.5">

@@ -98,7 +98,7 @@ export function InlineAiMenu({ planId, block }: Props) {
             return (
               <div key={group.id}>
                 {gi > 0 ? <ContextMenuSeparator /> : null}
-                <ContextMenuLabel className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <ContextMenuLabel className="flex items-center gap-1.5 text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
                   <group.icon className="size-3" />
                   <span>{group.heading}</span>
                 </ContextMenuLabel>

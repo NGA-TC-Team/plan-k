@@ -182,7 +182,7 @@ function ScreensRail({
   return (
     <>
       <div className="flex items-start justify-between px-3 py-2">
-        <div className="flex items-center gap-1.5 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-1.5 pt-1 text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
           {kind === "mobile" ? (
             <Smartphone className="size-3.5" />
           ) : (
@@ -378,7 +378,7 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
   return (
     <>
       <div className="flex items-start justify-between px-3 py-2">
-        <div className="flex items-center gap-1.5 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-1.5 pt-1 text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
           <BookOpen className="size-3.5" />
           <span>Docs sections</span>
         </div>
@@ -402,7 +402,7 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
               {templates.length > 0 ? (
                 <>
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <DropdownMenuLabel className="text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
                       {planKind === "agent"
                         ? "Agent docs · 에이전트 문서"
                         : planKind === "mobile"
@@ -422,18 +422,18 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{spec.title}</span>
                               {info?.titleKo ? (
-                                <span className="text-[11px] text-muted-foreground/80">
+                                <span className="text-caption text-muted-foreground/80">
                                   {info.titleKo}
                                 </span>
                               ) : null}
                               {spec.children?.length ? (
-                                <span className="ml-auto rounded bg-muted px-1 py-0.5 text-[9px] font-mono text-muted-foreground">
+                                <span className="ml-auto rounded bg-muted px-1 py-0.5 text-caption font-mono text-muted-foreground">
                                   +{spec.children.length}
                                 </span>
                               ) : null}
                             </div>
                             {spec.description ? (
-                              <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                              <span className="line-clamp-2 text-caption leading-snug text-muted-foreground">
                                 {spec.description}
                               </span>
                             ) : null}
@@ -453,11 +453,11 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
                 <div className="flex flex-1 flex-col gap-0.5">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Empty section</span>
-                    <span className="text-[11px] text-muted-foreground/80">
+                    <span className="text-caption text-muted-foreground/80">
                       빈 섹션
                     </span>
                   </div>
-                  <span className="text-[11px] leading-snug text-muted-foreground">
+                  <span className="text-caption leading-snug text-muted-foreground">
                     템플릿 없이 빈 섹션을 추가합니다.
                   </span>
                 </div>
@@ -789,7 +789,7 @@ function BacklogRail({ onCollapse }: { onCollapse: () => void }) {
   return (
     <>
       <div className="flex items-start justify-between px-3 py-2">
-        <div className="flex items-center gap-1.5 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-1.5 pt-1 text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
           <span>Backlog · {total}</span>
         </div>
         <RailHeaderActions

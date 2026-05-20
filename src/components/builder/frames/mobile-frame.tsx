@@ -24,7 +24,7 @@ export function MobileFrame({
       )}
       data-frame="mobile"
     >
-      <div className="relative flex h-7 items-center justify-between bg-foreground/85 px-6 text-[10px] text-background">
+      <div className="relative flex h-7 items-center justify-between bg-foreground/85 px-6 text-caption text-background">
         <span>9:41</span>
         <span
           aria-hidden

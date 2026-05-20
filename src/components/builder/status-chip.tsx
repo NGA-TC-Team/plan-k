@@ -82,7 +82,7 @@ export function StatusChipMenu({
               "shrink-0 rounded-full border border-transparent transition-colors hover:border-border",
               variant === "dot"
                 ? "flex size-5 items-center justify-center"
-                : "flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                : "flex items-center gap-1.5 px-2 py-0.5 text-caption font-medium uppercase tracking-eyebrow",
             )}
           >
             <span

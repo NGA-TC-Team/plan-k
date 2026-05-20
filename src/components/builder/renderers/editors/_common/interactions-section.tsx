@@ -85,16 +85,16 @@ export function InteractionsSection({ blockId, kind, data }: Props) {
   return (
     <section className="space-y-2 rounded-md border border-hairline p-3">
       <header className="flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
           Interactions
         </h3>
         <Button type="button" size="sm" variant="ghost" onClick={add}>
           <Plus className="size-3" />
-          <span className="text-[11px]">Add</span>
+          <span className="text-caption">Add</span>
         </Button>
       </header>
       {interactions.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           No interactions. Document how a user reaches another screen, opens a
           modal, or fires a custom action from this block.
         </p>
