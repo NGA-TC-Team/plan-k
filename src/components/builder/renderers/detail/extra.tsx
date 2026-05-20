@@ -188,9 +188,9 @@ export const ChecklistDetail: BlockRenderer = ({ vm }) => {
   const items =
     (vm.displayValue.items as { text: string; checked: boolean }[]) ?? [];
   if (items.length === 0)
-    return <div className="py-1 text-[15px]">{empty("Empty checklist")}</div>;
+    return <div className="py-1 text-subhead">{empty("Empty checklist")}</div>;
   return (
-    <ul className="space-y-1.5 text-[15px]">
+    <ul className="space-y-1.5 text-subhead">
       {items.map((item, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: positional list mirroring source array.
         <li key={i} className="flex items-start gap-2">
@@ -346,7 +346,7 @@ export const LinkCardDetail: BlockRenderer = ({ vm }) => {
 };
 
 export const DefinitionDetail: BlockRenderer = ({ vm }) => (
-  <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-[15px]">
+  <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-subhead">
     <dt className="font-semibold text-foreground">
       {stringValue(vm, "term") || empty("Term")}
     </dt>
@@ -572,7 +572,7 @@ export const UserStoryDetail: BlockRenderer = ({ vm }) => {
           <span className="text-[13px] text-muted-foreground">{estimate}</span>
         ) : null}
       </div>
-      <p className="text-[15px] leading-relaxed">
+      <p className="text-subhead leading-relaxed">
         As{" "}
         <span className="font-semibold text-foreground">
           {as || empty("…")}
@@ -618,7 +618,7 @@ export const RiskDetail: BlockRenderer = ({ vm }) => {
   const owner = stringValue(vm, "owner");
   return (
     <div className={cn(cardCls, "space-y-3")}>
-      <div className="font-semibold text-foreground text-[15px]">
+      <div className="font-semibold text-foreground text-subhead">
         {risk || empty("Risk")}
       </div>
       <div className="flex flex-wrap gap-2">
@@ -1380,7 +1380,7 @@ export const MilestoneDetail: BlockRenderer = ({ vm }) => {
           >
             {tone.label}
           </span>
-          <span className="font-semibold text-foreground text-[15px]">
+          <span className="font-semibold text-foreground text-subhead">
             {title || empty("Milestone")}
           </span>
         </div>

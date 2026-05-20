@@ -17,8 +17,9 @@ export const ListDetail: BlockRenderer = ({ vm }) => {
   return (
     <Tag
       className={cn(
-        "py-2 pl-6 text-sm",
+        "space-y-1.5 pl-5 text-subhead leading-relaxed",
         ordered ? "list-decimal" : "list-disc",
+        "marker:text-muted-foreground/60",
       )}
     >
       {items.map((item, i) => (
@@ -26,7 +27,7 @@ export const ListDetail: BlockRenderer = ({ vm }) => {
           {item.length > 0 ? (
             item
           ) : (
-            <span className="italic text-muted-foreground">Empty item</span>
+            <span className="italic text-muted-foreground/70">Empty item</span>
           )}
         </li>
       ))}
