@@ -3,7 +3,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { FileImage, FileText, MoreVertical } from "lucide-react";
 import { useState } from "react";
-import { buildExportParams } from "@/components/builder/export-params";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +15,7 @@ import type { PlanVersionListItem } from "@/data/plan-versions";
 import { useDeletePlanVersionMutation } from "@/data/plan-versions";
 import { usePrintOptionsStore } from "@/services/stores/print-options.store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { exportPlanWithToast } from "@/services/third-party-facade/export";
 
 type VersionsListItemProps = {
   planId: string;
@@ -45,14 +45,15 @@ export function VersionsListItem({ planId, version }: VersionsListItemProps) {
     const opts = usePrintOptionsStore.getState();
     // Cover is forced true server-side for version exports (design spec D7).
     // We still pass cover from the store; the print page overrides it.
-    const params = buildExportParams(planId, opts, {
+    exportPlanWithToast({
+      planId,
+      kind,
       versionId: version.id,
+      cover: opts.cover,
+      toc: opts.toc,
+      pageNumbers: opts.pageNumbers,
+      footerText: opts.footerText,
     });
-    window.open(
-      `/api/exports/${kind}?${params.toString()}`,
-      "_blank",
-      "noopener",
-    );
   };
 
   return (
