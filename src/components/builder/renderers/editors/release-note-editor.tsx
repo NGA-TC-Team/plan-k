@@ -21,7 +21,6 @@ type Values = {
 };
 
 function BucketList({
-  // biome-ignore lint/suspicious/noExplicitAny: same composite escape hatch as persona-editor.
   form,
   name,
   label,
