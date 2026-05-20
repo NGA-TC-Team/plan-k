@@ -454,14 +454,17 @@ function BlockFrame({
           ? { opacity: 1, y: 0 }
           : isFlashing
             ? {
-                opacity: [1, 0.7, 1],
-                filter: ["blur(0px)", "blur(6px)", "blur(0px)"],
+                backgroundColor: [
+                  "rgba(94, 105, 209, 0)",
+                  "rgba(94, 105, 209, 0.12)",
+                  "rgba(94, 105, 209, 0)",
+                ],
                 y: 0,
               }
-            : { opacity: 1, y: 0, filter: "blur(0px)" }
+            : { opacity: 1, y: 0 }
       }
       transition={{
-        duration: reduceMotion ? 0 : isFlashing ? 0.55 : 0.15,
+        duration: reduceMotion ? 0 : isFlashing ? 0.3 : 0.15,
         ease: "easeOut",
       }}
       // data-block-id allows mergeIntoBlock() and DOM-walk navigation to locate

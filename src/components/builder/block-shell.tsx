@@ -56,15 +56,18 @@ export function BlockShell({ blockId }: { blockId: string }) {
           ? { opacity: 1, y: 0 }
           : isFlashing
             ? {
-                opacity: [1, 0.7, 1],
-                filter: ["blur(0px)", "blur(6px)", "blur(0px)"],
+                backgroundColor: [
+                  "rgba(94, 105, 209, 0)",
+                  "rgba(94, 105, 209, 0.12)",
+                  "rgba(94, 105, 209, 0)",
+                ],
                 y: 0,
               }
-            : { opacity: 1, y: 0, filter: "blur(0px)" }
+            : { opacity: 1, y: 0 }
       }
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
       transition={{
-        duration: reduceMotion ? 0 : isFlashing ? 0.55 : 0.18,
+        duration: reduceMotion ? 0 : isFlashing ? 0.3 : 0.18,
         ease: "easeOut",
       }}
       data-block-id={vm.id}

@@ -85,7 +85,7 @@ export function SidePanel() {
         onPointerDown={startResize}
         className="group absolute left-0 top-0 bottom-0 z-20 flex w-2 -translate-x-1/2 cursor-col-resize items-center justify-center bg-transparent"
       >
-        <span className="block h-full w-px bg-border transition-colors group-hover:w-0.5 group-hover:bg-primary/60" />
+        <span className="block h-full w-px bg-border transition-colors group-focus-visible:bg-primary/60" />
       </button>
       <Tabs
         value={tab}
@@ -241,7 +241,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
               </span>
               {vm.isPending ? (
                 <Badge className="bg-ring/15 text-ring hover:bg-ring/15">
-                  <span className="size-1.5 rounded-full bg-ring animate-pulse" />
+                  <span className="size-1.5 rounded-full bg-ring" />
                   Saving…
                 </Badge>
               ) : null}
@@ -316,7 +316,7 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
           </section>
         </div>
       </div>
-      <div className="shrink-0 border-t bg-background/95 px-5 py-3 backdrop-blur">
+      <div className="shrink-0 border-t border-hairline bg-surface-1 px-5 py-3">
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={handlers.onBeginEdit}>
             <Pencil className="size-3.5" />
@@ -386,7 +386,7 @@ function MultiPane({ count }: { count: number }) {
           />
         </section>
       </div>
-      <div className="shrink-0 border-t bg-background/95 px-5 py-3 backdrop-blur">
+      <div className="shrink-0 border-t border-hairline bg-surface-1 px-5 py-3">
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"

@@ -117,7 +117,7 @@ export function FlowCanvas({ kind }: { kind: ProjectKind }) {
 
   return (
     <main className="relative h-full overflow-auto bg-muted/30">
-      <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/85 px-4 py-2 backdrop-blur">
+      <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-hairline bg-surface-1 px-4 py-2">
         <Button
           type="button"
           size="sm"
