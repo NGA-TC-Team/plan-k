@@ -35,6 +35,7 @@ import { sectionToMarkdown } from "@/lib/section-to-markdown";
 import { cn } from "@/lib/utils";
 import { useBacklogStore } from "@/services/stores";
 import { BacklogProperties } from "./backlog-properties";
+import { ConfirmDestructiveDialog } from "./confirm-destructive-dialog";
 import { EditableBlock } from "./editable-block";
 import { InsertSlot } from "./insert-slot";
 import { EntityStatusChip } from "./status-chip";
@@ -75,6 +76,9 @@ export function BacklogSheet() {
   // Full AppState snapshot — needed for sectionToMarkdown serialization.
   const appState = useBuilderState((s) => s.state);
   const dispatch = useBuilderDispatch();
+
+  // ── Delete confirm dialog ─────────────────────────────────────────────────
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // ── Fullscreen toggle ─────────────────────────────────────────────────────
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -140,11 +144,15 @@ export function BacklogSheet() {
   }, []);
   useSheetHistory(Boolean(openId), isFullscreen, onClose, onExitFullscreen);
 
-  const onDelete = () => {
+  const onDeleteConfirmed = () => {
     if (!section) return;
     dispatch({ type: "DELETE_SECTION", sectionId: section.id });
     unregister(section.planId, section.id);
     setOpenSheet(null);
+  };
+
+  const onDelete = () => {
+    setDeleteDialogOpen(true);
   };
 
   const onCopyMarkdown = async () => {
@@ -270,206 +278,220 @@ export function BacklogSheet() {
   };
 
   return (
-    <Sheet
-      open={Boolean(openId)}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
-    >
-      <SheetContent
-        className={cn(
-          "flex flex-col gap-0",
-          isFullscreen
-            ? "!fixed !inset-0 !max-w-none !w-full !h-full !translate-x-0 rounded-none border-0"
-            : "w-full sm:!max-w-[56rem]",
-        )}
+    <>
+      <Sheet
+        open={Boolean(openId)}
+        onOpenChange={(next) => {
+          if (!next) onClose();
+        }}
       >
-        <SheetTitle className="sr-only">
-          {section?.title ?? "Backlog item"}
-        </SheetTitle>
-        <SheetDescription className="sr-only">
-          노션 페이지처럼 본문에 블록을 추가할 수 있습니다.
-        </SheetDescription>
-        {section ? (
-          <BacklogSelectionContext.Provider
-            value={{ selectedTableId, setSelectedTableId }}
-          >
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: sheet content captures keyboard for table 2-step delete */}
-            <div className="contents" onKeyDown={handleSheetKeyDown}>
-              {/* pr-12: leaves room for SheetContent's absolute X close button */}
-              <div
-                data-backlog-toolbar="true"
-                className="flex items-center justify-between gap-2 border-b px-4 py-1.5 pr-12"
-              >
-                {/* Left: entity status chip */}
-                <EntityStatusChip entityId={section.id} variant="pill" />
+        <SheetContent
+          className={cn(
+            "flex flex-col gap-0",
+            isFullscreen
+              ? "!fixed !inset-0 !max-w-none !w-full !h-full !translate-x-0 rounded-none border-0"
+              : "w-full sm:!max-w-[56rem]",
+          )}
+        >
+          <SheetTitle className="sr-only">
+            {section?.title ?? "Backlog item"}
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            노션 페이지처럼 본문에 블록을 추가할 수 있습니다.
+          </SheetDescription>
+          {section ? (
+            <BacklogSelectionContext.Provider
+              value={{ selectedTableId, setSelectedTableId }}
+            >
+              {/* biome-ignore lint/a11y/noStaticElementInteractions: sheet content captures keyboard for table 2-step delete */}
+              <div className="contents" onKeyDown={handleSheetKeyDown}>
+                {/* pr-12: leaves room for SheetContent's absolute X close button */}
+                <div
+                  data-backlog-toolbar="true"
+                  className="flex items-center justify-between gap-2 border-b px-4 py-1.5 pr-12"
+                >
+                  {/* Left: entity status chip */}
+                  <EntityStatusChip entityId={section.id} variant="pill" />
 
-                {/* Right: fullscreen toggle + more actions dropdown + delete */}
-                <div className="flex items-center gap-1">
-                  {/* Fullscreen toggle — placed left of the ... dropdown */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsFullscreen((v) => !v)}
-                    aria-label={isFullscreen ? "사이드에서 보기" : "전체 보기"}
-                    title={isFullscreen ? "사이드에서 보기" : "전체 보기"}
-                  >
-                    {isFullscreen ? (
-                      <Minimize2 className="size-4" />
-                    ) : (
-                      <Maximize2 className="size-4" />
-                    )}
-                  </Button>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label="더 보기"
-                          title="더 보기"
-                        >
-                          <Ellipsis className="size-4" />
-                        </Button>
+                  {/* Right: fullscreen toggle + more actions dropdown + delete */}
+                  <div className="flex items-center gap-1">
+                    {/* Fullscreen toggle — placed left of the ... dropdown */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsFullscreen((v) => !v)}
+                      aria-label={
+                        isFullscreen ? "사이드에서 보기" : "전체 보기"
                       }
-                    />
-                    <DropdownMenuContent align="end" side="bottom">
-                      <DropdownMenuItem onSelect={onCopyMarkdown}>
-                        콘텐츠 복사하기
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={onExportPdf}>
-                        <FileDown className="size-4" />
-                        PDF로 내보내기
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={onDelete}
-                    aria-label="Delete"
-                    title="Delete"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                      title={isFullscreen ? "사이드에서 보기" : "전체 보기"}
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="size-4" />
+                      ) : (
+                        <Maximize2 className="size-4" />
+                      )}
+                    </Button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="더 보기"
+                            title="더 보기"
+                          >
+                            <Ellipsis className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end" side="bottom">
+                        <DropdownMenuItem onSelect={onCopyMarkdown}>
+                          콘텐츠 복사하기
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={onExportPdf}>
+                          <FileDown className="size-4" />
+                          PDF로 내보내기
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={onDelete}
+                      aria-label="Delete"
+                      title="Delete"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              {/* scroll parent — VirtualBlockList's scrollElement prop points here.
+                {/* scroll parent — VirtualBlockList's scrollElement prop points here.
                   onClick is on this div: only fires for blank padding areas below
                   (handleContainerClick guards for block/input/property targets). */}
-              {/* biome-ignore lint/a11y/noStaticElementInteractions: scroll container captures click for empty-area block insertion; blocks handle keyboard navigation */}
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: empty-area click does not require keyboard equivalent — blocks themselves handle keyboard navigation */}
-              <div
-                ref={setScrollEl}
-                data-backlog-sheet="true"
-                className="flex-1 overflow-y-auto px-12 py-10"
-                onClick={handleContainerClick}
-              >
-                <div className="mx-auto max-w-2xl">
-                  <input
-                    ref={titleInputRef}
-                    data-backlog-title="true"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    onBlur={flushTitle}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        flushTitle();
-                        (e.currentTarget as HTMLInputElement).blur();
-                        return;
-                      }
-                      // ArrowDown: move focus to first block at offset 0.
-                      if (e.key === "ArrowDown") {
-                        const sheetRoot = (
-                          e.currentTarget as HTMLInputElement
-                        ).closest<HTMLElement>("[data-backlog-sheet]");
-                        if (!sheetRoot) return;
-                        const blockEls = Array.from(
-                          sheetRoot.querySelectorAll<HTMLElement>(
-                            "[data-block-id]",
-                          ),
-                        );
-                        blockEls.sort(
-                          (a, b) =>
-                            a.getBoundingClientRect().top -
-                            b.getBoundingClientRect().top,
-                        );
-                        const first = blockEls[0];
-                        if (!first) return;
-                        const editor = first.querySelector<HTMLElement>(
-                          "[contenteditable='true']",
-                        );
-                        if (!editor) return;
-                        e.preventDefault();
-                        editor.focus();
-                        // Place caret at offset 0 (start).
-                        const sel = window.getSelection();
-                        if (sel) {
-                          const range = document.createRange();
-                          range.selectNodeContents(editor);
-                          range.collapse(true);
-                          sel.removeAllRanges();
-                          sel.addRange(range);
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: scroll container captures click for empty-area block insertion; blocks handle keyboard navigation */}
+                {/* biome-ignore lint/a11y/useKeyWithClickEvents: empty-area click does not require keyboard equivalent — blocks themselves handle keyboard navigation */}
+                <div
+                  ref={setScrollEl}
+                  data-backlog-sheet="true"
+                  className="flex-1 overflow-y-auto px-12 py-10"
+                  onClick={handleContainerClick}
+                >
+                  <div className="mx-auto max-w-2xl">
+                    <input
+                      ref={titleInputRef}
+                      data-backlog-title="true"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      onBlur={flushTitle}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          flushTitle();
+                          (e.currentTarget as HTMLInputElement).blur();
+                          return;
                         }
-                      }
-                    }}
-                    placeholder="Untitled"
-                    aria-label="Title"
-                    className="w-full border-0 bg-transparent p-0 text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40 focus:ring-0"
-                  />
+                        // ArrowDown: move focus to first block at offset 0.
+                        if (e.key === "ArrowDown") {
+                          const sheetRoot = (
+                            e.currentTarget as HTMLInputElement
+                          ).closest<HTMLElement>("[data-backlog-sheet]");
+                          if (!sheetRoot) return;
+                          const blockEls = Array.from(
+                            sheetRoot.querySelectorAll<HTMLElement>(
+                              "[data-block-id]",
+                            ),
+                          );
+                          blockEls.sort(
+                            (a, b) =>
+                              a.getBoundingClientRect().top -
+                              b.getBoundingClientRect().top,
+                          );
+                          const first = blockEls[0];
+                          if (!first) return;
+                          const editor = first.querySelector<HTMLElement>(
+                            "[contenteditable='true']",
+                          );
+                          if (!editor) return;
+                          e.preventDefault();
+                          editor.focus();
+                          // Place caret at offset 0 (start).
+                          const sel = window.getSelection();
+                          if (sel) {
+                            const range = document.createRange();
+                            range.selectNodeContents(editor);
+                            range.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                          }
+                        }
+                      }}
+                      placeholder="Untitled"
+                      aria-label="Title"
+                      className="w-full border-0 bg-transparent p-0 text-3xl font-bold tracking-tight outline-none placeholder:text-muted-foreground/40 focus:ring-0"
+                    />
 
-                  {/* Property panel — Notion DB page style */}
-                  <BacklogProperties
-                    section={section}
-                    onChange={onPropertiesChange}
-                  />
+                    {/* Property panel — Notion DB page style */}
+                    <BacklogProperties
+                      section={section}
+                      onChange={onPropertiesChange}
+                    />
 
-                  <div className="mt-8">
-                    {/* VirtualBlockList: only DOM-renders visible blocks.
+                    <div className="mt-8">
+                      {/* VirtualBlockList: only DOM-renders visible blocks.
                         Each row includes a leading InsertSlot (between) so the
                         user can insert before any block, plus a trailing InsertSlot
                         on the final row so there is always an append target.
                         measureElement reads the full row height (InsertSlot +
                         EditableBlock [+ trailing]) automatically. */}
-                    <VirtualBlockList
-                      ids={childBlockIds}
-                      render={(id) => {
-                        const idx = childBlockIds.indexOf(id);
-                        const isLast = idx === childBlockIds.length - 1;
-                        return (
-                          <>
-                            <InsertSlot
-                              parentId={section.id}
-                              index={idx}
-                              variant="between"
-                            />
-                            <EditableBlock blockId={id} parentId={section.id} />
-                            {isLast && (
+                      <VirtualBlockList
+                        ids={childBlockIds}
+                        render={(id) => {
+                          const idx = childBlockIds.indexOf(id);
+                          const isLast = idx === childBlockIds.length - 1;
+                          return (
+                            <>
                               <InsertSlot
                                 parentId={section.id}
-                                index={childBlockIds.length}
-                                variant="trailing"
+                                index={idx}
+                                variant="between"
                               />
-                            )}
-                          </>
-                        );
-                      }}
-                      scrollElement={scrollEl}
-                      estimateSize={48}
-                      overscan={10}
-                    />
+                              <EditableBlock
+                                blockId={id}
+                                parentId={section.id}
+                              />
+                              {isLast && (
+                                <InsertSlot
+                                  parentId={section.id}
+                                  index={childBlockIds.length}
+                                  variant="trailing"
+                                />
+                              )}
+                            </>
+                          );
+                        }}
+                        scrollElement={scrollEl}
+                        estimateSize={48}
+                        overscan={10}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </BacklogSelectionContext.Provider>
-        ) : null}
-      </SheetContent>
-    </Sheet>
+            </BacklogSelectionContext.Provider>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+      <ConfirmDestructiveDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="섹션 삭제"
+        description={`이 섹션과 자식 블록 ${childBlockIds.length}개를 함께 삭제합니다. 되돌릴 수 없습니다.`}
+        onConfirm={onDeleteConfirmed}
+      />
+    </>
   );
 }

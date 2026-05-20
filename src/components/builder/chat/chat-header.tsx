@@ -1,9 +1,11 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { chatApi } from "@/data/chat/api";
 import { useChatStore } from "@/services/stores";
+import { ConfirmDestructiveDialog } from "../confirm-destructive-dialog";
 
 const EMPTY_SESSIONS: never[] = [];
 
@@ -18,6 +20,8 @@ export function ChatHeader() {
   const selectSession = useChatStore((s) => s.selectSession);
   const current = sessions.find((s) => s.id === currentSessionId);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   const handleNew = async () => {
     if (!planId) return;
     const session = await chatApi.createSession({ planId });
@@ -25,13 +29,17 @@ export function ChatHeader() {
     selectSession(session.id);
   };
 
-  const handleDelete = async () => {
+  const handleDeleteConfirmed = async () => {
     if (!current) return;
-    if (!window.confirm(`Delete "${current.title}"?`)) return;
     await chatApi.deleteSession(current.id);
     removeSession(current.id);
     const next = sessions.find((s) => s.id !== current.id);
     selectSession(next?.id ?? null);
+  };
+
+  const handleDelete = () => {
+    if (!current) return;
+    setDeleteDialogOpen(true);
   };
 
   const handleModeToggle = async () => {
@@ -84,6 +92,13 @@ export function ChatHeader() {
       >
         <Trash2 className="size-3.5" />
       </Button>
+      <ConfirmDestructiveDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="채팅 세션 삭제"
+        description="이 채팅 세션을 영구 삭제합니다. 되돌릴 수 없습니다."
+        onConfirm={handleDeleteConfirmed}
+      />
     </div>
   );
 }

@@ -47,6 +47,7 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useBacklogStore, useBuilderUiStore } from "@/services/stores";
+import { ConfirmDestructiveDialog } from "./confirm-destructive-dialog";
 import { StatusChipMenu } from "./status-chip";
 
 export function LeftRail() {
@@ -142,11 +143,18 @@ function ScreensRail({
   );
   const screensMap = useBuilderState((s) => s.state.screens);
   const currentScreenId = useBuilderState((s) => s.state.currentScreenId);
+  // childrenMap: used to compute per-screen block count for conditional confirm
+  const childrenMap = useBuilderState((s) => s.state.children);
   const dispatch = useBuilderDispatch();
 
   const screens = useMemo(() => {
     return Object.values(screensMap).filter((s) => s.planId === planId);
   }, [screensMap, planId]);
+
+  // pendingDeleteScreenId: tracks which screen is awaiting confirm dialog
+  const [pendingDeleteScreenId, setPendingDeleteScreenId] = useState<
+    string | null
+  >(null);
 
   const addScreen = () => {
     if (!planId) return;
@@ -164,7 +172,18 @@ function ScreensRail({
   };
 
   const deleteScreen = (screenId: string) => {
-    dispatch({ type: "DELETE_SCREEN", screenId });
+    const childCount = (childrenMap[screenId] ?? []).length;
+    if (childCount >= 1) {
+      setPendingDeleteScreenId(screenId);
+    } else {
+      dispatch({ type: "DELETE_SCREEN", screenId });
+    }
+  };
+
+  const confirmDeleteScreen = () => {
+    if (!pendingDeleteScreenId) return;
+    dispatch({ type: "DELETE_SCREEN", screenId: pendingDeleteScreenId });
+    setPendingDeleteScreenId(null);
   };
 
   const selectScreen = (screenId: string) => {
@@ -242,6 +261,17 @@ function ScreensRail({
           );
         })}
       </ul>
+      {pendingDeleteScreenId !== null ? (
+        <ConfirmDestructiveDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setPendingDeleteScreenId(null);
+          }}
+          title="스크린 삭제"
+          description={`이 스크린과 자식 블록 ${(childrenMap[pendingDeleteScreenId] ?? []).length}개를 함께 삭제합니다. 되돌릴 수 없습니다.`}
+          onConfirm={confirmDeleteScreen}
+        />
+      ) : null}
     </>
   );
 }

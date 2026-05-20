@@ -14,6 +14,7 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useBuilderUiStore } from "@/services/stores";
+import { ConfirmDestructiveDialog } from "./confirm-destructive-dialog";
 import { FlowEdge } from "./frames";
 
 const CARD_W = 220;
@@ -40,6 +41,8 @@ export function FlowCanvas({ kind }: { kind: ProjectKind }) {
   );
   const screensMap = useBuilderState((s) => s.state.screens);
   const screenEdgesMap = useBuilderState((s) => s.state.screenEdges);
+  // childrenMap: used to compute per-screen block count for conditional confirm
+  const childrenMap = useBuilderState((s) => s.state.children);
   const dispatch = useBuilderDispatch();
   const setCanvasMode = useBuilderUiStore((s) => s.setCanvasMode);
 
@@ -174,6 +177,7 @@ export function FlowCanvas({ kind }: { kind: ProjectKind }) {
             kind={kind}
             screen={screen}
             position={position}
+            childCount={(childrenMap[screen.id] ?? []).length}
             connectMode={connectMode}
             isConnectSource={connectFromId === screen.id}
             onClick={() => handleCardClick(screen.id)}
@@ -219,6 +223,7 @@ function ScreenCard({
   kind,
   screen,
   position,
+  childCount,
   connectMode,
   isConnectSource,
   onClick,
@@ -227,6 +232,7 @@ function ScreenCard({
   kind: ProjectKind;
   screen: ScreenEntity;
   position: Position;
+  childCount: number;
   connectMode: boolean;
   isConnectSource: boolean;
   onClick: () => void;
@@ -242,6 +248,7 @@ function ScreenCard({
     moved: boolean;
   } | null>(null);
   const [livePos, setLivePos] = useState<Position | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const effectivePos = livePos ?? position;
 
@@ -300,9 +307,17 @@ function ScreenCard({
     [dispatch, livePos, screen.id, onClick],
   );
 
+  const handleDeleteConfirmed = () => {
+    dispatch({ type: "DELETE_SCREEN", screenId: screen.id });
+  };
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch({ type: "DELETE_SCREEN", screenId: screen.id });
+    if (childCount >= 1) {
+      setDeleteDialogOpen(true);
+    } else {
+      dispatch({ type: "DELETE_SCREEN", screenId: screen.id });
+    }
   };
 
   return (
@@ -359,6 +374,13 @@ function ScreenCard({
           </>
         ) : null}
       </div>
+      <ConfirmDestructiveDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="스크린 삭제"
+        description={`이 스크린과 자식 블록 ${childCount}개를 함께 삭제합니다. 되돌릴 수 없습니다.`}
+        onConfirm={handleDeleteConfirmed}
+      />
     </div>
   );
 }

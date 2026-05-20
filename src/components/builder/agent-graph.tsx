@@ -9,6 +9,7 @@ import {
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
+import { ConfirmDestructiveDialog } from "./confirm-destructive-dialog";
 import { FlowEdge } from "./frames";
 
 const NODE_W = 160;
@@ -45,6 +46,11 @@ export function AgentGraph() {
 
   const nodes = useMemo(() => Object.values(nodesMap), [nodesMap]);
   const edges = useMemo(() => Object.values(edgesMap), [edgesMap]);
+
+  // pendingDeleteNodeId: tracks which node is awaiting confirm (edge count ≥ 1)
+  const [pendingDeleteNodeId, setPendingDeleteNodeId] = useState<string | null>(
+    null,
+  );
 
   const positionById = useMemo(() => {
     const m = new Map<string, Position>();
@@ -92,7 +98,20 @@ export function AgentGraph() {
   };
 
   const handleDeleteNode = (nodeId: string) => {
-    dispatch({ type: "DELETE_AGENT_NODE", nodeId });
+    const connectedEdgeCount = edges.filter(
+      (e) => e.from === nodeId || e.to === nodeId,
+    ).length;
+    if (connectedEdgeCount >= 1) {
+      setPendingDeleteNodeId(nodeId);
+    } else {
+      dispatch({ type: "DELETE_AGENT_NODE", nodeId });
+    }
+  };
+
+  const confirmDeleteNode = () => {
+    if (!pendingDeleteNodeId) return;
+    dispatch({ type: "DELETE_AGENT_NODE", nodeId: pendingDeleteNodeId });
+    setPendingDeleteNodeId(null);
   };
 
   const handleDeleteEdge = (edgeId: string) => {
@@ -220,6 +239,17 @@ export function AgentGraph() {
           </div>
         ) : null}
       </div>
+      {pendingDeleteNodeId !== null ? (
+        <ConfirmDestructiveDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setPendingDeleteNodeId(null);
+          }}
+          title="노드 삭제"
+          description={`이 노드와 연결된 엣지 ${edges.filter((e) => e.from === pendingDeleteNodeId || e.to === pendingDeleteNodeId).length}개를 함께 삭제합니다. 되돌릴 수 없습니다.`}
+          onConfirm={confirmDeleteNode}
+        />
+      ) : null}
     </main>
   );
 }

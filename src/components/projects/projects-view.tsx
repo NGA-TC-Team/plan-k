@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { ProjectKind } from "@/builder/types/entity";
+import { ConfirmDestructiveDialog } from "@/components/builder/confirm-destructive-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,9 +120,13 @@ const CREATE_OPTIONS: CreateOption[] = [
   },
 ];
 
+type PendingDeleteProject = { id: string; title: string };
+
 export function ProjectsView() {
   const projectsQuery = useProjectsQuery();
   const deleteMutation = useDeleteProjectMutation();
+  const [pendingDelete, setPendingDelete] =
+    useState<PendingDeleteProject | null>(null);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-12">
@@ -184,11 +190,7 @@ export function ProjectsView() {
                 size="icon"
                 disabled={deleteMutation.isPending}
                 onClick={() => {
-                  if (
-                    confirm(`Delete "${project.title}"? This cannot be undone.`)
-                  ) {
-                    deleteMutation.mutate(project.id);
-                  }
+                  setPendingDelete({ id: project.id, title: project.title });
                 }}
                 aria-label={`Delete ${project.title}`}
                 title="Delete project"
@@ -210,6 +212,23 @@ export function ProjectsView() {
           <span>back to home</span>
         </Link>
       </section>
+      <ConfirmDestructiveDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="프로젝트 삭제"
+        description={
+          pendingDelete
+            ? `프로젝트 "${pendingDelete.title}"과 모든 계획·인텐트 로그를 영구 삭제합니다. 되돌릴 수 없습니다.`
+            : ""
+        }
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          deleteMutation.mutate(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+      />
     </main>
   );
 }
