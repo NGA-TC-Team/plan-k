@@ -323,7 +323,7 @@ function ScreenCard({
         if (e.key === "Enter") onEnter();
       }}
       className={cn(
-        "group absolute select-none rounded-lg border bg-background transition-colors",
+        "group absolute select-none rounded-lg border border-hairline bg-background transition-colors",
         "hover:border-foreground/30",
         connectMode && !isConnectSource && "ring-1 ring-primary/30",
         isConnectSource && "ring-2 ring-primary",

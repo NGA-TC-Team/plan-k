@@ -17,6 +17,7 @@ export function MobileFrame({
   children,
 }: Props) {
   return (
+    // device bezel — hairline 토큰이 아니라 디바이스 셸 메타포
     <div
       className={cn(
         "mx-auto w-[380px] max-w-full overflow-hidden rounded-[2.5rem] border-[10px] border-foreground/85 bg-background shadow-lg",

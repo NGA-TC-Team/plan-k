@@ -22,7 +22,7 @@ export function BrowserFrame({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border bg-background shadow-sm",
+        "overflow-hidden rounded-lg border border-hairline bg-background shadow-sm",
         className,
       )}
       data-frame="browser"
