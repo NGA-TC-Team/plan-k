@@ -7,7 +7,7 @@ export const TextDetail: BlockRenderer = ({ vm }) => {
   const markdown = (vm.displayValue.markdown as string) ?? "";
   if (markdown.trim().length === 0) {
     return (
-      <div className="py-2 text-[15px] italic text-muted-foreground/70">
+      <div className="py-2 text-subhead italic text-muted-foreground/70">
         Empty text. Double-click to edit.
       </div>
     );

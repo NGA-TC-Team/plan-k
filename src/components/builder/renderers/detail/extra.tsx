@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { CheckCircle2, Info, TriangleAlert, User, XCircle } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 import { inlineMdToHtml } from "@/components/builder/inline-editor";
 import { MarkdownView } from "@/components/builder/markdown/markdown-view";
 import { useMediaUrl } from "@/hooks/builder/use-media-url.hook";
@@ -19,8 +20,16 @@ import { CopyButton } from "./_copy-button";
  */
 
 const empty = (label: string) => (
-  <span className="italic text-muted-foreground">{label}</span>
+  <span className="italic text-muted-foreground/70">{label}</span>
 );
+
+// Shared card class for all spec-card docs blocks (decision, persona, …).
+const cardCls =
+  "rounded-lg border border-hairline bg-background dark:bg-card p-4 shadow-[0_0_0_1px_transparent]";
+
+// Eyebrow label: uppercase small caps for sub-section labels inside cards.
+const eyebrowCls =
+  "text-caption font-medium uppercase tracking-eyebrow text-muted-foreground";
 
 function stringValue(
   vm: { displayValue: Record<string, unknown> },
@@ -36,10 +45,16 @@ export const BlockquoteDetail: BlockRenderer = ({ vm }) => {
   const text = stringValue(vm, "text");
   const cite = stringValue(vm, "cite");
   return (
-    <blockquote className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
-      {text ? <MarkdownView compact>{text}</MarkdownView> : empty("Quote")}
+    <blockquote className="border-l-2 border-hairline-strong pl-4 text-subhead italic text-muted-foreground">
+      {text ? (
+        <MarkdownView compact className="prose-doc">
+          {text}
+        </MarkdownView>
+      ) : (
+        empty("Quote")
+      )}
       {cite ? (
-        <footer className="mt-1 text-xs not-italic text-muted-foreground/80">
+        <footer className="mt-1 not-italic text-xs text-muted-foreground/70">
           — {cite}
         </footer>
       ) : null}
@@ -47,28 +62,70 @@ export const BlockquoteDetail: BlockRenderer = ({ vm }) => {
   );
 };
 
-const CALLOUT_TONES: Record<string, string> = {
-  info: "border-blue-300 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100",
-  warn: "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100",
-  success:
-    "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100",
-  error:
-    "border-red-300 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100",
+// Callout tones: left accent bar + icon chip. Dark-mode safe via semantic color tokens
+// and explicit dark: variants only on explicit light-color bg tints.
+const CALLOUT_TONES: Record<
+  string,
+  { accent: string; iconBg: string; icon: ReactNode }
+> = {
+  info: {
+    accent: "before:bg-blue-500",
+    iconBg: "bg-blue-500/10 text-blue-600 dark:text-blue-300",
+    icon: <Info className="size-3.5" />,
+  },
+  warn: {
+    accent: "before:bg-amber-500",
+    iconBg: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
+    icon: <TriangleAlert className="size-3.5" />,
+  },
+  success: {
+    accent: "before:bg-emerald-500",
+    iconBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+    icon: <CheckCircle2 className="size-3.5" />,
+  },
+  error: {
+    accent: "before:bg-red-500",
+    iconBg: "bg-red-500/10 text-red-600 dark:text-red-300",
+    icon: <XCircle className="size-3.5" />,
+  },
 };
 
 export const CalloutDetail: BlockRenderer = ({ vm }) => {
   const variant = stringValue(vm, "variant") || "info";
   const title = stringValue(vm, "title");
   const text = stringValue(vm, "text");
+  // Fallback to info tone when an unknown variant is passed in data.
+  const tone = CALLOUT_TONES[variant] ?? CALLOUT_TONES.info;
   return (
     <div
       className={cn(
-        "rounded-md border p-3 text-sm",
-        CALLOUT_TONES[variant] ?? CALLOUT_TONES.info,
+        "relative overflow-hidden rounded-lg border border-hairline bg-background dark:bg-card pl-4 pr-4 py-3 text-subhead",
+        "before:absolute before:left-0 before:top-0 before:h-full before:w-1",
+        tone.accent,
       )}
     >
-      {title ? <div className="mb-1 font-semibold">{title}</div> : null}
-      {text ? <MarkdownView compact>{text}</MarkdownView> : empty("Callout")}
+      <div className="flex gap-3">
+        <span
+          className={cn(
+            "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
+            tone.iconBg,
+          )}
+        >
+          {tone.icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          {title ? (
+            <div className="mb-1 font-semibold text-foreground">{title}</div>
+          ) : null}
+          {text ? (
+            <MarkdownView compact className="prose-doc">
+              {text}
+            </MarkdownView>
+          ) : (
+            empty("Callout")
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -94,9 +151,9 @@ export const CodeBlockDetail: BlockRenderer = ({ vm }) => {
   }, [code, language]);
 
   return (
-    <div className="group relative overflow-hidden rounded-md border bg-surface-1 text-xs">
-      <div className="flex items-center justify-between border-b bg-muted/60 px-2 py-1">
-        <span className="font-mono text-[10px] text-muted-foreground">
+    <div className="group relative overflow-hidden rounded-lg border border-hairline bg-surface-1">
+      <div className="flex items-center justify-between border-b border-hairline bg-surface-2 px-3 py-1.5">
+        <span className="font-mono text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
           {filename ? `${filename} · ${language}` : language}
         </span>
         {code ? (
@@ -109,17 +166,17 @@ export const CodeBlockDetail: BlockRenderer = ({ vm }) => {
       {code ? (
         highlighted ? (
           <div
-            className="code-block-shiki overflow-x-auto px-3 py-2 font-mono text-xs [&_pre]:bg-transparent [&_pre]:p-0"
+            className="code-block-shiki overflow-x-auto px-3 py-3 font-mono text-[13px] leading-relaxed [&_pre]:bg-transparent [&_pre]:p-0"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki output is HTML escaped by the highlighter.
             dangerouslySetInnerHTML={{ __html: highlighted }}
           />
         ) : (
-          <pre className="overflow-x-auto bg-muted/30 px-3 py-2 font-mono">
+          <pre className="overflow-x-auto bg-muted/30 px-3 py-3 font-mono text-[13px] leading-relaxed">
             <code>{code}</code>
           </pre>
         )
       ) : (
-        <pre className="overflow-x-auto bg-muted/30 px-3 py-2 font-mono">
+        <pre className="overflow-x-auto bg-muted/30 px-3 py-3 font-mono text-[13px] leading-relaxed">
           <code>{empty("// empty")}</code>
         </pre>
       )}
@@ -131,9 +188,9 @@ export const ChecklistDetail: BlockRenderer = ({ vm }) => {
   const items =
     (vm.displayValue.items as { text: string; checked: boolean }[]) ?? [];
   if (items.length === 0)
-    return <div className="py-1 text-sm">{empty("Empty checklist")}</div>;
+    return <div className="py-1 text-[15px]">{empty("Empty checklist")}</div>;
   return (
-    <ul className="space-y-1.5 text-sm">
+    <ul className="space-y-1.5 text-[15px]">
       {items.map((item, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: positional list mirroring source array.
         <li key={i} className="flex items-start gap-2">
@@ -141,12 +198,12 @@ export const ChecklistDetail: BlockRenderer = ({ vm }) => {
             type="checkbox"
             checked={!!item.checked}
             readOnly
-            className="mt-[3px] size-3.5 rounded border-border"
+            className="mt-[3px] size-4 rounded-sm border-hairline-strong accent-foreground"
           />
           <span
             className={
               item.checked
-                ? "leading-relaxed line-through text-muted-foreground"
+                ? "leading-relaxed line-through decoration-2 text-muted-foreground"
                 : "leading-relaxed"
             }
           >
@@ -162,17 +219,17 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
   const columns = (vm.displayValue.columns as string[]) ?? [];
   const rows = (vm.displayValue.rows as string[][]) ?? [];
   if (columns.length === 0 && rows.length === 0)
-    return <div className="py-1 text-sm">{empty("Empty table")}</div>;
+    return <div className="py-1 text-[14px]">{empty("Empty table")}</div>;
   return (
-    <div className="min-w-0 overflow-x-auto rounded-md border">
-      <table className="w-full border-collapse text-sm">
-        <thead className="bg-muted/40">
+    <div className="min-w-0 overflow-x-auto rounded-lg border border-hairline">
+      <table className="w-full border-collapse text-[14px]">
+        <thead className="border-b border-hairline-strong bg-surface-2/60">
           <tr>
             {columns.map((col, i) => (
               <th
                 // biome-ignore lint/suspicious/noArrayIndexKey: header positions are stable.
                 key={i}
-                className="border-b border-border px-3 py-1.5 text-left font-semibold"
+                className="px-4 py-2.5 text-left text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground"
               >
                 {col ? (
                   <span
@@ -188,15 +245,18 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional.
-            <tr key={ri} className="border-b border-border last:border-b-0">
+            <tr
+              // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional.
+              key={ri}
+              className="border-b border-hairline last:border-b-0 even:bg-surface-1/40"
+            >
               {row.map((cell, ci) => {
                 const html = inlineMdToHtml(cell);
                 return (
                   <td
                     // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional.
                     key={ci}
-                    className="px-3 py-1.5 align-top"
+                    className="px-4 py-2.5 align-top text-foreground"
                     // biome-ignore lint/security/noDangerouslySetInnerHtml: inlineMdToHtml escapes user input before inserting whitelisted tags only.
                     dangerouslySetInnerHTML={{ __html: html }}
                   />
@@ -211,7 +271,7 @@ export const TableDetail: BlockRenderer = ({ vm }) => {
 };
 
 export const RuleDetail: BlockRenderer = () => (
-  <hr className="my-3 border-muted" />
+  <hr className="border-hairline" />
 );
 
 export const FigureDetail: BlockRenderer = ({ vm }) => {
@@ -223,22 +283,24 @@ export const FigureDetail: BlockRenderer = ({ vm }) => {
   // Resolve "media:<id>" refs to /api/media/<id>/raw; raw URLs pass through unchanged.
   const resolvedSrc = useMediaUrl(ref);
   return (
-    <figure className="my-2 max-w-full space-y-1">
+    <figure className="max-w-full space-y-2">
       {resolvedSrc ? (
-        // biome-ignore lint/performance/noImgElement: arbitrary remote URLs.
-        <img
-          src={resolvedSrc}
-          alt={alt || "figure"}
-          style={width ? { width } : undefined}
-          className="max-w-full rounded border"
-        />
+        <div className="overflow-hidden rounded-lg border border-hairline bg-muted/30">
+          {/* biome-ignore lint/performance/noImgElement: arbitrary remote URLs. */}
+          <img
+            src={resolvedSrc}
+            alt={alt || "figure"}
+            style={width ? { width } : undefined}
+            className="w-full max-w-full"
+          />
+        </div>
       ) : (
-        <div className="flex h-32 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
+        <div className="flex h-32 items-center justify-center rounded-lg border border-hairline bg-muted/30 text-xs text-muted-foreground">
           {empty("No image")}
         </div>
       )}
       {caption ? (
-        <figcaption className="text-xs text-muted-foreground">
+        <figcaption className="mt-2 text-[13px] italic text-muted-foreground">
           {caption}
         </figcaption>
       ) : null}
@@ -256,7 +318,7 @@ export const LinkCardDetail: BlockRenderer = ({ vm }) => {
   return (
     <a
       href={url || "#"}
-      className="block rounded border p-3 text-sm hover:bg-accent"
+      className="block rounded-lg border border-hairline p-4 hover:border-hairline-strong transition-colors"
       target="_blank"
       rel="noreferrer"
     >
@@ -265,35 +327,42 @@ export const LinkCardDetail: BlockRenderer = ({ vm }) => {
           // biome-ignore lint/performance/noImgElement: tiny external favicon.
           <img src={resolvedFaviconUrl} alt="" className="h-4 w-4" />
         ) : null}
-        <span className="font-medium">{title || empty("Untitled link")}</span>
+        <span className="font-semibold text-foreground">
+          {title || empty("Untitled link")}
+        </span>
       </div>
       {description ? (
-        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+        <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
           {description}
         </p>
       ) : null}
       {url ? (
-        <p className="mt-1 truncate text-[10px] text-muted-foreground">{url}</p>
+        <p className="mt-1 truncate text-caption text-muted-foreground">
+          {url}
+        </p>
       ) : null}
     </a>
   );
 };
 
 export const DefinitionDetail: BlockRenderer = ({ vm }) => (
-  <dl className="text-sm">
-    <dt className="font-semibold">
+  <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-[15px]">
+    <dt className="font-semibold text-foreground">
       {stringValue(vm, "term") || empty("Term")}
     </dt>
-    <dd className="ml-3 text-muted-foreground">
+    <dd className="leading-relaxed text-muted-foreground">
       {stringValue(vm, "definition") || empty("Definition")}
     </dd>
   </dl>
 );
 
 const STATUS_TONE: Record<string, string> = {
-  proposed: "bg-amber-100 text-amber-800",
-  accepted: "bg-emerald-100 text-emerald-800",
-  superseded: "bg-surface-2 text-ink-subtle",
+  proposed:
+    "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-300/60 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-800/60",
+  accepted:
+    "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-300/60 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-800/60",
+  superseded:
+    "bg-surface-2 text-ink-subtle ring-1 ring-inset ring-hairline dark:bg-surface-2 dark:text-ink-subtle",
 };
 
 export const DecisionDetail: BlockRenderer = ({ vm }) => {
@@ -310,24 +379,26 @@ export const DecisionDetail: BlockRenderer = ({ vm }) => {
       cons: string;
     }[]) ?? [];
   return (
-    <div className="space-y-3 rounded border p-3 text-sm">
-      <div className="flex items-center gap-2">
+    <div className={cn(cardCls, "space-y-4")}>
+      <div className="flex flex-wrap items-start gap-2">
         <span
           className={cn(
-            "rounded px-2 py-0.5 text-[10px] font-semibold uppercase",
+            "rounded-md px-2 py-0.5 text-caption font-medium uppercase tracking-eyebrow",
             STATUS_TONE[status] ?? STATUS_TONE.proposed,
           )}
         >
           {status}
         </span>
-        <span className="font-semibold">{question || empty("Question")}</span>
+        <span className="text-[17px] font-semibold leading-snug text-foreground">
+          {question || empty("Question")}
+        </span>
       </div>
       {ctx ? (
         <div>
-          <div className="text-xs font-semibold uppercase text-muted-foreground">
-            Context
-          </div>
-          <p className="whitespace-pre-wrap text-xs">{ctx}</p>
+          <div className={eyebrowCls}>Context</div>
+          <p className="mt-1 whitespace-pre-wrap text-[14px] text-muted-foreground">
+            {ctx}
+          </p>
         </div>
       ) : null}
       {options.length > 0 ? (
@@ -336,16 +407,20 @@ export const DecisionDetail: BlockRenderer = ({ vm }) => {
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: option order is stable.
               key={i}
-              className="rounded border p-2 text-xs"
+              className="rounded-md border border-hairline p-3 text-[13px]"
             >
-              <div className="font-medium">
+              <div className="font-semibold text-foreground">
                 {opt.label || `Option ${i + 1}`}
               </div>
               {opt.pros ? (
-                <div className="mt-1 text-emerald-700">+ {opt.pros}</div>
+                <div className="mt-1 text-emerald-600 dark:text-emerald-400">
+                  + {opt.pros}
+                </div>
               ) : null}
               {opt.cons ? (
-                <div className="text-red-700">− {opt.cons}</div>
+                <div className="text-red-600 dark:text-red-400">
+                  − {opt.cons}
+                </div>
               ) : null}
             </div>
           ))}
@@ -353,26 +428,20 @@ export const DecisionDetail: BlockRenderer = ({ vm }) => {
       ) : null}
       {decision ? (
         <div>
-          <div className="text-xs font-semibold uppercase text-muted-foreground">
-            Decision
-          </div>
-          <p className="whitespace-pre-wrap text-xs">{decision}</p>
+          <div className={eyebrowCls}>Decision</div>
+          <p className="mt-1 whitespace-pre-wrap text-[14px]">{decision}</p>
         </div>
       ) : null}
       {rationale ? (
         <div>
-          <div className="text-xs font-semibold uppercase text-muted-foreground">
-            Rationale
-          </div>
-          <p className="whitespace-pre-wrap text-xs">{rationale}</p>
+          <div className={eyebrowCls}>Rationale</div>
+          <p className="mt-1 whitespace-pre-wrap text-[14px]">{rationale}</p>
         </div>
       ) : null}
       {consequences ? (
         <div>
-          <div className="text-xs font-semibold uppercase text-muted-foreground">
-            Consequences
-          </div>
-          <p className="whitespace-pre-wrap text-xs">{consequences}</p>
+          <div className={eyebrowCls}>Consequences</div>
+          <p className="mt-1 whitespace-pre-wrap text-[14px]">{consequences}</p>
         </div>
       ) : null}
     </div>
@@ -387,21 +456,68 @@ export const PersonaDetail: BlockRenderer = ({ vm }) => {
   const goals = (vm.displayValue.goals as string[]) ?? [];
   const needs = (vm.displayValue.needs as string[]) ?? [];
   const pains = (vm.displayValue.pains as string[]) ?? [];
+
+  // Resolve "media:<id>" → URL; empty string / undefined → undefined (SVG fallback).
+  const profileRef = stringValue(vm, "profileImageRef");
+  const profileAlt =
+    stringValue(vm, "profileImageAlt") || name || "Persona profile";
+  const resolvedProfile = useMediaUrl(profileRef || undefined);
+
+  // Track img load failure so we can swap to the SVG fallback.
+  const [imgError, setImgError] = useState(false);
+
+  // Reset error state whenever the ref changes (user picks a new image).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset on ref change only.
+  useEffect(() => {
+    setImgError(false);
+  }, [profileRef]);
+
+  const showImage = resolvedProfile && !imgError;
+
   return (
-    <div className="rounded border p-3 text-sm">
-      <div className="font-semibold">{name || empty("Persona")}</div>
-      {role ? (
-        <div className="text-xs text-muted-foreground">{role}</div>
-      ) : null}
-      {demographics ? (
-        <p className="mt-1 text-xs text-muted-foreground">{demographics}</p>
-      ) : null}
+    <div className={cardCls}>
+      {/* Avatar header — image or SVG fallback */}
+      <div className="flex items-start gap-3">
+        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-hairline bg-muted">
+          {showImage ? (
+            // biome-ignore lint/performance/noImgElement: local /api/media/<id>/raw — next/image not applicable.
+            <img
+              src={resolvedProfile}
+              alt={profileAlt}
+              className="h-full w-full object-cover"
+              onError={() => {
+                console.warn(
+                  `[PersonaDetail] Failed to load profile image: ${profileRef}`,
+                );
+                setImgError(true);
+              }}
+            />
+          ) : (
+            <User className="size-7 text-muted-foreground/60" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-semibold text-foreground">
+            {name || empty("Persona")}
+          </div>
+          {role ? (
+            <div className="truncate text-[13px] text-muted-foreground">
+              {role}
+            </div>
+          ) : null}
+          {demographics ? (
+            <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
+              {demographics}
+            </p>
+          ) : null}
+        </div>
+      </div>
       {quote ? (
-        <blockquote className="my-2 border-l-2 border-muted-foreground/40 pl-2 text-xs italic">
+        <blockquote className="my-3 border-l-2 border-hairline-strong pl-3 text-[13px] italic text-muted-foreground">
           {quote}
         </blockquote>
       ) : null}
-      <div className="mt-2 grid gap-2 md:grid-cols-3">
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
         <PersonaList title="Goals" items={goals} />
         <PersonaList title="Needs" items={needs} />
         <PersonaList title="Pains" items={pains} />
@@ -413,13 +529,11 @@ export const PersonaDetail: BlockRenderer = ({ vm }) => {
 function PersonaList({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <div className="text-[10px] font-semibold uppercase text-muted-foreground">
-        {title}
-      </div>
+      <div className={eyebrowCls}>{title}</div>
       {items.length === 0 ? (
-        <div className="text-xs italic text-muted-foreground">—</div>
+        <div className="text-[13px] italic text-muted-foreground/70">—</div>
       ) : (
-        <ul className="ml-3 list-disc text-xs">
+        <ul className="mt-1 space-y-1 pl-4 list-disc marker:text-muted-foreground/50 text-[13px]">
           {items.map((item, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: stable list.
             <li key={i}>{item}</li>
@@ -431,9 +545,9 @@ function PersonaList({ title, items }: { title: string; items: string[] }) {
 }
 
 const PRIORITY_TONE: Record<string, string> = {
-  P0: "bg-red-100 text-red-800",
-  P1: "bg-amber-100 text-amber-800",
-  P2: "bg-surface-2 text-ink-subtle",
+  P0: "bg-red-100 text-red-800 ring-1 ring-inset ring-red-300/60 dark:bg-red-950 dark:text-red-200 dark:ring-red-800/60",
+  P1: "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-300/60 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-800/60",
+  P2: "bg-surface-2 text-ink-subtle ring-1 ring-inset ring-hairline",
 };
 
 export const UserStoryDetail: BlockRenderer = ({ vm }) => {
@@ -444,31 +558,39 @@ export const UserStoryDetail: BlockRenderer = ({ vm }) => {
   const estimate = stringValue(vm, "estimate");
   const acceptance = (vm.displayValue.acceptance as string[]) ?? [];
   return (
-    <div className="rounded border p-3 text-sm">
+    <div className={cn(cardCls, "space-y-3")}>
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            "rounded px-2 py-0.5 text-[10px] font-semibold",
+            "rounded-md px-2 py-0.5 text-caption font-medium uppercase tracking-eyebrow",
             PRIORITY_TONE[priority] ?? PRIORITY_TONE.P1,
           )}
         >
           {priority}
         </span>
         {estimate ? (
-          <span className="text-xs text-muted-foreground">{estimate}</span>
+          <span className="text-[13px] text-muted-foreground">{estimate}</span>
         ) : null}
       </div>
-      <p className="mt-1">
-        As <span className="font-medium">{as || empty("…")}</span>, I want{" "}
-        <span className="font-medium">{want || empty("…")}</span>, so that{" "}
-        <span className="font-medium">{soThat || empty("…")}</span>.
+      <p className="text-[15px] leading-relaxed">
+        As{" "}
+        <span className="font-semibold text-foreground">
+          {as || empty("…")}
+        </span>
+        , I want{" "}
+        <span className="font-semibold text-foreground">
+          {want || empty("…")}
+        </span>
+        , so that{" "}
+        <span className="font-semibold text-foreground">
+          {soThat || empty("…")}
+        </span>
+        .
       </p>
       {acceptance.length > 0 ? (
-        <div className="mt-2">
-          <div className="text-[10px] font-semibold uppercase text-muted-foreground">
-            Acceptance
-          </div>
-          <ul className="ml-3 list-disc text-xs">
+        <div>
+          <div className={eyebrowCls}>Acceptance</div>
+          <ul className="mt-1 space-y-1 ml-4 list-disc marker:text-muted-foreground/50 text-[13px]">
             {acceptance.map((c, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: stable list.
               <li key={i}>{c}</li>
@@ -481,9 +603,10 @@ export const UserStoryDetail: BlockRenderer = ({ vm }) => {
 };
 
 const LEVEL_TONE: Record<string, string> = {
-  low: "bg-emerald-100 text-emerald-800",
-  medium: "bg-amber-100 text-amber-800",
-  high: "bg-red-100 text-red-800",
+  low: "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-300/60 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-800/60",
+  medium:
+    "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-300/60 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-800/60",
+  high: "bg-red-100 text-red-800 ring-1 ring-inset ring-red-300/60 dark:bg-red-950 dark:text-red-200 dark:ring-red-800/60",
 };
 
 export const RiskDetail: BlockRenderer = ({ vm }) => {
@@ -494,12 +617,14 @@ export const RiskDetail: BlockRenderer = ({ vm }) => {
   const mitigation = stringValue(vm, "mitigation");
   const owner = stringValue(vm, "owner");
   return (
-    <div className="space-y-2 rounded border p-3 text-sm">
-      <div className="font-semibold">{risk || empty("Risk")}</div>
-      <div className="flex flex-wrap gap-2 text-[10px]">
+    <div className={cn(cardCls, "space-y-3")}>
+      <div className="font-semibold text-foreground text-[15px]">
+        {risk || empty("Risk")}
+      </div>
+      <div className="flex flex-wrap gap-2">
         <span
           className={cn(
-            "rounded px-2 py-0.5 font-semibold",
+            "rounded-md px-2 py-0.5 text-caption font-medium uppercase tracking-eyebrow",
             LEVEL_TONE[impactLevel] ?? LEVEL_TONE.medium,
           )}
         >
@@ -507,27 +632,25 @@ export const RiskDetail: BlockRenderer = ({ vm }) => {
         </span>
         <span
           className={cn(
-            "rounded px-2 py-0.5 font-semibold",
+            "rounded-md px-2 py-0.5 text-caption font-medium uppercase tracking-eyebrow",
             LEVEL_TONE[likelihood] ?? LEVEL_TONE.medium,
           )}
         >
           likelihood: {likelihood}
         </span>
         {owner ? (
-          <span className="rounded bg-muted px-2 py-0.5 text-muted-foreground">
-            owner: {owner}
+          <span className="rounded-md bg-surface-2 px-2 py-0.5 text-caption font-medium tracking-eyebrow text-muted-foreground ring-1 ring-inset ring-hairline">
+            @{owner}
           </span>
         ) : null}
       </div>
       {impact ? (
-        <p className="text-xs text-muted-foreground">{impact}</p>
+        <p className="text-[13px] text-muted-foreground">{impact}</p>
       ) : null}
       {mitigation ? (
         <div>
-          <div className="text-[10px] font-semibold uppercase text-muted-foreground">
-            Mitigation
-          </div>
-          <p className="text-xs">{mitigation}</p>
+          <div className={eyebrowCls}>Mitigation</div>
+          <p className="mt-1 text-[14px]">{mitigation}</p>
         </div>
       ) : null}
     </div>
@@ -554,9 +677,9 @@ export const MetricDetail: BlockRenderer = ({ vm }) => {
   const unit = stringValue(vm, "unit");
   const trend = stringValue(vm, "trend") || "flat";
   return (
-    <div className="rounded border p-3 text-sm">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{name || empty("Metric")}</span>
+    <div className={cardCls}>
+      <div className="flex items-center justify-between">
+        <span className={eyebrowCls}>{name || empty("Metric")}</span>
         <span
           title={`status: ${status}`}
           className={cn(
@@ -565,10 +688,14 @@ export const MetricDetail: BlockRenderer = ({ vm }) => {
           )}
         />
       </div>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-2xl font-semibold">{current || "—"}</span>
-        {unit ? <span className="text-xs">{unit}</span> : null}
-        <span className="ml-2 text-xs text-muted-foreground">
+      <div className="mt-2 flex items-baseline gap-1">
+        <span className="text-[28px] font-semibold tracking-display-lg tabular-nums">
+          {current || "—"}
+        </span>
+        {unit ? (
+          <span className="text-[13px] text-muted-foreground ml-1">{unit}</span>
+        ) : null}
+        <span className="ml-2 text-[13px] text-muted-foreground">
           {TREND_GLYPH[trend] ?? "→"} target {target || "—"}
         </span>
       </div>
@@ -923,7 +1050,7 @@ export const BadgeDetail: BlockRenderer = ({ vm }) => {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+        "inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium",
         BADGE_TONE[variant] ?? BADGE_TONE.default,
       )}
     >
@@ -995,7 +1122,7 @@ export const InputDetail: BlockRenderer = ({ vm }) => {
         />
       )}
       {helpText ? (
-        <p className="text-[10px] text-muted-foreground">{helpText}</p>
+        <p className="text-caption text-muted-foreground">{helpText}</p>
       ) : null}
     </div>
   );
@@ -1068,7 +1195,7 @@ export const StatusBarDetail: BlockRenderer = ({ vm }) => {
   return (
     <div
       className={cn(
-        "flex items-center justify-between px-3 py-1 text-[11px]",
+        "flex items-center justify-between px-3 py-1 text-caption",
         variant === "dark"
           ? "bg-surface-3 text-ink"
           : "bg-inverse-canvas text-inverse-ink",
@@ -1099,7 +1226,7 @@ export const BottomNavDetail: BlockRenderer = ({ vm }) => {
           // biome-ignore lint/suspicious/noArrayIndexKey: stable.
           key={i}
           className={cn(
-            "flex flex-col items-center px-2 text-[10px]",
+            "flex flex-col items-center px-2 text-caption",
             i === active ? "text-primary font-medium" : "text-muted-foreground",
           )}
         >
@@ -1233,36 +1360,38 @@ export const MilestoneDetail: BlockRenderer = ({ vm }) => {
   const exitCriteria = stringValue(vm, "exitCriteria");
   const tone = MILESTONE_STATUS[status] ?? MILESTONE_STATUS.planned;
   return (
-    <div className="flex gap-3 rounded border p-3 text-sm">
+    <div className={cn(cardCls, "flex gap-3")}>
       <span
         className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", tone.dot)}
         aria-hidden
       />
-      <div className="flex-1 space-y-1">
+      <div className="flex-1 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           {date ? (
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+            <span className="font-mono text-label bg-surface-2 border border-hairline rounded px-2 py-0.5 text-muted-foreground">
               {date}
             </span>
           ) : null}
           <span
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] font-medium",
+              "rounded-md px-2 py-0.5 text-caption font-medium uppercase tracking-eyebrow",
               tone.chip,
             )}
           >
             {tone.label}
           </span>
-          <span className="font-semibold">{title || empty("Milestone")}</span>
+          <span className="font-semibold text-foreground text-[15px]">
+            {title || empty("Milestone")}
+          </span>
         </div>
         {scope ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             <span className="font-medium text-foreground">Scope · </span>
             {scope}
           </p>
         ) : null}
         {exitCriteria ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             <span className="font-medium text-foreground">Done when · </span>
             {exitCriteria}
           </p>
@@ -1277,10 +1406,22 @@ const RELEASE_BUCKETS: Array<{
   label: string;
   tone: string;
 }> = [
-  { key: "added", label: "Added", tone: "text-emerald-600" },
-  { key: "changed", label: "Changed", tone: "text-amber-600" },
-  { key: "fixed", label: "Fixed", tone: "text-blue-600" },
-  { key: "removed", label: "Removed", tone: "text-red-600" },
+  {
+    key: "added",
+    label: "Added",
+    tone: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    key: "changed",
+    label: "Changed",
+    tone: "text-amber-600 dark:text-amber-400",
+  },
+  { key: "fixed", label: "Fixed", tone: "text-blue-600 dark:text-blue-400" },
+  {
+    key: "removed",
+    label: "Removed",
+    tone: "text-red-600 dark:text-red-400",
+  },
 ];
 
 export const ReleaseNoteDetail: BlockRenderer = ({ vm }) => {
@@ -1289,35 +1430,32 @@ export const ReleaseNoteDetail: BlockRenderer = ({ vm }) => {
   const highlights = stringValue(vm, "highlights");
   const data = vm.displayValue;
   return (
-    <div className="rounded border p-4 text-sm">
-      <header className="mb-3 flex flex-wrap items-baseline gap-2 border-b pb-2">
-        <span className="font-mono text-base font-semibold">
+    <div className={cardCls}>
+      <header className="mb-4 flex flex-wrap items-baseline gap-2 border-b border-hairline pb-3">
+        <span className="font-mono text-[17px] font-semibold tabular-nums text-foreground">
           {version || empty("v0.0.0")}
         </span>
         {date ? (
-          <span className="text-xs text-muted-foreground">{date}</span>
+          <span className="text-[13px] text-muted-foreground">{date}</span>
         ) : null}
       </header>
       {highlights ? (
-        <p className="mb-3 text-xs text-muted-foreground">{highlights}</p>
+        <p className="mb-4 text-[13px] text-muted-foreground">{highlights}</p>
       ) : null}
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {RELEASE_BUCKETS.map((b) => {
           const items = (data[b.key] as string[]) ?? [];
           return (
             <div key={b.key}>
-              <div
-                className={cn(
-                  "mb-1 text-[10px] font-semibold uppercase tracking-wide",
-                  b.tone,
-                )}
-              >
+              <div className={cn(eyebrowCls, b.tone)}>
                 {b.label} ({items.length})
               </div>
               {items.length === 0 ? (
-                <div className="text-xs text-muted-foreground/70">—</div>
+                <div className="mt-1 text-[13px] text-muted-foreground/70">
+                  —
+                </div>
               ) : (
-                <ul className="space-y-0.5 text-xs">
+                <ul className="mt-1 space-y-1 text-[13px]">
                   {items.map((item, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: positional list.
                     <li key={i} className="flex gap-1">
@@ -1342,15 +1480,17 @@ export const ColorSwatchDetail: BlockRenderer = ({ vm }) => {
   const role = stringValue(vm, "role");
   const contrastNote = stringValue(vm, "contrastNote");
   return (
-    <div className="flex items-stretch gap-3 rounded border p-3 text-sm">
+    <div className={cn(cardCls, "flex items-stretch gap-4")}>
       <div
-        className="size-16 shrink-0 rounded border"
+        className="size-14 shrink-0 rounded-md ring-1 ring-hairline-strong"
         style={hex ? { backgroundColor: hex } : undefined}
         aria-hidden
       />
       <div className="flex-1 space-y-1">
         <div className="flex items-baseline gap-2">
-          <span className="font-semibold">{name || empty("Swatch")}</span>
+          <span className="font-semibold text-foreground">
+            {name || empty("Swatch")}
+          </span>
           {hex ? (
             <span className="font-mono text-xs text-muted-foreground">
               {hex}
@@ -1374,25 +1514,27 @@ export const JourneyStepDetail: BlockRenderer = ({ vm }) => {
   const outcome = stringValue(vm, "outcome");
   const painPoint = stringValue(vm, "painPoint");
   return (
-    <div className="rounded border p-3 text-sm">
-      <header className="mb-2 flex items-baseline gap-2 border-b pb-1.5">
-        <span className="rounded bg-foreground px-1.5 py-0.5 font-mono text-[10px] text-background">
+    <div className={cardCls}>
+      <header className="mb-3 flex items-baseline gap-2 border-b border-hairline pb-2">
+        <span className="rounded bg-foreground px-1.5 py-0.5 font-mono text-caption text-background">
           STEP {step}
         </span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-[13px] text-muted-foreground">
           {persona || empty("(persona)")}
         </span>
       </header>
-      <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
-        <dt className="font-medium text-foreground">Action</dt>
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-[13px]">
+        <dt className={eyebrowCls}>Action</dt>
         <dd className="text-muted-foreground">{action || empty("—")}</dd>
-        <dt className="font-medium text-foreground">System</dt>
+        <dt className={eyebrowCls}>System</dt>
         <dd className="text-muted-foreground">{system || empty("—")}</dd>
-        <dt className="font-medium text-foreground">Outcome</dt>
+        <dt className={eyebrowCls}>Outcome</dt>
         <dd className="text-muted-foreground">{outcome || empty("—")}</dd>
         {painPoint ? (
           <>
-            <dt className="font-medium text-red-600">Pain</dt>
+            <dt className={cn(eyebrowCls, "text-red-600 dark:text-red-400")}>
+              Pain
+            </dt>
             <dd className="text-muted-foreground">{painPoint}</dd>
           </>
         ) : null}
@@ -1425,18 +1567,18 @@ function HighlightedJson({ code }: { code: string }) {
       cancelled = true;
     };
   }, [code]);
-  if (!code) return <div className="text-[11px] text-muted-foreground">—</div>;
+  if (!code) return <div className="text-caption text-muted-foreground">—</div>;
   if (html) {
     return (
       <div
-        className="overflow-x-auto rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] [&_pre]:bg-transparent [&_pre]:p-0"
+        className="overflow-x-auto rounded bg-muted/40 px-2 py-1.5 font-mono text-caption [&_pre]:bg-transparent [&_pre]:p-0"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki output.
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   }
   return (
-    <pre className="overflow-x-auto rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px]">
+    <pre className="overflow-x-auto rounded bg-muted/40 px-2 py-1.5 font-mono text-caption">
       <code>{code}</code>
     </pre>
   );
@@ -1452,52 +1594,48 @@ export const ApiEndpointDetail: BlockRenderer = ({ vm }) => {
   const errors =
     (vm.displayValue.errors as { status: number; reason: string }[]) ?? [];
   return (
-    <div className="rounded border text-sm">
-      <header className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2">
+    <div className={cn(cardCls, "p-0 overflow-hidden")}>
+      <header className="flex flex-wrap items-center gap-2 border-b border-hairline bg-surface-2/60 px-4 py-3">
         <span
           className={cn(
-            "rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold",
+            "rounded-md px-2 py-0.5 font-mono text-caption font-semibold ring-1 ring-inset ring-current/20",
             METHOD_TONE[method] ?? METHOD_TONE.GET,
           )}
         >
           {method}
         </span>
-        <code className="font-mono text-sm">{path || empty("/path")}</code>
+        <code className="font-mono text-[14px] text-foreground">
+          {path || empty("/path")}
+        </code>
         {auth ? (
-          <span className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <span className="ml-auto rounded bg-surface-2 border border-hairline px-2 py-0.5 text-caption text-muted-foreground">
             🔒 {auth}
           </span>
         ) : null}
       </header>
       {summary ? (
-        <p className="border-b px-3 py-2 text-xs text-muted-foreground">
+        <p className="border-b border-hairline px-4 py-2.5 text-[13px] text-muted-foreground">
           {summary}
         </p>
       ) : null}
-      <div className="grid gap-3 p-3 md:grid-cols-2">
+      <div className="grid gap-4 p-4 md:grid-cols-2">
         <div>
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Request
-          </div>
+          <div className={cn(eyebrowCls, "mb-1.5")}>Request</div>
           <HighlightedJson code={request} />
         </div>
         <div>
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Response
-          </div>
+          <div className={cn(eyebrowCls, "mb-1.5")}>Response</div>
           <HighlightedJson code={response} />
         </div>
       </div>
       {errors.length > 0 ? (
-        <div className="border-t px-3 py-2">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Errors
-          </div>
-          <ul className="space-y-0.5 text-xs">
+        <div className="border-t border-hairline px-4 py-3">
+          <div className={cn(eyebrowCls, "mb-1.5")}>Errors</div>
+          <ul className="space-y-1 text-[13px]">
             {errors.map((e, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: positional list.
               <li key={i} className="flex gap-2">
-                <span className="font-mono font-semibold text-red-600">
+                <span className="font-mono font-semibold text-red-600 dark:text-red-400">
                   {e.status}
                 </span>
                 <span className="text-muted-foreground">{e.reason || "—"}</span>
@@ -1526,7 +1664,7 @@ export const MathBlockDetail: BlockRenderer = ({ vm }) => {
 
   return (
     <div
-      className="overflow-x-auto py-2 text-center"
+      className="overflow-x-auto rounded-md border border-hairline bg-background dark:bg-card px-3 py-4 text-center"
       // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted KaTeX output.
       dangerouslySetInnerHTML={{ __html: html }}
     />

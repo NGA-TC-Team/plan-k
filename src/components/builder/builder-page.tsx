@@ -32,6 +32,22 @@ import { ViewModeOverrideToggle } from "./view-mode-override-toggle";
 
 const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
+/**
+ * CanvasMeta — shared count + ViewModeOverrideToggle row used in both
+ * ScreenCanvas and SectionCanvas headers. Renders nothing for the count
+ * span when count === 0 (consistent with ScreenCanvas behaviour).
+ */
+function CanvasMeta({ count, entityId }: { count: number; entityId: string }) {
+  return (
+    <div className="ml-auto flex items-center gap-1">
+      {count > 0 ? (
+        <span className="text-xs text-muted-foreground">({count} blocks)</span>
+      ) : null}
+      <ViewModeOverrideToggle entityId={entityId} />
+    </div>
+  );
+}
+
 export function BuilderPage({ planId }: { planId: string }) {
   return (
     <BuilderProvider planId={planId}>
@@ -138,7 +154,8 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
   if (!screen) {
     return (
       <main className="h-full overflow-auto p-6 text-sm text-muted-foreground">
-        No screen selected. Open a Web or Mobile screen to see the builder canvas.
+        No screen selected. Open a Web or Mobile screen to see the builder
+        canvas.
       </main>
     );
   }
@@ -151,7 +168,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
             <div className="text-sm">
               <span className="font-medium">{screen.title}</span>
             </div>
-            <ViewModeOverrideToggle entityId={screen.id} />
+            <CanvasMeta count={0} entityId={screen.id} />
           </div>
         </div>
         <EmptyStateCards
@@ -191,11 +208,8 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
       <div className="mb-4 flex items-center justify-between">
         <div className="text-sm">
           <span className="font-medium">{screen.title}</span>
-          <span className="ml-2 text-xs text-muted-foreground">
-            ({childIds.length} blocks)
-          </span>
         </div>
-        <ViewModeOverrideToggle entityId={screen.id} />
+        <CanvasMeta count={childIds.length} entityId={screen.id} />
       </div>
       <ScreenFrame kind={planKind} screen={screen}>
         {blockTree}
@@ -237,10 +251,7 @@ function SectionCanvas() {
               <h1 className="text-2xl font-semibold tracking-headline">
                 {section.title}
               </h1>
-              <span className="text-xs text-muted-foreground">(0 blocks)</span>
-              <div className="ml-auto flex items-center gap-1">
-                <ViewModeOverrideToggle entityId={section.id} />
-              </div>
+              <CanvasMeta count={0} entityId={section.id} />
             </header>
           </div>
         </div>
@@ -265,12 +276,7 @@ function SectionCanvas() {
           <h1 className="text-2xl font-semibold tracking-headline">
             {section.title}
           </h1>
-          <span className="text-xs text-muted-foreground">
-            ({childBlockIds.length} blocks)
-          </span>
-          <div className="ml-auto flex items-center gap-1">
-            <ViewModeOverrideToggle entityId={section.id} />
-          </div>
+          <CanvasMeta count={childBlockIds.length} entityId={section.id} />
         </header>
         <div className="space-y-3">
           <AnimatePresence initial={false}>

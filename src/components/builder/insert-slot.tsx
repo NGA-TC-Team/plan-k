@@ -151,7 +151,7 @@ export function InsertSlot({
             "flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground transition-opacity",
             "hover:bg-accent hover:text-accent-foreground",
             variant === "between" &&
-              "opacity-0 group-hover/slot:opacity-100 data-[popup-open]:opacity-100",
+              "opacity-0 group-hover/slot:opacity-100 focus-within:opacity-100 data-[popup-open]:opacity-100",
           )}
           aria-label="Insert block"
           onPointerDown={(e) => e.stopPropagation()}
