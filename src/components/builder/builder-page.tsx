@@ -130,7 +130,6 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
   const childIds = useBuilderState((s) =>
     screenId ? (s.state.children[screenId] ?? EMPTY_IDS) : EMPTY_IDS,
   );
-  const viewMode = useBuilderState((s) => s.state.viewMode);
   const dispatch = useBuilderDispatch();
   const rootRef = useRef<HTMLElement | null>(null);
   const marquee = useMarquee(rootRef, dispatch);
@@ -139,7 +138,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
   if (!screen) {
     return (
       <main className="h-full overflow-auto p-6 text-sm text-muted-foreground">
-        No screen selected — open a Web/Mobile demo to see the builder canvas.
+        No screen selected. Open a Web or Mobile screen to see the builder canvas.
       </main>
     );
   }
@@ -151,9 +150,6 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <span className="font-medium">{screen.title}</span>
-              <span className="ml-2 text-xs text-muted-foreground">
-                (0 blocks · {viewMode})
-              </span>
             </div>
             <ViewModeOverrideToggle entityId={screen.id} />
           </div>
@@ -196,7 +192,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
         <div className="text-sm">
           <span className="font-medium">{screen.title}</span>
           <span className="ml-2 text-xs text-muted-foreground">
-            ({childIds.length} blocks · {viewMode})
+            ({childIds.length} blocks)
           </span>
         </div>
         <ViewModeOverrideToggle entityId={screen.id} />

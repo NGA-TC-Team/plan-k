@@ -216,7 +216,7 @@ export function AgentGraph() {
 
         {nodes.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-            Empty graph — add an input/tool/llm/output node to start.
+            Empty graph. Add an input, tool, llm, or output node to start.
           </div>
         ) : null}
       </div>

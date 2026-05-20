@@ -117,7 +117,7 @@ export function ChatMessageList() {
       >
         {messages.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-            Start chatting — Claude can edit blocks, add sections, or export the
+            Start chatting. Claude can edit blocks, add sections, or export the
             plan. Tag with @ or click a block in the canvas.
           </div>
         ) : null}

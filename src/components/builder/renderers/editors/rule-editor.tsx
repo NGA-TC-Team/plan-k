@@ -16,7 +16,7 @@ export const RuleEditor: BlockRenderer = ({ vm, handlers }) => {
       onCancel={handlers.onCancelEdit}
     >
       <p className="text-xs text-muted-foreground">
-        No properties — horizontal rule. Delete to remove.
+        Horizontal rule. Delete to remove.
       </p>
     </EditorShell>
   );

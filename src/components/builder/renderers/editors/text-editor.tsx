@@ -29,7 +29,7 @@ export const TextEditor: BlockRenderer = ({ vm, handlers }) => {
         render={({ field }) => (
           <MentionInput
             rows={8}
-            placeholder="Markdown / freeform — type @ to reference an entity"
+            placeholder="Markdown. Type @ to reference an entity."
             value={field.value ?? ""}
             onChange={field.onChange}
             onBlur={field.onBlur}

@@ -60,7 +60,7 @@ export function MediaUsagePopover({
   return (
     <Popover>
       <PopoverTrigger
-        aria-label={`사용 중인 블록 ${triggerLabel}개 — 목록 보기`}
+        aria-label={`사용 중인 블록 ${triggerLabel}개: 목록 보기`}
         className={cn(
           "rounded bg-black/60 px-1 py-0.5 text-caption font-medium leading-none text-white",
           "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",

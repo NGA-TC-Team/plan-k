@@ -43,7 +43,7 @@ export function ChatComposer() {
     const content = composerText.trim();
     if (!content) return;
     if (runState !== "idle") {
-      toast.message("Wait — assistant is still working.");
+      toast.message("Please wait. Assistant is still working.");
       return;
     }
     try {

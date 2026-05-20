@@ -90,7 +90,7 @@ export function VersionsDrawer({ planId }: VersionsDrawerProps) {
                   </div>
                 ) : versionCount === 0 ? (
                   <div className="px-4 py-6 text-sm text-muted-foreground">
-                    No versions yet — tag the current state to start a history.
+                    No versions yet. Tag the current state to start a history.
                   </div>
                 ) : (
                   <ul className="divide-y">

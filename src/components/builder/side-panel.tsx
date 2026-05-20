@@ -369,8 +369,7 @@ function MultiPane({ count }: { count: number }) {
             {count} selected
           </Badge>
           <p className="text-xs text-muted-foreground">
-            여러 블록이 선택됐습니다. 공통 속성 편집은 곧 지원 예정입니다.
-            지금은 일괄 복사 / 복제 / 삭제만 가능합니다.
+            여러 블록이 선택됐습니다. 일괄 복사, 복제, 삭제가 가능합니다.
           </p>
         </header>
         <section>

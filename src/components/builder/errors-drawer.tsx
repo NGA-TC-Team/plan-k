@@ -48,8 +48,7 @@ export function ErrorsDrawer() {
         <div className="flex-1 overflow-y-auto">
           {isEmpty ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">
-              No errors yet — anything that goes wrong here will show up in this
-              list.
+              No errors yet. Issues that occur will appear in this list.
             </p>
           ) : (
             <ul className="divide-y">

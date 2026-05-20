@@ -56,7 +56,7 @@ export const JsonFallbackEditor: BlockRenderer = ({ vm, handlers }) => {
         <div className="text-xs text-destructive">{error}</div>
       ) : (
         <div className="text-xs text-muted-foreground">
-          No dedicated editor for this kind yet — edit the raw data.
+          No dedicated editor for this kind. Edit the raw data.
         </div>
       )}
     </EditorShell>

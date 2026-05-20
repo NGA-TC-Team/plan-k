@@ -199,7 +199,7 @@ function ScreensRail({
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 text-sm">
         {screens.length === 0 ? (
           <li className="px-2 py-3 text-xs text-muted-foreground">
-            No screens yet — click + to add one.
+            No screens yet. Click + to add one.
           </li>
         ) : null}
         {screens.map((screen) => {
@@ -404,10 +404,10 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
                   <DropdownMenuGroup>
                     <DropdownMenuLabel className="text-caption font-medium uppercase tracking-eyebrow text-muted-foreground">
                       {planKind === "agent"
-                        ? "Agent docs · 에이전트 문서"
+                        ? "Agent docs"
                         : planKind === "mobile"
-                          ? "Mobile docs · 모바일 문서"
-                          : "Web docs · 웹 문서"}
+                          ? "Mobile docs"
+                          : "Web docs"}
                     </DropdownMenuLabel>
                     {templates.map((spec) => {
                       const info = SECTION_INFO[spec.kind];
@@ -447,18 +447,15 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
               ) : null}
               <DropdownMenuItem
                 onClick={handleAddRoot}
-                title="템플릿 없이 빈 섹션을 추가합니다."
+                title="Add a section without a template."
                 className="items-start py-1.5"
               >
                 <div className="flex flex-1 flex-col gap-0.5">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Empty section</span>
-                    <span className="text-caption text-muted-foreground/80">
-                      빈 섹션
-                    </span>
                   </div>
                   <span className="text-caption leading-snug text-muted-foreground">
-                    템플릿 없이 빈 섹션을 추가합니다.
+                    Add a section without a template.
                   </span>
                 </div>
               </DropdownMenuItem>
@@ -480,7 +477,7 @@ function DocsRail({ onCollapse }: { onCollapse: () => void }) {
       <ul className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-2 text-sm">
         {docsRoots.length === 0 ? (
           <li className="px-2 py-3 text-xs text-muted-foreground">
-            No sections — click + to add one.
+            No sections. Click + to add one.
           </li>
         ) : null}
         {docsRoots.map((id) => {
@@ -753,7 +750,7 @@ function AgentRailPlaceholder({ onCollapse }: { onCollapse: () => void }) {
       ) : (
         <div className="flex-1 px-3 py-2 text-xs text-muted-foreground">
           Add nodes/edges in the canvas. The graph holds the agent's runtime
-          shape — input/tool/llm/output and how they wire together.
+          shape: input, tool, llm, output and how they wire together.
         </div>
       )}
     </>
