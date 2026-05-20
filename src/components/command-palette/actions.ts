@@ -12,6 +12,7 @@ import type {
 import { useErrorsUiStore } from "@/services/stores/errors-ui.store";
 import type { Theme } from "@/services/stores/theme-store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { exportPlanWithToast } from "@/services/third-party-facade/export";
 
 export type BuilderStoreHook = ReturnType<typeof createBuilderStore>;
 
@@ -225,12 +226,9 @@ export const ACTIONS: Record<string, ActionHandler> = {
     if (!ctx.builder) return;
     const planId = Object.values(ctx.builder.getState().state.plans)[0]?.id;
     if (!planId) return;
-    const format = args?.format === "png" ? "png" : "pdf";
-    window.open(
-      `/api/exports/${format}?planId=${encodeURIComponent(planId)}`,
-      "_blank",
-      "noopener",
-    );
+    const kind = args?.format === "png" ? "png" : "pdf";
+    // Command palette uses default print options — no PrintOptionsPopover
+    exportPlanWithToast({ planId, kind });
   },
   "export.print": (ctx) => {
     if (!ctx.builder) return;

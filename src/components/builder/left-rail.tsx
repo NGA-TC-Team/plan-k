@@ -48,6 +48,7 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useBacklogStore, useBuilderUiStore } from "@/services/stores";
+import { exportPlanWithToast } from "@/services/third-party-facade/export";
 import { ConfirmDestructiveDialog } from "./confirm-destructive-dialog";
 import { StatusChipMenu } from "./status-chip";
 
@@ -671,9 +672,7 @@ function SectionExportMenu({
   sectionTitle: string;
 }) {
   const trigger = (kind: "pdf" | "png") => {
-    if (typeof window === "undefined") return;
-    const url = `/api/exports/${kind}?planId=${encodeURIComponent(planId)}&sectionId=${encodeURIComponent(sectionId)}`;
-    window.open(url, "_blank", "noopener");
+    exportPlanWithToast({ planId, kind, sectionId });
   };
   const openPrint = () => {
     window.open(
@@ -700,11 +699,11 @@ function SectionExportMenu({
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuItem onClick={() => trigger("pdf")}>
           <FileText className="size-3.5" />
-          <span>Export as PDF</span>
+          <span>PDF로 내보내기</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => trigger("png")}>
           <FileImage className="size-3.5" />
-          <span>Export as PNG</span>
+          <span>PNG로 내보내기</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={openPrint}>
           <Printer className="size-3.5" />

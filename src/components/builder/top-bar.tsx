@@ -54,8 +54,8 @@ import {
 import { useBuilderUiStore, useThemeStore } from "@/services/stores";
 import { usePrintOptionsStore } from "@/services/stores/print-options.store";
 import { useVersionsUiStore } from "@/services/stores/versions-ui.store";
+import { exportPlanWithToast } from "@/services/third-party-facade/export";
 import { ErrorsDrawer } from "./errors-drawer";
-import { buildExportParams } from "./export-params";
 import { PrintOptionsPopover } from "./print-options-popover";
 import { SaveStatusChip } from "./save-status-chip";
 import { VersionsDrawer } from "./versions-drawer";
@@ -324,11 +324,15 @@ function ProjectMetaEditor({
 
 function ExportMenu({ planId }: { planId: string }) {
   const trigger = (kind: "pdf" | "png") => {
-    if (typeof window === "undefined") return;
     const opts = usePrintOptionsStore.getState();
-    const params = buildExportParams(planId, opts);
-    const url = `/api/exports/${kind}?${params.toString()}`;
-    window.open(url, "_blank", "noopener");
+    exportPlanWithToast({
+      planId,
+      kind,
+      cover: opts.cover,
+      toc: opts.toc,
+      pageNumbers: opts.pageNumbers,
+      footerText: opts.footerText || undefined,
+    });
   };
   return (
     <>

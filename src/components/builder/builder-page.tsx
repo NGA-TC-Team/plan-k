@@ -1,8 +1,16 @@
 "use client";
 
+import { Download, FileImage, FileText } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { type ReactNode, useRef } from "react";
 import type { ProjectKind, ScreenEntity } from "@/builder/types/entity";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useBuilderShortcuts } from "@/hooks/builder/use-builder-shortcuts.hook";
 import {
   useBuilderDispatch,
@@ -16,6 +24,7 @@ import {
   useChatStore,
   usePanelStore,
 } from "@/services/stores";
+import { exportPlanWithToast } from "@/services/third-party-facade/export";
 import { AgentGraph } from "./agent-graph";
 import { BacklogBoard } from "./backlog-board";
 import { BlockShell } from "./block-shell";
@@ -221,6 +230,9 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
 
 function SectionCanvas() {
   const sectionId = useBuilderUiStore((s) => s.currentSectionId);
+  const planId = useBuilderState(
+    (s) => Object.values(s.state.plans)[0]?.id ?? null,
+  );
   const section = useBuilderState((s) =>
     sectionId ? s.state.sections[sectionId] : undefined,
   );
@@ -242,16 +254,22 @@ function SectionCanvas() {
     );
   }
 
+  const exportMenu =
+    planId && sectionId ? (
+      <SectionDownloadMenu planId={planId} sectionId={sectionId} />
+    ) : null;
+
   if (childBlockIds.length === 0) {
     return (
       <main className="h-full overflow-auto">
         <div className="px-6 pt-8 pb-2">
           <div className="mx-auto w-full max-w-pane-wide">
-            <header className="mb-6 flex items-baseline gap-3 border-b border-hairline pb-3">
+            <header className="mb-6 flex items-center gap-3 border-b border-hairline pb-3">
               <h1 className="text-2xl font-semibold tracking-headline">
                 {section.title}
               </h1>
               <CanvasMeta count={0} entityId={section.id} />
+              {exportMenu}
             </header>
           </div>
         </div>
@@ -272,11 +290,12 @@ function SectionCanvas() {
       onPointerUp={marquee.handlers.onPointerUp}
     >
       <div className="mx-auto w-full max-w-pane-wide">
-        <header className="mb-6 flex items-baseline gap-3 border-b border-hairline pb-3">
+        <header className="mb-6 flex items-center gap-3 border-b border-hairline pb-3">
           <h1 className="text-2xl font-semibold tracking-headline">
             {section.title}
           </h1>
           <CanvasMeta count={childBlockIds.length} entityId={section.id} />
+          {exportMenu}
         </header>
         <div className="space-y-3">
           <AnimatePresence initial={false}>
@@ -296,6 +315,55 @@ function SectionCanvas() {
       </div>
       <MarqueeOverlay box={marquee.box} />
     </main>
+  );
+}
+
+/**
+ * Download icon + DropdownMenu for section-level export in the SectionCanvas
+ * header. Uses default print options (no PrintOptionsPopover).
+ */
+function SectionDownloadMenu({
+  planId,
+  sectionId,
+}: {
+  planId: string;
+  sectionId: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="ml-auto size-7 shrink-0"
+            aria-label="Export section"
+            title="Export section"
+          >
+            <Download className="size-4" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() =>
+            exportPlanWithToast({ planId, kind: "pdf", sectionId })
+          }
+        >
+          <FileText className="size-3.5" />
+          <span>PDF로 내보내기</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() =>
+            exportPlanWithToast({ planId, kind: "png", sectionId })
+          }
+        >
+          <FileImage className="size-3.5" />
+          <span>PNG로 내보내기</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
