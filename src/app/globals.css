@@ -81,6 +81,9 @@
 
   /* spacing tokens */
   --spacing-section: 96px;
+  --spacing-rail: 260px;
+  --spacing-rail-collapsed: 36px;
+  --spacing-pane-wide: 1088px;
 
   /* typography scale — DESIGN.md token pairs (size + line-height + letter-spacing)
      Tailwind v4: --text-<name>--line-height / --text-<name>--letter-spacing

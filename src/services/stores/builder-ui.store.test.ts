@@ -8,54 +8,35 @@ beforeEach(() => {
     canvasMode: "screen",
     currentSectionId: null,
     leftRailCollapsed: false,
-    zenMode: false,
   });
 });
 
-describe("zenMode", () => {
+describe("leftRailCollapsed", () => {
   it("defaults to false", () => {
-    expect(useBuilderUiStore.getState().zenMode).toBe(false);
+    expect(useBuilderUiStore.getState().leftRailCollapsed).toBe(false);
   });
 
-  it("setZenMode(true) sets zenMode to true", () => {
-    useBuilderUiStore.getState().setZenMode(true);
-    expect(useBuilderUiStore.getState().zenMode).toBe(true);
+  it("setLeftRailCollapsed(true) collapses rail", () => {
+    useBuilderUiStore.getState().setLeftRailCollapsed(true);
+    expect(useBuilderUiStore.getState().leftRailCollapsed).toBe(true);
   });
 
-  it("setZenMode(false) sets zenMode to false", () => {
-    useBuilderUiStore.getState().setZenMode(true);
-    useBuilderUiStore.getState().setZenMode(false);
-    expect(useBuilderUiStore.getState().zenMode).toBe(false);
+  it("toggleLeftRail flips false → true", () => {
+    useBuilderUiStore.getState().toggleLeftRail();
+    expect(useBuilderUiStore.getState().leftRailCollapsed).toBe(true);
   });
 
-  it("toggleZenMode flips false → true", () => {
-    useBuilderUiStore.getState().toggleZenMode();
-    expect(useBuilderUiStore.getState().zenMode).toBe(true);
-  });
-
-  it("toggleZenMode flips true → false", () => {
-    useBuilderUiStore.getState().setZenMode(true);
-    useBuilderUiStore.getState().toggleZenMode();
-    expect(useBuilderUiStore.getState().zenMode).toBe(false);
-  });
-
-  it("toggleZenMode twice returns to original state", () => {
-    useBuilderUiStore.getState().toggleZenMode();
-    useBuilderUiStore.getState().toggleZenMode();
-    expect(useBuilderUiStore.getState().zenMode).toBe(false);
+  it("toggleLeftRail flips true → false", () => {
+    useBuilderUiStore.getState().setLeftRailCollapsed(true);
+    useBuilderUiStore.getState().toggleLeftRail();
+    expect(useBuilderUiStore.getState().leftRailCollapsed).toBe(false);
   });
 });
 
-describe("existing state unaffected by zenMode ops", () => {
-  it("topMode is unchanged after toggleZenMode", () => {
+describe("existing state unaffected by rail ops", () => {
+  it("topMode is unchanged after toggleLeftRail", () => {
     useBuilderUiStore.getState().setTopMode("docs");
-    useBuilderUiStore.getState().toggleZenMode();
+    useBuilderUiStore.getState().toggleLeftRail();
     expect(useBuilderUiStore.getState().topMode).toBe("docs");
-  });
-
-  it("leftRailCollapsed is unchanged after toggleZenMode", () => {
-    useBuilderUiStore.getState().setLeftRailCollapsed(true);
-    useBuilderUiStore.getState().toggleZenMode();
-    expect(useBuilderUiStore.getState().leftRailCollapsed).toBe(true);
   });
 });

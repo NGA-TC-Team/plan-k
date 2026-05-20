@@ -40,50 +40,51 @@ export function BuilderPage({ planId }: { planId: string }) {
   );
 }
 
+// Static padding values matching the overlay widths so canvas content
+// never slides under the rails. Padding is intentionally not transitioned
+// (layout property) — it jumps on collapse toggle, which is the expected
+// UX for a deliberate user action.
+const RAIL_EXPANDED_PX = 260; // --spacing-rail
+const RAIL_COLLAPSED_PX = 36; // --spacing-rail-collapsed
+
 function BuilderShell() {
   useBuilderShortcuts();
   const runState = useChatStore((s) => s.runState);
   const aiActive = runState !== "idle";
   const leftCollapsed = useBuilderUiStore((s) => s.leftRailCollapsed);
-  const zenMode = useBuilderUiStore((s) => s.zenMode);
   const rightWidth = usePanelStore((s) => s.width);
-  const leftWidth = leftCollapsed ? 36 : 260;
-
-  // Zen: collapse side panels to 0; canvas expands to fill.
-  // Width + opacity transition 200ms ease-out applied on the wrapper divs.
-  const effectiveLeft = zenMode ? 0 : leftWidth;
-  const effectiveRight = zenMode ? 0 : rightWidth;
+  const leftWidth = leftCollapsed ? RAIL_COLLAPSED_PX : RAIL_EXPANDED_PX;
 
   return (
     <div className="grid h-screen grid-rows-[auto_1fr]">
       <TopBar />
-      <div
-        className="grid overflow-hidden transition-[grid-template-columns] duration-200 ease-out"
-        style={{
-          gridTemplateColumns: `${effectiveLeft}px 1fr ${effectiveRight}px`,
-        }}
-      >
-        {/* LeftRail wrapper: overflow-hidden ensures content is clipped as width shrinks */}
+      {/* Canvas area: single full-width container; rails float above as overlays */}
+      <div className="relative overflow-hidden">
+        {/* LeftRail overlay: always visible, width shrinks on collapse */}
         <div
-          className="overflow-hidden transition-opacity duration-200 ease-out"
-          style={{ opacity: zenMode ? 0 : 1 }}
+          className="absolute inset-y-0 left-0 z-30 transition-[width] duration-200 ease-out"
+          style={{ width: leftWidth }}
         >
           <LeftRail />
         </div>
+
+        {/* Canvas: full width, static padding reserves space under each overlay */}
         <div
           data-ai-active={aiActive ? "true" : undefined}
           data-ai-state={runState}
           className={cn(
-            "canvas-shell relative min-h-0 overflow-hidden",
+            "canvas-shell h-full min-h-0 overflow-hidden",
             aiActive && "ai-active",
           )}
+          style={{ paddingLeft: RAIL_EXPANDED_PX, paddingRight: rightWidth }}
         >
           <Canvas />
         </div>
-        {/* SidePanel wrapper: same fade pattern as LeftRail */}
+
+        {/* SidePanel overlay: hidden on small screens (lg:flex inside SidePanel) */}
         <div
-          className="h-full min-h-0 overflow-hidden transition-opacity duration-200 ease-out"
-          style={{ opacity: zenMode ? 0 : 1 }}
+          className="absolute inset-y-0 right-0 z-30"
+          style={{ width: rightWidth }}
         >
           <SidePanel />
         </div>
@@ -233,15 +234,17 @@ function SectionCanvas() {
   if (childBlockIds.length === 0) {
     return (
       <main className="h-full overflow-auto">
-        <div className="p-6 pb-2">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <span className="font-medium">{section.title}</span>
-              <span className="ml-2 text-xs text-muted-foreground">
-                (0 blocks)
-              </span>
-            </div>
-            <ViewModeOverrideToggle entityId={section.id} />
+        <div className="px-6 pt-8 pb-2">
+          <div className="mx-auto w-full max-w-pane-wide">
+            <header className="mb-6 flex items-baseline gap-3 border-b border-hairline pb-3">
+              <h1 className="text-2xl font-semibold tracking-headline">
+                {section.title}
+              </h1>
+              <span className="text-xs text-muted-foreground">(0 blocks)</span>
+              <div className="ml-auto flex items-center gap-1">
+                <ViewModeOverrideToggle entityId={section.id} />
+              </div>
+            </header>
           </div>
         </div>
         <EmptyStateCards
@@ -255,34 +258,38 @@ function SectionCanvas() {
   return (
     <main
       ref={rootRef}
-      className="h-full overflow-auto p-6"
+      className="h-full overflow-auto bg-canvas px-6 py-8"
       onPointerDown={marquee.handlers.onPointerDown}
       onPointerMove={marquee.handlers.onPointerMove}
       onPointerUp={marquee.handlers.onPointerUp}
     >
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm">
-          <span className="font-medium">{section.title}</span>
-          <span className="ml-2 text-xs text-muted-foreground">
+      <div className="mx-auto w-full max-w-pane-wide">
+        <header className="mb-6 flex items-baseline gap-3 border-b border-hairline pb-3">
+          <h1 className="text-2xl font-semibold tracking-headline">
+            {section.title}
+          </h1>
+          <span className="text-xs text-muted-foreground">
             ({childBlockIds.length} blocks)
           </span>
+          <div className="ml-auto flex items-center gap-1">
+            <ViewModeOverrideToggle entityId={section.id} />
+          </div>
+        </header>
+        <div className="space-y-3">
+          <AnimatePresence initial={false}>
+            {childBlockIds.map((id, idx) => (
+              <div key={id}>
+                <InsertSlot parentId={section.id} index={idx} />
+                <BlockShell blockId={id} />
+              </div>
+            ))}
+          </AnimatePresence>
+          <InsertSlot
+            parentId={section.id}
+            index={childBlockIds.length}
+            variant="trailing"
+          />
         </div>
-        <ViewModeOverrideToggle entityId={section.id} />
-      </div>
-      <div className="rounded-lg border p-4">
-        <AnimatePresence initial={false}>
-          {childBlockIds.map((id, idx) => (
-            <div key={id}>
-              <InsertSlot parentId={section.id} index={idx} />
-              <BlockShell blockId={id} />
-            </div>
-          ))}
-        </AnimatePresence>
-        <InsertSlot
-          parentId={section.id}
-          index={childBlockIds.length}
-          variant="trailing"
-        />
       </div>
       <MarqueeOverlay box={marquee.box} />
     </main>
