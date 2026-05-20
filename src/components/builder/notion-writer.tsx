@@ -14,6 +14,7 @@ import {
   applyInlineMath,
   wrapLastBacktickPair,
 } from "@/components/builder/inline-editor";
+import { Kbd } from "@/components/ui/kbd";
 import {
   useBuilderDispatch,
   useBuilderState,
@@ -508,9 +509,7 @@ export function NotionWriter({ parentId }: Props) {
                           <span>{spec.label}</span>
                         </span>
                         {spec.shortcut ? (
-                          <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-caption font-mono text-muted-foreground">
-                            {spec.shortcut}
-                          </kbd>
+                          <Kbd className="ml-2">{spec.shortcut}</Kbd>
                         ) : null}
                       </button>
                     );

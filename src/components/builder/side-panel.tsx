@@ -21,6 +21,7 @@ import {
 } from "@/builder/projection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBlock } from "@/hooks/builder/use-block.hook";
 import {
@@ -129,7 +130,7 @@ function IdleState() {
     <div className="flex h-full min-h-0 flex-col items-center justify-center gap-2 p-5 text-center text-xs text-muted-foreground">
       <div className="font-medium text-foreground">Select a block</div>
       <div>
-        Click to select · Double-click or <kbd>Enter</kbd> to edit
+        Click to select · Double-click or <Kbd>Enter</Kbd> to edit
       </div>
     </div>
   );
@@ -333,7 +334,11 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
           </Button>
         </div>
         <p className="mt-2 text-caption text-muted-foreground">
-          <kbd>Enter</kbd> to edit · <kbd>Delete</kbd> to remove · <kbd>⌘Z</kbd>{" "}
+          <Kbd>Enter</Kbd> to edit · <Kbd>Delete</Kbd> to remove ·{" "}
+          <KbdGroup>
+            <Kbd>⌘</Kbd>
+            <Kbd>Z</Kbd>
+          </KbdGroup>{" "}
           to undo
         </p>
       </div>
@@ -426,8 +431,21 @@ function MultiPane({ count }: { count: number }) {
           </Button>
         </div>
         <p className="mt-2 text-caption text-muted-foreground">
-          <kbd>⌘C</kbd> 복사 · <kbd>⌘V</kbd> 붙여넣기 · <kbd>⌘D</kbd> 복제 ·{" "}
-          <kbd>Delete</kbd> 일괄 삭제
+          <KbdGroup>
+            <Kbd>⌘</Kbd>
+            <Kbd>C</Kbd>
+          </KbdGroup>{" "}
+          복사 ·{" "}
+          <KbdGroup>
+            <Kbd>⌘</Kbd>
+            <Kbd>V</Kbd>
+          </KbdGroup>{" "}
+          붙여넣기 ·{" "}
+          <KbdGroup>
+            <Kbd>⌘</Kbd>
+            <Kbd>D</Kbd>
+          </KbdGroup>{" "}
+          복제 · <Kbd>Delete</Kbd> 일괄 삭제
         </p>
       </div>
     </div>

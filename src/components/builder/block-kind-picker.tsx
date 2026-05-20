@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { iconForBlock, iconForGroup } from "@/builder/blocks/icons";
 import { type BlockKindSpec, blockKindsForContext } from "@/builder/defaults";
 import type { BlockContext, BlockKind } from "@/builder/types/entity";
+import { Kbd } from "@/components/ui/kbd";
 import { useInsertMruStore } from "@/services/stores";
 
 type Props = {
@@ -180,9 +181,7 @@ export function BlockKindPicker({
                     <span>{spec.label}</span>
                   </span>
                   {spec.shortcut ? (
-                    <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-caption font-mono text-muted-foreground">
-                      {spec.shortcut}
-                    </kbd>
+                    <Kbd className="ml-2">{spec.shortcut}</Kbd>
                   ) : null}
                 </button>
               );
@@ -214,9 +213,7 @@ export function BlockKindPicker({
                         <span>{spec.label}</span>
                       </span>
                       {spec.shortcut ? (
-                        <kbd className="ml-2 rounded-sm border border-border/60 bg-muted px-1 text-caption font-mono text-muted-foreground">
-                          {spec.shortcut}
-                        </kbd>
+                        <Kbd className="ml-2">{spec.shortcut}</Kbd>
                       ) : null}
                     </button>
                   );

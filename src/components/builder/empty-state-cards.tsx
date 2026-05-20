@@ -7,6 +7,7 @@ import {
   type SuggestedKind,
 } from "@/builder/blocks/suggested";
 import type { BlockKind } from "@/builder/types/entity";
+import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -37,11 +38,7 @@ function SuggestionCard({
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
         <span className="text-sm font-medium leading-none">{item.label}</span>
-        {item.shortcut && (
-          <kbd className="ml-auto rounded border bg-muted px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
-            {item.shortcut}
-          </kbd>
-        )}
+        {item.shortcut && <Kbd className="ml-auto">{item.shortcut}</Kbd>}
       </div>
       <p className="text-xs text-muted-foreground leading-snug">
         {item.description}

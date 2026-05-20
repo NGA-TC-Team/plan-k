@@ -4,6 +4,7 @@ import { Paperclip, Send, X } from "lucide-react";
 import { type KeyboardEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import { Textarea } from "@/components/ui/textarea";
 import { chatApi } from "@/data/chat/api";
 import { cn } from "@/lib/utils";
@@ -240,9 +241,9 @@ export function ChatComposer() {
             >
               <Send className="size-3" />
               Send
-              <kbd className="ml-1 rounded-sm bg-primary-foreground/20 px-1 text-caption">
+              <Kbd className="ml-1 border-transparent bg-primary-foreground/20 text-primary-foreground">
                 ↵
-              </kbd>
+              </Kbd>
             </Button>
           </div>
         </div>
