@@ -121,30 +121,38 @@ export const SPACING_DEFAULTS_BY_KIND: Partial<
   // Docs blocks mostly carry their own card-style padding inside the renderer
   // (callout, code-block, link-card, decision, persona, …) so the outer
   // padding stays at "none" — overrides set rhythm via marginTop/marginBottom.
+  //
+  // Rhythm buckets (Stripe/Linear pass):
+  //   text blocks (paragraph/list/quote/definition/math) → xs/xs (4px each, space-y handles gaps)
+  //   visual blocks (callout/code/figure/link-card/rule) → md/md (16px breathing room)
+  //   card blocks (table/decision/persona/user-story/risk/metric/milestone/
+  //                release-note/journey-step/api-endpoint/color-swatch/canvas) → lg/lg (24px)
+  //   heading → xl top (32px) / sm bottom (8px); first heading mt-0 via CSS first-of-type
+  // heading uses lg (24px) top — xl(40px) is too much for in-document headings
   heading: { padding: "none", marginTop: "lg", marginBottom: "sm" },
   paragraph: { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  blockquote: { padding: "sm", marginTop: "sm", marginBottom: "sm" },
-  callout: { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  "code-block": { padding: "none", marginTop: "sm", marginBottom: "sm" },
+  blockquote: { padding: "none", marginTop: "sm", marginBottom: "sm" },
+  callout: { padding: "none", marginTop: "md", marginBottom: "md" },
+  "code-block": { padding: "none", marginTop: "md", marginBottom: "md" },
   "bullet-list": { padding: "none", marginTop: "sm", marginBottom: "sm" },
   "numbered-list": { padding: "none", marginTop: "sm", marginBottom: "sm" },
   checklist: { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  table: { padding: "none", marginTop: "md", marginBottom: "md" },
+  table: { padding: "none", marginTop: "lg", marginBottom: "lg" },
   rule: { padding: "none", marginTop: "md", marginBottom: "md" },
   figure: { padding: "none", marginTop: "md", marginBottom: "md" },
-  "link-card": { padding: "none", marginTop: "sm", marginBottom: "sm" },
+  "link-card": { padding: "none", marginTop: "md", marginBottom: "md" },
   definition: { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  decision: { padding: "none", marginTop: "md", marginBottom: "md" },
-  persona: { padding: "none", marginTop: "md", marginBottom: "md" },
-  "user-story": { padding: "none", marginTop: "md", marginBottom: "md" },
-  risk: { padding: "none", marginTop: "md", marginBottom: "md" },
-  metric: { padding: "none", marginTop: "sm", marginBottom: "sm" },
+  decision: { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  persona: { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  "user-story": { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  risk: { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  metric: { padding: "none", marginTop: "lg", marginBottom: "lg" },
   // P7 docs additions
-  milestone: { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  "release-note": { padding: "none", marginTop: "md", marginBottom: "md" },
-  "color-swatch": { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  "journey-step": { padding: "none", marginTop: "sm", marginBottom: "sm" },
-  "api-endpoint": { padding: "none", marginTop: "md", marginBottom: "md" },
+  milestone: { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  "release-note": { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  "color-swatch": { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  "journey-step": { padding: "none", marginTop: "lg", marginBottom: "lg" },
+  "api-endpoint": { padding: "none", marginTop: "lg", marginBottom: "lg" },
 };
 
 export function spacingDefaultsFor(kind: BlockKind): SpacingDefaults {
