@@ -27,9 +27,9 @@ const STATUS_LABEL: Record<EntityStatus, string> = {
 
 const STATUS_DOT_CLASS: Record<EntityStatus, string> = {
   pending: "bg-muted-foreground/40",
-  "in-progress": "bg-amber-500",
-  approved: "bg-emerald-500",
-  rejected: "bg-rose-500",
+  "in-progress": "bg-warning",
+  approved: "bg-success",
+  rejected: "bg-destructive",
 };
 
 export function statusOf(status: EntityStatus | undefined): EntityStatus {

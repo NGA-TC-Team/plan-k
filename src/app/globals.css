@@ -66,6 +66,7 @@
   --color-on-primary: var(--on-primary);
   --color-brand-secure: var(--brand-secure);
   --color-success: var(--semantic-success);
+  --color-warning: var(--semantic-warning);
 
   /* radius scale aligned to DESIGN.md */
   --radius-xs: 4px;
@@ -184,6 +185,7 @@
 
   /* Semantic */
   --semantic-success: #1f8a37;
+  --semantic-warning: #b25a08;
   --semantic-overlay: rgba(10, 11, 14, 0.4);
 
   /* shadcn semantic mapping */
@@ -250,6 +252,7 @@
   --brand-secure: #7a7fad;
 
   --semantic-success: #27a644;
+  --semantic-warning: #d98a3a;
   --semantic-overlay: rgba(0, 0, 0, 0.7);
 
   --popover: var(--surface-3);
