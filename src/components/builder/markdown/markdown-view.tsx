@@ -36,18 +36,30 @@ const components: Components = {
  * Block-level docs blocks (`table`, `bullet-list`, etc.) keep their structured
  * editors and should not pass through this component — only free-form
  * markdown fields (paragraph/text, callout body, blockquote body) do.
+ *
+ * When `className` contains `prose-doc`, the Tailwind Typography base classes
+ * (`prose prose-sm prose-zinc`) are skipped so that the editorial .prose-doc
+ * CSS class (globals.css) drives the rendering without cascade conflicts.
  */
 export function MarkdownView({ children, className, compact = false }: Props) {
+  const isProseDoc = className?.includes("prose-doc") ?? false;
   return (
     <div
       className={cn(
-        "prose prose-sm prose-zinc max-w-none",
-        "prose-headings:font-semibold prose-headings:tracking-tight",
-        "prose-pre:my-2 prose-pre:bg-muted/40 prose-pre:text-foreground",
-        "prose-code:before:content-none prose-code:after:content-none",
-        "prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em]",
-        "prose-table:my-2 prose-th:text-left prose-th:bg-muted/40",
-        compact && "prose-p:my-1 prose-ul:my-1 prose-ol:my-1",
+        // Skip Tailwind Typography base when prose-doc is handling styles.
+        !isProseDoc && "prose prose-sm prose-zinc max-w-none",
+        !isProseDoc &&
+          "prose-headings:font-semibold prose-headings:tracking-tight",
+        !isProseDoc &&
+          "prose-pre:my-2 prose-pre:bg-muted/40 prose-pre:text-foreground",
+        !isProseDoc &&
+          "prose-code:before:content-none prose-code:after:content-none",
+        !isProseDoc &&
+          "prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[0.85em]",
+        !isProseDoc &&
+          "prose-table:my-2 prose-th:text-left prose-th:bg-muted/40",
+        !isProseDoc && compact && "prose-p:my-1 prose-ul:my-1 prose-ol:my-1",
+        "max-w-none",
         className,
       )}
     >
