@@ -2,7 +2,12 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray } from "react-hook-form";
-import { Field, TextAreaField, TextField } from "@/components/builder/fields";
+import {
+  Field,
+  ImageRefField,
+  TextAreaField,
+  TextField,
+} from "@/components/builder/fields";
 import { Button } from "@/components/ui/button";
 import type { BlockRenderer } from "../types";
 import { EditorShell } from "./editor-shell";
@@ -16,6 +21,8 @@ type Values = {
   needs: string[];
   pains: string[];
   quote: string;
+  profileImageRef: string;
+  profileImageAlt: string;
 };
 
 function StringList({
@@ -75,6 +82,11 @@ export const PersonaEditor: BlockRenderer = ({ vm, handlers }) => {
       onSubmit={handleSubmit(() => handlers.onCommitEdit())}
       onCancel={handlers.onCancelEdit}
     >
+      <ImageRefField
+        form={form}
+        srcName="profileImageRef"
+        altName="profileImageAlt"
+      />
       <Field label="Name">
         <TextField {...register("name")} />
       </Field>
