@@ -41,6 +41,34 @@ type Props = {
 // off-screen) — caller already called e.preventDefault() only after this returns
 // true (see callers below).
 
+// Focuses the [data-backlog-title] input within the nearest sheet root and
+// places the caret at the end of the current value.
+// Returns true when the input was found and focused; false otherwise.
+function focusTitleInput(currentEl: HTMLElement): boolean {
+  const sheetRoot = currentEl.closest<HTMLElement>("[data-backlog-sheet]");
+  const titleInput = sheetRoot?.querySelector<HTMLInputElement>(
+    "input[data-backlog-title='true']",
+  );
+  if (!titleInput) return false;
+  titleInput.focus();
+  const len = titleInput.value.length;
+  titleInput.setSelectionRange(len, len);
+  return true;
+}
+
+// Moves caret to prev block; if no prev block, falls back to the title input.
+// Returns true when caret was moved (either to prev block or title).
+export function moveCaretToPrevBlockOrTitle(currentBlockId: string): boolean {
+  // Try standard prev-block navigation first.
+  if (moveCaretToPrevBlock(currentBlockId)) return true;
+  // No prev block in DOM — fall back to title input.
+  const currentEl = document.querySelector<HTMLElement>(
+    `[data-block-id="${CSS.escape(currentBlockId)}"]`,
+  );
+  if (!currentEl) return false;
+  return focusTitleInput(currentEl);
+}
+
 function getSortedBlockElements(currentEl: HTMLElement): HTMLElement[] {
   // Walk up to find the sheet scroll container that owns this block.
   const sheetRoot = currentEl.closest<HTMLElement>("[data-backlog-sheet]");
@@ -443,7 +471,7 @@ function BlockFrame({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-5 top-1.5 hidden text-muted-foreground/40 group-hover/eb:flex"
+        className="pointer-events-none absolute -left-5 top-1.5 flex text-muted-foreground/40"
       >
         <GripVertical className="size-3.5" />
       </span>
@@ -616,7 +644,8 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
               (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
               handleRef.current?.isCaretAtStart()
             ) {
-              if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+              // Try prev block; fallback to title input if at first block.
+              if (moveCaretToPrevBlockOrTitle(block.id)) e.preventDefault();
               return;
             }
             if (
@@ -654,15 +683,16 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
             // isEmpty: trim strips browser-injected trailing "\n" from <br>
             const isEmpty = md.replace(/\n/g, "").trim().length === 0;
             if (isEmpty) {
-              // Empty block: delete regardless of caret position.
-              // Check if prev sibling is a table → enter table selected state.
+              // Empty block: move caret to prev block (or title) before delete.
               if (prevBlock?.kind === "table") {
                 e.preventDefault();
+                moveCaretToPrevBlockOrTitle(block.id);
                 setSelectedTableId(prevBlock.id);
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                 return;
               }
               e.preventDefault();
+              moveCaretToPrevBlockOrTitle(block.id);
               dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
               return;
             }
@@ -674,7 +704,7 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
             }
           }
         }}
-        inputClassName="text-base leading-relaxed"
+        inputClassName="text-[15px] leading-relaxed"
       />
     </BlockFrame>
   );
@@ -711,12 +741,13 @@ function HeadingLine({ block }: { block: BlockEntity }) {
     });
   };
 
+  // Mirror HeaderDetail display sizes exactly to prevent edit-mode reflow.
   const sizeClass =
     level === 1
-      ? "text-3xl font-bold tracking-tight"
+      ? "text-[28px] leading-tight font-bold tracking-display-lg"
       : level === 2
-        ? "text-2xl font-bold tracking-tight"
-        : "text-xl font-semibold";
+        ? "text-[22px] leading-tight font-semibold tracking-headline"
+        : "text-[18px] leading-snug font-semibold tracking-headline";
 
   return (
     <BlockFrame blockId={block.id}>
@@ -734,7 +765,8 @@ function HeadingLine({ block }: { block: BlockEntity }) {
               (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
               handleRef.current?.isCaretAtStart()
             ) {
-              if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+              // Fallback to title input when at first block.
+              if (moveCaretToPrevBlockOrTitle(block.id)) e.preventDefault();
               return;
             }
             if (
@@ -774,14 +806,16 @@ function HeadingLine({ block }: { block: BlockEntity }) {
             // isEmpty: trim strips browser-injected trailing "\n" from <br>
             const isEmpty = md.replace(/\n/g, "").trim().length === 0;
             if (isEmpty) {
-              // Empty heading: delete regardless of caret position.
+              // Empty heading: move caret to prev block (or title) before delete.
               if (prevBlock?.kind === "table") {
                 e.preventDefault();
+                moveCaretToPrevBlockOrTitle(block.id);
                 setSelectedTableId(prevBlock.id);
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                 return;
               }
               e.preventDefault();
+              moveCaretToPrevBlockOrTitle(block.id);
               dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
               return;
             }
@@ -823,7 +857,7 @@ function QuoteLine({ block }: { block: BlockEntity }) {
           value={value}
           onBlur={commit}
           placeholder="Quote"
-          inputClassName="text-base"
+          inputClassName="text-[15px]"
           onKeyDown={(e, _md) => {
             const md = _md;
             // ── Arrow navigation ────────────────────────────────────────────
@@ -832,7 +866,7 @@ function QuoteLine({ block }: { block: BlockEntity }) {
                 (e.key === "ArrowUp" || e.key === "ArrowLeft") &&
                 handleRef.current?.isCaretAtStart()
               ) {
-                if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+                if (moveCaretToPrevBlockOrTitle(block.id)) e.preventDefault();
                 return;
               }
               if (
@@ -848,14 +882,16 @@ function QuoteLine({ block }: { block: BlockEntity }) {
               // isEmpty: trim strips browser-injected trailing "\n" from <br>
               const isEmpty = md.replace(/\n/g, "").trim().length === 0;
               if (isEmpty) {
-                // Empty quote: delete regardless of caret position.
+                // Empty quote: move caret to prev block (or title) before delete.
                 if (prevBlock?.kind === "table") {
                   e.preventDefault();
+                  moveCaretToPrevBlockOrTitle(block.id);
                   setSelectedTableId(prevBlock.id);
                   dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                   return;
                 }
                 e.preventDefault();
+                moveCaretToPrevBlockOrTitle(block.id);
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                 return;
               }
@@ -911,7 +947,7 @@ function CodeLine({ block }: { block: BlockEntity }) {
                 e.key === "ArrowLeft" &&
                 handleRef.current?.isCaretAtStart()
               ) {
-                if (moveCaretToPrevBlock(block.id)) e.preventDefault();
+                if (moveCaretToPrevBlockOrTitle(block.id)) e.preventDefault();
                 return;
               }
               if (e.key === "ArrowRight" && handleRef.current?.isCaretAtEnd()) {
@@ -924,14 +960,16 @@ function CodeLine({ block }: { block: BlockEntity }) {
               // isEmpty: trim strips browser-injected trailing "\n" from <br>
               const isEmpty = md.replace(/\n/g, "").trim().length === 0;
               if (isEmpty) {
-                // Empty code block: delete regardless of caret position.
+                // Empty code block: move caret to prev block (or title) before delete.
                 if (prevBlock?.kind === "table") {
                   e.preventDefault();
+                  moveCaretToPrevBlockOrTitle(block.id);
                   setSelectedTableId(prevBlock.id);
                   dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                   return;
                 }
                 e.preventDefault();
+                moveCaretToPrevBlockOrTitle(block.id);
                 dispatch({ type: "DELETE_BLOCK", nodeId: block.id });
                 return;
               }
@@ -1098,7 +1136,7 @@ function ListLine({ block }: { block: BlockEntity }) {
             onMergeIntoAbove={undefined}
             onMoveUp={(fresh) => moveItem(0, -1, fresh)}
             onMoveDown={(fresh) => moveItem(0, 1, fresh)}
-            onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
+            onArrowPrevBlock={() => moveCaretToPrevBlockOrTitle(block.id)}
             onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
             onArrowPrevItem={undefined}
             onArrowNextItem={undefined}
@@ -1127,7 +1165,7 @@ function ListLine({ block }: { block: BlockEntity }) {
               }
               onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
               onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
-              onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
+              onArrowPrevBlock={() => moveCaretToPrevBlockOrTitle(block.id)}
               onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
               onArrowPrevItem={
                 idx > 0 ? () => focusItemAt(idx - 1, "end") : undefined
@@ -1212,7 +1250,7 @@ function ListItem({
           autoFocusCaret={autoFocusCaret}
           onBlur={onCommit}
           placeholder="List item"
-          inputClassName="text-base"
+          inputClassName="text-[15px]"
           onKeyDown={(e, md) => {
             // Alt+Arrow: move this item up or down within the list.
             // Pass the live editor value (md) so moveItem can patch items[idx]
@@ -1450,7 +1488,7 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
             }
             onMoveUp={(fresh) => moveItem(idx, -1, fresh)}
             onMoveDown={(fresh) => moveItem(idx, 1, fresh)}
-            onArrowPrevBlock={() => moveCaretToPrevBlock(block.id)}
+            onArrowPrevBlock={() => moveCaretToPrevBlockOrTitle(block.id)}
             onArrowNextBlock={() => moveCaretToNextBlock(block.id)}
             onArrowPrevItem={
               idx > 0 ? () => focusChecklistItemAt(idx - 1, "end") : undefined
@@ -1539,7 +1577,7 @@ function ChecklistItem({
           autoFocusCaret={autoFocusCaret}
           onBlur={onCommit}
           placeholder="To-do"
-          inputClassName="text-base"
+          inputClassName="text-[15px]"
           onKeyDown={(e, md) => {
             // Alt+Arrow: move this item up or down within the checklist.
             // Pass live editor value so moveItem patches text before swapping.

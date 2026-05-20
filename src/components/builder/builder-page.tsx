@@ -56,17 +56,18 @@ function BuilderShell() {
   const leftWidth = leftCollapsed ? RAIL_COLLAPSED_PX : RAIL_EXPANDED_PX;
 
   return (
-    <div className="grid h-screen grid-rows-[auto_1fr]">
+    <div data-builder="root" className="grid h-screen grid-rows-[auto_1fr]">
       <TopBar />
       {/* Canvas area: single full-width container; rails float above as overlays */}
       <div className="relative overflow-hidden">
         {/* LeftRail overlay: always visible, width shrinks on collapse */}
-        <div
+        <aside
+          aria-label="Builder navigation"
           className="absolute inset-y-0 left-0 z-30"
           style={{ width: leftWidth }}
         >
           <LeftRail />
-        </div>
+        </aside>
 
         {/* Canvas: full width, static padding reserves space under each overlay */}
         <div
@@ -316,5 +317,7 @@ function ScreenFrame({
   if (kind === "mobile") {
     return <MobileFrame title={screen.title}>{children}</MobileFrame>;
   }
-  return <div className="rounded-lg border p-4">{children}</div>;
+  return (
+    <div className="rounded-lg border border-hairline p-4">{children}</div>
+  );
 }

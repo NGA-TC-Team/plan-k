@@ -263,7 +263,7 @@ function ProjectMetaEditor({
         aria-label="Edit project title"
       >
         <span className="truncate text-sm font-medium">{fallbackTitle}</span>
-        <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/title:opacity-100" />
+        <Pencil className="size-3 shrink-0 text-muted-foreground hover:text-foreground focus-visible:text-foreground" />
       </button>
       <DialogContent>
         <form onSubmit={handleSubmit} className="space-y-4">

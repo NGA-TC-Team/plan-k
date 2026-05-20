@@ -345,7 +345,7 @@ function ScreenCard({
           onClick={handleDelete}
           aria-label={`Delete ${screen.title}`}
           title="Delete screen"
-          className="ml-2 size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+          className="ml-2 size-5 shrink-0 rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive flex items-center justify-center"
         >
           <X className="size-3" />
         </button>

@@ -227,7 +227,7 @@ function ScreensRail({
                 />
                 <button
                   type="button"
-                  className="size-6 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+                  className="size-6 shrink-0 rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteScreen(screen.id);
@@ -580,7 +580,7 @@ function SectionTreeNode({
           }}
           aria-label={`Add child to ${section.title}`}
           title="Add subsection"
-          className="size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
+          className="size-5 shrink-0 rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:text-foreground flex items-center justify-center"
         >
           <Plus className="size-3" />
         </button>
@@ -599,7 +599,7 @@ function SectionTreeNode({
           }}
           aria-label={`Delete ${section.title}`}
           title="Delete section"
-          className="size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+          className="size-5 shrink-0 rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive flex items-center justify-center"
         >
           <Trash2 className="size-3" />
         </button>
@@ -656,7 +656,7 @@ function SectionExportMenu({
             aria-label={`Export ${sectionTitle}`}
             title="Export section"
             onClick={(e) => e.stopPropagation()}
-            className="size-5 shrink-0 rounded-sm text-muted-foreground opacity-0 hover:bg-accent group-hover:opacity-100 flex items-center justify-center"
+            className="size-5 shrink-0 rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:text-foreground flex items-center justify-center"
           >
             <Download className="size-3" />
           </button>

@@ -9,7 +9,7 @@ import {
   Tag,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useContext, useEffect, useRef } from "react";
 import { iconForBlock } from "@/builder/blocks/icons";
 import { manifestFor, summaryFor } from "@/builder/blocks/registry";
 import {
@@ -24,6 +24,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBlock } from "@/hooks/builder/use-block.hook";
 import {
+  handleCopy,
+  handleDuplicate,
+} from "@/hooks/builder/use-builder-shortcuts.hook";
+import {
+  useBuilderDispatch,
   useBuilderState,
   useBuilderStateShallow,
 } from "@/hooks/builder/use-builder-store.hook";
@@ -35,6 +40,7 @@ import {
   usePanelWidthPersistence,
 } from "@/services/stores";
 import { BacklinksPanel } from "./backlinks-panel";
+import { BuilderContext } from "./builder-context";
 import { ChatPane } from "./chat/chat-pane";
 import {
   AgentNodeInspector,
@@ -336,7 +342,8 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
 }
 
 function MultiPane({ count }: { count: number }) {
-  const dispatch = useBuilderState((s) => s.dispatch);
+  const dispatch = useBuilderDispatch();
+  const storeHook = useContext(BuilderContext);
   const ids = useBuilderState((s) =>
     s.state.selection.kind === "multi"
       ? s.state.selection.ids
@@ -385,10 +392,7 @@ function MultiPane({ count }: { count: number }) {
             size="sm"
             variant="outline"
             onClick={() => {
-              // Synthesize keyboard event so the existing copy handler runs.
-              window.dispatchEvent(
-                new KeyboardEvent("keydown", { key: "c", metaKey: true }),
-              );
+              if (storeHook) handleCopy(storeHook);
             }}
           >
             <Copy className="size-3.5" />
@@ -398,9 +402,7 @@ function MultiPane({ count }: { count: number }) {
             size="sm"
             variant="outline"
             onClick={() => {
-              window.dispatchEvent(
-                new KeyboardEvent("keydown", { key: "d", metaKey: true }),
-              );
+              if (storeHook) handleDuplicate(storeHook, dispatch);
             }}
           >
             <CopyPlus className="size-3.5" />

@@ -202,7 +202,7 @@ export function AgentGraph() {
                   }}
                   aria-label={`Delete ${node.label}`}
                   title="Delete node"
-                  className="size-4 rounded-sm text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 flex items-center justify-center"
+                  className="size-4 rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive flex items-center justify-center"
                 >
                   <Trash2 className="size-3" />
                 </button>

@@ -145,10 +145,8 @@ export function BlockShell({ blockId }: { blockId: string }) {
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "absolute -left-6 top-1/2 -translate-y-1/2 hidden h-6 w-5 cursor-grab items-center justify-center rounded text-muted-foreground/60 transition-opacity",
-            "hover:text-foreground active:cursor-grabbing",
-            "group-hover/block:flex",
-            vm.isSelected && "flex",
+            "absolute -left-6 top-1/2 -translate-y-1/2 flex h-6 w-5 cursor-grab items-center justify-center rounded text-muted-foreground/60",
+            "hover:text-foreground active:cursor-grabbing focus-visible:text-foreground",
           )}
         >
           <GripVertical className="size-3.5" />

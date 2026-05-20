@@ -22,6 +22,10 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return false;
 }
 
+// Exported so UI components (e.g. MultiPane) can call the same logic without
+// synthesizing a KeyboardEvent.
+export { handleCopy, handleDuplicate };
+
 export function useBuilderShortcuts() {
   const dispatch = useBuilderDispatch();
   const editing = useBuilderState((s) => s.state.editing);

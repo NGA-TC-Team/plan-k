@@ -281,6 +281,16 @@
   .canvas-shell.ai-active {
     animation: none;
   }
+
+  /* Builder-scoped: suppress all transitions and animations within the builder
+     shell without touching external UI (dialogs, landing page, etc.). */
+  [data-builder] *,
+  [data-builder] *::before,
+  [data-builder] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Chat assistant message markdown — compact prose, sidepanel-friendly */
