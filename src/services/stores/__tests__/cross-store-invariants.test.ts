@@ -207,7 +207,8 @@ describe("Invariant 2 — staged intent targetId must exist in builder state", (
     useChatStore.getState().upsertStaged(SESSION_ID, staged);
 
     const builderBlocks = builderStore.getState().state.blocks;
-    const stagedList = useChatStore.getState().stagedBySession[SESSION_ID] ?? [];
+    const stagedList =
+      useChatStore.getState().stagedBySession[SESSION_ID] ?? [];
     const targetedStaged = stagedList.find((s) => s.id === "staged-1");
 
     expect(targetedStaged).toBeDefined();
