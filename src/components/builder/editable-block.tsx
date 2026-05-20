@@ -704,7 +704,7 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
             }
           }
         }}
-        inputClassName="text-[15px] leading-relaxed"
+        inputClassName="text-subhead leading-relaxed"
       />
     </BlockFrame>
   );
@@ -744,10 +744,10 @@ function HeadingLine({ block }: { block: BlockEntity }) {
   // Mirror HeaderDetail display sizes exactly to prevent edit-mode reflow.
   const sizeClass =
     level === 1
-      ? "text-[28px] leading-tight font-bold tracking-display-lg"
+      ? "text-display-sm leading-tight font-bold"
       : level === 2
-        ? "text-[22px] leading-tight font-semibold tracking-headline"
-        : "text-[18px] leading-snug font-semibold tracking-headline";
+        ? "text-headline leading-tight font-semibold"
+        : "text-title leading-snug font-semibold";
 
   return (
     <BlockFrame blockId={block.id}>
@@ -857,7 +857,7 @@ function QuoteLine({ block }: { block: BlockEntity }) {
           value={value}
           onBlur={commit}
           placeholder="Quote"
-          inputClassName="text-[15px]"
+          inputClassName="text-subhead"
           onKeyDown={(e, _md) => {
             const md = _md;
             // ── Arrow navigation ────────────────────────────────────────────
@@ -1250,7 +1250,7 @@ function ListItem({
           autoFocusCaret={autoFocusCaret}
           onBlur={onCommit}
           placeholder="List item"
-          inputClassName="text-[15px]"
+          inputClassName="text-subhead"
           onKeyDown={(e, md) => {
             // Alt+Arrow: move this item up or down within the list.
             // Pass the live editor value (md) so moveItem can patch items[idx]
@@ -1577,7 +1577,7 @@ function ChecklistItem({
           autoFocusCaret={autoFocusCaret}
           onBlur={onCommit}
           placeholder="To-do"
-          inputClassName="text-[15px]"
+          inputClassName="text-subhead"
           onKeyDown={(e, md) => {
             // Alt+Arrow: move this item up or down within the checklist.
             // Pass live editor value so moveItem patches text before swapping.

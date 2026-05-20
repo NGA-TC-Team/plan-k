@@ -63,7 +63,9 @@
     "typographyMeta": {
       "display-xl": { "displayName": "Display XL", "purpose": "Largest landing/section headline. Builder pages rarely use this size." },
       "display-lg": { "displayName": "Display LG", "purpose": "Section openers inside the builder, sheet titles." },
+      "display-sm": { "displayName": "Display SM", "purpose": "Docs section H1; edit/display parity." },
       "headline": { "displayName": "Headline", "purpose": "Dialog titles, panel headings." },
+      "title":      { "displayName": "Title",      "purpose": "Docs section H3; between Headline and Card Title." },
       "card-title": { "displayName": "Card Title", "purpose": "Inspector group headings, sheet-row titles." },
       "subhead": { "displayName": "Subhead", "purpose": "Lead paragraph in docs context, callout headings." },
       "body": { "displayName": "Body", "purpose": "Default 14px text. Inputs. Block content." },

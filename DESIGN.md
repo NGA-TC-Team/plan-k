@@ -48,12 +48,24 @@ typography:
     fontWeight: 600
     lineHeight: 1.15
     letterSpacing: "-0.032em"
+  display-sm:
+    fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: 1.18
+    letterSpacing: "-0.028em"
   headline:
     fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
     fontSize: "22px"
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "-0.021em"
+  title:
+    fontFamily: "var(--font-geist-sans), -apple-system, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "-0.015em"
   card-title:
     fontFamily: "var(--font-geist-sans), 'SF Pro Display', -apple-system, system-ui, sans-serif"
     fontSize: "17px"
@@ -300,7 +312,9 @@ A monochromatic ladder in two themes, tied together by a single lavender hue. Th
 ### Hierarchy
 - **Display XL** (600, 44px, line 1.08, tracking -3.75%): The largest headline a product page should carry, used at most on the project landing and section opener. Builder pages typically do not use this size.
 - **Display LG** (600, 32px, line 1.15, tracking -3.2%): Section openers inside the builder, sheet titles.
+- **Display SM** (600, 28px, line 1.18, tracking -2.8%): Docs section H1 in edit/display modes. Edit/display parity carrier.
 - **Headline** (600, 22px, line 1.25, tracking -2.1%): Dialog titles, panel headings.
+- **Title** (500-600, 18px, line 1.3, tracking -1.5%): Docs section H3 in edit/display modes. Sits between Headline and Card Title.
 - **Card Title** (600, 17px, line 1.3, tracking -1.8%): Inspector group headings, sheet-row titles.
 - **Subhead** (500, 15px, line 1.4, tracking -1.0%): Lead paragraph in docs context, callout headings.
 - **Body** (400, 14px, line 1.55, tracking -0.3%): Default text. Inputs. Block content.
