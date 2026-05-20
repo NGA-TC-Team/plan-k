@@ -2,6 +2,7 @@
 
 import { Plus, Trash2, Unlink } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { AgentEdge, AgentNode } from "@/builder/types/entity";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,6 +106,13 @@ export function AgentGraph() {
       setPendingDeleteNodeId(nodeId);
     } else {
       dispatch({ type: "DELETE_AGENT_NODE", nodeId });
+      toast("노드를 삭제했습니다", {
+        duration: 5000,
+        action: {
+          label: "되돌리기",
+          onClick: () => dispatch({ type: "UNDO" }),
+        },
+      });
     }
   };
 

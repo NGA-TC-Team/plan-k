@@ -223,6 +223,7 @@ export function ProjectsView() {
             ? `프로젝트 "${pendingDelete.title}"과 모든 계획·인텐트 로그를 영구 삭제합니다. 되돌릴 수 없습니다.`
             : ""
         }
+        severity="permanent"
         onConfirm={() => {
           if (!pendingDelete) return;
           deleteMutation.mutate(pendingDelete.id);

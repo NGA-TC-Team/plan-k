@@ -2,6 +2,7 @@
 
 import { Plus, Unlink, X } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type {
   ProjectKind,
   ScreenEdge,
@@ -116,6 +117,10 @@ export function FlowCanvas({ kind }: { kind: ProjectKind }) {
 
   const handleDeleteEdge = (edgeId: string) => {
     dispatch({ type: "DELETE_SCREEN_EDGE", edgeId });
+    toast("엣지를 삭제했습니다", {
+      duration: 5000,
+      action: { label: "되돌리기", onClick: () => dispatch({ type: "UNDO" }) },
+    });
   };
 
   return (
@@ -317,6 +322,13 @@ function ScreenCard({
       setDeleteDialogOpen(true);
     } else {
       dispatch({ type: "DELETE_SCREEN", screenId: screen.id });
+      toast("스크린을 삭제했습니다", {
+        duration: 5000,
+        action: {
+          label: "되돌리기",
+          onClick: () => dispatch({ type: "UNDO" }),
+        },
+      });
     }
   };
 

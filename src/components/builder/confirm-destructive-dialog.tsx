@@ -17,6 +17,7 @@ export type ConfirmDestructiveDialogProps = {
   title: string;
   description: string;
   confirmLabel?: string;
+  severity?: "destructive" | "permanent";
   onConfirm: () => void;
 };
 
@@ -25,7 +26,8 @@ export function ConfirmDestructiveDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "삭제",
+  severity = "destructive",
+  confirmLabel = severity === "permanent" ? "영구 삭제" : "삭제",
   onConfirm,
 }: ConfirmDestructiveDialogProps) {
   return (

@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { defaultDataFor, manifestFor } from "@/builder/blocks/registry";
 import {
   defaultDocsTreeFor,
@@ -177,6 +178,13 @@ function ScreensRail({
       setPendingDeleteScreenId(screenId);
     } else {
       dispatch({ type: "DELETE_SCREEN", screenId });
+      toast("스크린을 삭제했습니다", {
+        duration: 5000,
+        action: {
+          label: "되돌리기",
+          onClick: () => dispatch({ type: "UNDO" }),
+        },
+      });
     }
   };
 

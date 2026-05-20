@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect } from "react";
+import { toast } from "sonner";
 import {
   getClipboard,
   intentsForPaste,
@@ -71,12 +72,18 @@ export function useBuilderShortcuts() {
           selection.kind === "multi"
         ) {
           e.preventDefault();
-          dispatch({
-            type: "BATCH",
-            intents: selection.ids.map((id) => ({
-              type: "DELETE_BLOCK" as const,
-              nodeId: id,
-            })),
+          const intents = selection.ids.map((id) => ({
+            type: "DELETE_BLOCK" as const,
+            nodeId: id,
+          }));
+          dispatch({ type: "BATCH", intents });
+          const n = intents.length;
+          toast(`블록 ${n}개를 삭제했습니다`, {
+            duration: 5000,
+            action: {
+              label: "되돌리기",
+              onClick: () => dispatch({ type: "UNDO" }),
+            },
           });
           return;
         }

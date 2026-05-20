@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useContext, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { iconForBlock } from "@/builder/blocks/icons";
 import { manifestFor, summaryFor } from "@/builder/blocks/registry";
 import {
@@ -216,6 +217,7 @@ function AgentNodeInspectPane({ entityId }: { entityId: string }) {
 
 function BlockInspectPane({ blockId }: { blockId: string }) {
   const vm = useBuilderStateShallow((s) => projectBlock(s.state, blockId));
+  const dispatch = useBuilderDispatch();
   const { handlers } = useBlock(blockId);
   if (!vm)
     return (
@@ -326,7 +328,16 @@ function BlockInspectPane({ blockId }: { blockId: string }) {
           <Button
             size="sm"
             variant="outline"
-            onClick={handlers.onDelete}
+            onClick={() => {
+              dispatch({ type: "DELETE_BLOCK", nodeId: blockId });
+              toast("블록을 삭제했습니다", {
+                duration: 5000,
+                action: {
+                  label: "되돌리기",
+                  onClick: () => dispatch({ type: "UNDO" }),
+                },
+              });
+            }}
             className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <Trash2 className="size-3.5" />
@@ -416,12 +427,20 @@ function MultiPane({ count }: { count: number }) {
             size="sm"
             variant="outline"
             onClick={() => {
+              const n = ids.length;
               dispatch({
                 type: "BATCH",
                 intents: ids.map((id) => ({
                   type: "DELETE_BLOCK" as const,
                   nodeId: id,
                 })),
+              });
+              toast(`블록 ${n}개를 삭제했습니다`, {
+                duration: 5000,
+                action: {
+                  label: "되돌리기",
+                  onClick: () => dispatch({ type: "UNDO" }),
+                },
               });
             }}
             className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
