@@ -13,7 +13,7 @@ Each block lives in exactly one of three contexts. The context is **inferred fro
 
 | Context | Parent type | Kinds |
 |---|---|---|
-| `docs` | a docs section (any non-`agent-*` section kind) | `heading`, `paragraph`, `bullet-list`, `numbered-list`, `checklist`, `callout`, `code-block`, `blockquote`, `table`, `figure`, `rule`, `link-card`, `definition`, `decision`, `persona`, `user-story`, `risk`, `metric` |
+| `docs` | a docs section (any non-`agent-*` section kind) | `heading`, `paragraph`, `bullet-list`, `numbered-list`, `checklist`, `callout`, `code-block`, `blockquote`, `table`, `figure`, `rule`, `link-card`, `definition`, `decision`, `persona`, `user-story`, `risk`, `metric`, `canvas` |
 | `app` | a screen, or another app block | `page-header`, `hero`, `cta-section`, `card-grid`, `form`, `button`, `input`, `image`, `text`, `list`, `sidebar`, `footer`, `tabs`, `modal`, `banner`, `stat`, `avatar`, `badge`, `divider`, `empty-state`, `nav` (+ mobile-only: `status-bar`, `bottom-nav`, `list-row`, `fab`, `sheet`) |
 | `agent` | an `agent-*` section, or another agent block | `agent-step` |
 
@@ -60,10 +60,11 @@ POST ${BASE_URL}/api/intents     body: IntentLogEntry → { ok: true, serverVers
 | `link-card` | `{ url, title, description }` |
 | `definition` | `{ term: string, definition: string }` |
 | `decision` | `{ question, options[], decision, rationale }` |
-| `persona` | `{ name, role, needs[], pains[] }` |
+| `persona` | `{ name, role, demographics, goals[], needs[], pains[], quote, profileImageRef, profileImageAlt }` |
 | `user-story` | `{ as, want, soThat, acceptance[] }` |
 | `risk` | `{ risk, impact, mitigation, owner }` |
 | `metric` | `{ name, target, current, status }` |
+| `canvas` | `{ title: string, snapshot: any \| null, previewDataUrl: string }` |
 
 ## Common app data shapes
 
@@ -77,7 +78,7 @@ POST ${BASE_URL}/api/intents     body: IntentLogEntry → { ok: true, serverVers
 | `nav` | `{ items: NavItem[] }` |
 | `button` | `{ label: string, variant: "primary"\|"secondary"\|... }` |
 
-(Real renderers exist for: docs paragraph/heading/bullet-list/numbered-list, app text/list/hero/card-grid/form/nav, agent agent-step. Other kinds render as labeled stubs — fine for plans, exports look basic.)
+(Real renderers exist for: docs paragraph/heading/bullet-list/numbered-list/persona/canvas, app text/list/hero/card-grid/form/nav, agent agent-step. Other kinds render as labeled stubs — fine for plans, exports look basic.)
 
 ## Lamport rules
 

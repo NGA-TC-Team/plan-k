@@ -87,11 +87,11 @@ If `null`, the entity has no prior meta — start with lamport `1`.
 
 Each block carries a `context` ("docs" | "app" | "agent") inferred from its parent. The full kind set lives in `BLOCK_KIND_REGISTRY` (server source). Summary:
 
-- **docs** (under a non-`agent-*` section, document-writing primitives — distinct names from app): heading, paragraph, bullet-list, numbered-list, checklist, callout, code-block, blockquote, table, figure, rule, link-card, definition, decision, persona, user-story, risk, metric.
+- **docs** (under a non-`agent-*` section, document-writing primitives — distinct names from app): heading, paragraph, bullet-list, numbered-list, checklist, callout, code-block, blockquote, table, figure, rule, link-card, definition, decision, persona, user-story, risk, metric, canvas.
 - **app** (under a screen, UI mockup primitives): page-header, hero, cta-section, card-grid, form, button, input, image, text, list, sidebar, footer, tabs, modal, banner, stat, avatar, badge, divider, empty-state, nav. Mobile-only on `kind: "mobile"` plans: status-bar, bottom-nav, list-row, fab, sheet.
 - **agent** (under an `agent-*` section, e.g. `agent-examples`): agent-step.
 
-Real renderers exist for: docs paragraph/heading/bullet-list/numbered-list, app text/list/hero/card-grid/form/nav, agent-step. Other kinds render as labeled stubs.
+Real renderers exist for: docs paragraph/heading/bullet-list/numbered-list/persona/canvas, app text/list/hero/card-grid/form/nav, agent agent-step. Other kinds render as labeled stubs.
 
 ## When to use this skill vs others
 
