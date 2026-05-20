@@ -3,6 +3,7 @@ import type { BlockContext, BlockKind } from "@/builder/types/entity";
 import { StubBlock } from "../stub-block";
 import type { BlockRenderer } from "../types";
 import { AgentStepDetail } from "./agent-step";
+import { CanvasDetail } from "./canvas";
 import { CardGridDetail } from "./card-grid";
 import {
   ApiEndpointDetail,
@@ -63,6 +64,7 @@ const realDocs: ContextRegistry = {
   "numbered-list": ListDetail,
   blockquote: BlockquoteDetail,
   callout: CalloutDetail,
+  canvas: CanvasDetail,
   "code-block": CodeBlockDetail,
   checklist: ChecklistDetail,
   table: TableDetail,

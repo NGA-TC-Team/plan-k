@@ -68,6 +68,7 @@ export const BLOCK_ICONS: Record<BlockKind, LucideIcon> = {
   paragraph: Pilcrow,
   blockquote: Quote,
   callout: Info,
+  canvas: LayoutGrid,
   "code-block": Code2,
   "bullet-list": List,
   "numbered-list": ListOrdered,

@@ -9,6 +9,7 @@ import { BlockquoteEditor } from "./blockquote-editor";
 import { BottomNavEditor } from "./bottom-nav-editor";
 import { ButtonEditor } from "./button-editor";
 import { CalloutEditor } from "./callout-editor";
+import { CanvasEditor } from "./canvas-editor";
 import { CardGridEditor } from "./card-grid-editor";
 import { ChecklistEditor } from "./checklist-editor";
 import { CodeBlockEditor } from "./code-block-editor";
@@ -60,6 +61,7 @@ const docs: ContextRegistry = {
   "numbered-list": ListEditor,
   blockquote: BlockquoteEditor,
   callout: CalloutEditor,
+  canvas: CanvasEditor,
   "code-block": CodeBlockEditor,
   checklist: ChecklistEditor,
   table: TableEditor,

@@ -179,6 +179,30 @@ const ruleManifest = manifest({
   summary: () => "Rule",
 });
 
+const canvasManifest = manifest({
+  context: "docs",
+  kind: "canvas",
+  label: "Canvas",
+  group: "Media",
+  shortcut: "X",
+  schema: z.object({
+    title: z.string().default(""),
+    // tldraw StoreSnapshot serialized via getSnapshot() — opaque to this app.
+    snapshot: z.unknown().nullable().default(null),
+    // PNG data URL of the last Apply render.
+    previewDataUrl: z.string().default(""),
+  }),
+  defaults: {
+    title: "",
+    snapshot: null as unknown,
+    previewDataUrl: "",
+  },
+  summary(data) {
+    const t = (data as { title?: string }).title?.trim();
+    return t && t.length > 0 ? t : "Empty canvas";
+  },
+});
+
 const figureManifest = manifest({
   context: "docs",
   kind: "figure",
@@ -280,6 +304,8 @@ const personaManifest = manifest({
     needs: z.array(z.string()).default([]),
     pains: z.array(z.string()).default([]),
     quote: z.string().default(""),
+    profileImageRef: z.string().default(""),
+    profileImageAlt: z.string().default(""),
   }),
   defaults: {
     name: "",
@@ -289,6 +315,8 @@ const personaManifest = manifest({
     needs: [] as string[],
     pains: [] as string[],
     quote: "",
+    profileImageRef: "",
+    profileImageAlt: "",
   },
   summary: (v) => `${v.name || "Persona"} (${v.role || "—"})`,
 });
@@ -1141,6 +1169,7 @@ export const blockManifests = {
   paragraph: paragraphManifest,
   blockquote: blockquoteManifest,
   callout: calloutManifest,
+  canvas: canvasManifest,
   "code-block": codeBlockManifest,
   "bullet-list": bulletListManifest,
   "numbered-list": numberedListManifest,

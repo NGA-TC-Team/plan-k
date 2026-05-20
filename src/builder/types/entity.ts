@@ -10,6 +10,7 @@ export type DocsBlockKind =
   | "numbered-list"
   | "checklist"
   | "callout"
+  | "canvas"
   | "code-block"
   | "blockquote"
   | "table"
@@ -164,6 +165,40 @@ export type SectionStatus = EntityStatus;
 export const SECTION_STATUS_VALUES: readonly SectionStatus[] =
   ENTITY_STATUS_VALUES;
 
+// ── Backlog property panel types ──────────────────────────────────────────────
+// Notion DB-page style key/value properties attached to a backlog section.
+export type PropertyType = "text" | "number" | "date" | "select";
+
+export type PropertyColor =
+  | "default"
+  | "gray"
+  | "red"
+  | "orange"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "purple"
+  | "pink";
+
+export type PropertySelectOption = {
+  id: string;
+  name: string;
+  color: PropertyColor;
+};
+
+export type PropertyEntry = {
+  id: string;
+  key: string;
+  type: PropertyType;
+  /**
+   * - text/number/date: scalar
+   * - select: array of selected option ids (multi-select)
+   */
+  value: string | number | string[] | null;
+  /** Allowed options for `select` type. */
+  options?: PropertySelectOption[];
+};
+
 export type SectionEntity = {
   id: SectionId;
   planId: string;
@@ -171,6 +206,8 @@ export type SectionEntity = {
   kind: SectionKind;
   title: string;
   status?: SectionStatus;
+  /** Backlog property panel entries (Notion DB page style). */
+  properties?: PropertyEntry[];
 };
 
 export type AgentNode = {
