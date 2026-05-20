@@ -62,7 +62,7 @@ function BuilderShell() {
       <div className="relative overflow-hidden">
         {/* LeftRail overlay: always visible, width shrinks on collapse */}
         <div
-          className="absolute inset-y-0 left-0 z-30 transition-[width] duration-200 ease-out"
+          className="absolute inset-y-0 left-0 z-30"
           style={{ width: leftWidth }}
         >
           <LeftRail />
