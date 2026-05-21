@@ -3,10 +3,10 @@
 import { GripVertical } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useParams } from "next/navigation";
-import { useContext } from "react";
+import { type CSSProperties, useContext } from "react";
 import { resolveClickSelection } from "@/builder/selection-click";
 import {
-  resolveSpacingClass,
+  resolveSpacingStyle,
   spacingDefaultsFor,
   spacingFromBlockData,
 } from "@/builder/spacing";
@@ -24,7 +24,13 @@ import { InlineAiMenu } from "./inline-ai/menu";
 import { InsertSlot } from "./insert-slot";
 import { pickRenderer } from "./renderers";
 
-export function BlockShell({ blockId }: { blockId: string }) {
+export function BlockShell({
+  blockId,
+  isFirst,
+}: {
+  blockId: string;
+  isFirst?: boolean;
+}) {
   const { vm, handlers, viewMode } = useBlock(blockId);
   const reduceMotion = useReducedMotion();
   const beginDrag = useBlockDragStore((s) => s.begin);
@@ -38,13 +44,19 @@ export function BlockShell({ blockId }: { blockId: string }) {
   if (!vm) return null;
 
   const Renderer = pickRenderer(viewMode, vm.context, vm.kind);
-  const spacingClass =
+  const spacingStyle: CSSProperties =
     vm.context === "app" || vm.context === "docs"
-      ? resolveSpacingClass(
+      ? resolveSpacingStyle(
           spacingFromBlockData(vm.displayValue),
           spacingDefaultsFor(vm.kind),
         )
-      : "";
+      : {};
+  // isFirst prop이 true이면 인라인 style.marginTop을 0으로 override.
+  // first-of-type CSS pseudo-class는 인라인 style에 의해 무효화되므로
+  // DOM 구조에 의존하지 않고 명시 prop으로 제어한다.
+  if (isFirst) {
+    spacingStyle.marginTop = 0;
+  }
   const draggable = vm.context === "app" || vm.context === "docs";
 
   return (
@@ -71,10 +83,10 @@ export function BlockShell({ blockId }: { blockId: string }) {
         ease: "easeOut",
       }}
       data-block-id={vm.id}
+      style={spacingStyle}
       className={cn(
-        "group/block relative rounded-md outline-none first-of-type:mt-0",
+        "group/block relative rounded-md outline-none",
         "min-w-0",
-        spacingClass,
         vm.isSelected && "ring-1 ring-ring/70",
         vm.isPending && "opacity-70",
         isDragging && "opacity-40",

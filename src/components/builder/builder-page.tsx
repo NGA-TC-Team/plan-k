@@ -204,7 +204,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
               index={idx}
               forceVisible={hoveredIdx === idx}
             />
-            <BlockShell blockId={id} />
+            <BlockShell blockId={id} isFirst={idx === 0} />
           </div>
         ))}
       </AnimatePresence>
@@ -325,7 +325,7 @@ function SectionCanvas() {
                   index={idx}
                   forceVisible={hoveredIdx === idx}
                 />
-                <BlockShell blockId={id} />
+                <BlockShell blockId={id} isFirst={idx === 0} />
               </div>
             ))}
           </AnimatePresence>

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { z } from "zod";
 import type { BlockKind } from "./types/entity";
 
@@ -11,23 +12,165 @@ export type SpacingPreset = (typeof SPACING_PRESETS)[number];
 
 export const SpacingPresetSchema = z.enum(SPACING_PRESETS);
 
+/**
+ * A spacing field can be either a preset token ("none"|"sm"|"md"|"lg"|"xl")
+ * or a raw integer px value (0–512). undefined means "inherit / use default".
+ */
+export const SpacingFieldSchema = z.union([
+  SpacingPresetSchema,
+  z.number().int().min(0).max(512),
+]);
+export type SpacingField = z.infer<typeof SpacingFieldSchema>;
+
+/**
+ * 4-side spacing value shape. New data uses the 4-side keys.
+ * @deprecated `padding` / `marginTop` / `marginBottom` are kept as optional
+ *   for read-compatibility with existing persisted blocks; `migrateLegacySpacing`
+ *   expands them to the 4-side keys on write.
+ */
+export const SpacingValueSchema = z
+  .object({
+    // ── New 4-side keys ───────────────────────────────────────────────────────
+    paddingTop: SpacingFieldSchema.optional(),
+    paddingRight: SpacingFieldSchema.optional(),
+    paddingBottom: SpacingFieldSchema.optional(),
+    paddingLeft: SpacingFieldSchema.optional(),
+    marginTop: SpacingFieldSchema.optional(),
+    marginRight: SpacingFieldSchema.optional(),
+    marginBottom: SpacingFieldSchema.optional(),
+    marginLeft: SpacingFieldSchema.optional(),
+    // ── Deprecated single-axis keys (read-compat) ─────────────────────────────
+    /** @deprecated use paddingTop/Right/Bottom/Left */
+    padding: SpacingPresetSchema.optional(),
+  })
+  .partial()
+  .optional();
+
+export type SpacingValue = z.infer<typeof SpacingValueSchema>;
+
 export const SpacingFragment = z.object({
-  spacing: z
-    .object({
-      padding: SpacingPresetSchema.optional(),
-      marginTop: SpacingPresetSchema.optional(),
-      marginBottom: SpacingPresetSchema.optional(),
-    })
-    .partial()
-    .optional(),
+  spacing: SpacingValueSchema,
 });
-export type SpacingValue = z.infer<typeof SpacingFragment>["spacing"];
 
 export type SpacingDefaults = {
   padding: SpacingPreset;
   marginTop: SpacingPreset;
   marginBottom: SpacingPreset;
 };
+
+// ── Preset → px mapping (authoritative for resolveSpacingPx) ─────────────────
+const PRESET_PX: Record<SpacingPreset, number> = {
+  none: 0,
+  sm: 4,
+  md: 8,
+  lg: 16,
+  xl: 24,
+};
+
+/**
+ * Resolve a SpacingField to a pixel integer.
+ * - Token → mapped px (none=0, sm=4, md=8, lg=16, xl=24)
+ * - Number → as-is
+ * - undefined → undefined
+ */
+export function resolveSpacingPx(field?: SpacingField): number | undefined {
+  if (field === undefined) return undefined;
+  if (typeof field === "number") return field;
+  return PRESET_PX[field];
+}
+
+/**
+ * Migrate a legacy SpacingValue that may have the old `padding` (shorthand)
+ * key to the canonical 4-side representation.
+ *
+ * Rules:
+ * - If new 4-side keys are already present, they take precedence over `padding`.
+ * - `padding` shorthand → spread to all 4 padding sides (only fills sides not yet set).
+ * - `marginTop` / `marginBottom` are already 4-side compatible; left/right stay undefined.
+ * - Drops the `padding` shorthand key from the output.
+ */
+export function migrateLegacySpacing(value?: SpacingValue): SpacingValue {
+  if (!value) return undefined;
+
+  const {
+    padding,
+    paddingTop,
+    paddingRight,
+    paddingBottom,
+    paddingLeft,
+    marginTop,
+    marginRight,
+    marginBottom,
+    marginLeft,
+  } = value;
+
+  // Spread the legacy `padding` shorthand only for sides not yet explicitly set.
+  const resolvedPaddingTop = paddingTop ?? padding;
+  const resolvedPaddingRight = paddingRight ?? padding;
+  const resolvedPaddingBottom = paddingBottom ?? padding;
+  const resolvedPaddingLeft = paddingLeft ?? padding;
+
+  const next: NonNullable<SpacingValue> = {};
+
+  // Only include keys that have a defined value (avoid sparse keys in stored JSON).
+  if (resolvedPaddingTop !== undefined) next.paddingTop = resolvedPaddingTop;
+  if (resolvedPaddingRight !== undefined)
+    next.paddingRight = resolvedPaddingRight;
+  if (resolvedPaddingBottom !== undefined)
+    next.paddingBottom = resolvedPaddingBottom;
+  if (resolvedPaddingLeft !== undefined) next.paddingLeft = resolvedPaddingLeft;
+  if (marginTop !== undefined) next.marginTop = marginTop;
+  if (marginRight !== undefined) next.marginRight = marginRight;
+  if (marginBottom !== undefined) next.marginBottom = marginBottom;
+  if (marginLeft !== undefined) next.marginLeft = marginLeft;
+
+  // Return undefined if nothing survived migration.
+  if (Object.keys(next).length === 0) return undefined;
+  return next;
+}
+
+/**
+ * Resolve spacing override + defaults into an inline CSSProperties object.
+ * Each of the 8 sides maps to its px value. A side with no override and no
+ * legacy `padding` shorthand inherits from the defaults (padding-4-sides
+ * come from `defaults.padding`; marginLeft/Right not in defaults → 0).
+ *
+ * Use this for new rendering paths; `resolveSpacingClass` remains for
+ * legacy call sites not yet migrated.
+ */
+export function resolveSpacingStyle(
+  override: SpacingValue,
+  defaults: SpacingDefaults,
+): CSSProperties {
+  // First migrate any legacy shorthand so we work with 4-side keys only.
+  const migrated = migrateLegacySpacing(override);
+
+  const defaultPaddingPx = PRESET_PX[defaults.padding];
+  const defaultMarginTopPx = PRESET_PX[defaults.marginTop];
+  const defaultMarginBottomPx = PRESET_PX[defaults.marginBottom];
+
+  const pt = resolveSpacingPx(migrated?.paddingTop) ?? defaultPaddingPx;
+  const pr = resolveSpacingPx(migrated?.paddingRight) ?? defaultPaddingPx;
+  const pb = resolveSpacingPx(migrated?.paddingBottom) ?? defaultPaddingPx;
+  const pl = resolveSpacingPx(migrated?.paddingLeft) ?? defaultPaddingPx;
+  const mt = resolveSpacingPx(migrated?.marginTop) ?? defaultMarginTopPx;
+  const mr = resolveSpacingPx(migrated?.marginRight) ?? 0;
+  const mb = resolveSpacingPx(migrated?.marginBottom) ?? defaultMarginBottomPx;
+  const ml = resolveSpacingPx(migrated?.marginLeft) ?? 0;
+
+  return {
+    paddingTop: pt,
+    paddingRight: pr,
+    paddingBottom: pb,
+    paddingLeft: pl,
+    marginTop: mt,
+    marginRight: mr,
+    marginBottom: mb,
+    marginLeft: ml,
+  };
+}
+
+// ── Legacy Tailwind class helpers (kept for existing call sites) ───────────────
 
 const PADDING_CLASS: Record<SpacingPreset, string> = {
   none: "p-0",
@@ -62,6 +205,7 @@ export const SPACING_PRESET_LABEL: Record<SpacingPreset, string> = {
 };
 
 /**
+ * @deprecated Use `resolveSpacingStyle` for new rendering paths.
  * Resolve the override → defaults pair into Tailwind utility classes.
  * Uses `??` so explicit `"none"` overrides win over defaults.
  */
@@ -69,10 +213,33 @@ export function resolveSpacingClass(
   override: SpacingValue,
   defaults: SpacingDefaults,
 ): string {
-  const padding = override?.padding ?? defaults.padding;
-  const mt = override?.marginTop ?? defaults.marginTop;
-  const mb = override?.marginBottom ?? defaults.marginBottom;
-  return [PADDING_CLASS[padding], MARGIN_TOP_CLASS[mt], MARGIN_BOTTOM_CLASS[mb]]
+  // Support legacy `padding` shorthand — fall back to defaults when not set.
+  const padding = override?.padding ?? override?.paddingTop ?? defaults.padding;
+  const mt =
+    (override?.marginTop as SpacingPreset | undefined) ?? defaults.marginTop;
+  const mb =
+    (override?.marginBottom as SpacingPreset | undefined) ??
+    defaults.marginBottom;
+
+  // For class resolution we need a SpacingPreset string; if user set a raw
+  // number we can't map it to a Tailwind class, so fall back to defaults.
+  const paddingPreset = (SPACING_PRESETS as readonly string[]).includes(
+    padding as string,
+  )
+    ? (padding as SpacingPreset)
+    : defaults.padding;
+  const mtPreset = (SPACING_PRESETS as readonly string[]).includes(mt as string)
+    ? (mt as SpacingPreset)
+    : defaults.marginTop;
+  const mbPreset = (SPACING_PRESETS as readonly string[]).includes(mb as string)
+    ? (mb as SpacingPreset)
+    : defaults.marginBottom;
+
+  return [
+    PADDING_CLASS[paddingPreset],
+    MARGIN_TOP_CLASS[mtPreset],
+    MARGIN_BOTTOM_CLASS[mbPreset],
+  ]
     .filter(Boolean)
     .join(" ");
 }
@@ -118,17 +285,6 @@ export const SPACING_DEFAULTS_BY_KIND: Partial<
   sidebar: { padding: "md", marginTop: "md", marginBottom: "md" },
   text: { padding: "sm", marginTop: "sm", marginBottom: "sm" },
   // ── docs context ──
-  // Docs blocks mostly carry their own card-style padding inside the renderer
-  // (callout, code-block, link-card, decision, persona, …) so the outer
-  // padding stays at "none" — overrides set rhythm via marginTop/marginBottom.
-  //
-  // Rhythm buckets (Stripe/Linear pass):
-  //   text blocks (paragraph/list/quote/definition/math) → xs/xs (4px each, space-y handles gaps)
-  //   visual blocks (callout/code/figure/link-card/rule) → md/md (16px breathing room)
-  //   card blocks (table/decision/persona/user-story/risk/metric/milestone/
-  //                release-note/journey-step/api-endpoint/color-swatch/canvas) → lg/lg (24px)
-  //   heading → xl top (32px) / sm bottom (8px); first heading mt-0 via CSS first-of-type
-  // heading uses lg (24px) top — xl(40px) is too much for in-document headings
   heading: { padding: "none", marginTop: "lg", marginBottom: "sm" },
   paragraph: { padding: "none", marginTop: "sm", marginBottom: "sm" },
   blockquote: { padding: "none", marginTop: "sm", marginBottom: "sm" },
