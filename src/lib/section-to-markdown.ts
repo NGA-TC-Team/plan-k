@@ -1,5 +1,6 @@
 // Serializes a section (and its descendant block tree) into a GFM markdown
-// string. Used by the BacklogSheet "콘텐츠 복사하기" action.
+// string. Used by the BacklogSheet "콘텐츠 복사하기" action and the
+// Cmd+C system-clipboard path in use-builder-shortcuts.hook.ts.
 //
 // Block kinds mirror extract-text.ts — when a kind grows new fields, keep
 // both files in sync.
@@ -112,6 +113,29 @@ function blockToMarkdown(
       return [fallback, ...childLines].filter(Boolean).join("\n");
     }
   }
+}
+
+/**
+ * Converts an arbitrary list of block IDs to GFM markdown.
+ * Used by the Cmd+C shortcut to write to the system clipboard so content
+ * can be pasted into external apps (Notion, VS Code, etc.).
+ *
+ * Blocks that are missing from state are silently skipped.
+ * Returns an empty string when blockIds is empty or all blocks resolve to
+ * whitespace — callers should guard before writing to the clipboard.
+ */
+export function blocksToMarkdown(
+  state: AppState,
+  blockIds: readonly string[],
+): string {
+  const md: string[] = [];
+  for (const id of blockIds) {
+    const block = state.blocks[id];
+    if (!block) continue;
+    const part = blockToMarkdown(block, state, 0);
+    if (part.trim()) md.push(part);
+  }
+  return md.join("\n\n");
 }
 
 /** Converts a section and its immediate block children to GFM markdown.

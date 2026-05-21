@@ -1,6 +1,5 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { defaultDataFor } from "@/builder/defaults";
@@ -15,8 +14,9 @@ import {
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
-import { useAiFlashStore } from "@/services/stores";
+import { useAiFlashStore, useBlockDragStore } from "@/services/stores";
 import { BacklogSelectionContext } from "./backlog-sheet";
+import { BlockDragHandle } from "./block-drag-handle";
 import { BlockKindPicker } from "./block-kind-picker";
 import { matchBlockMacro } from "./block-macros";
 import { BlockShell } from "./block-shell";
@@ -27,6 +27,7 @@ import { InlineEditor, type InlineEditorHandle } from "./inline-editor";
 
 type Props = {
   blockId: string;
+  /** Parent section/screen id — forwarded to BlockFrame for drag registration. */
   parentId?: string;
 };
 
@@ -375,7 +376,7 @@ function mergeIntoBlock(
 // Renders a block inline-editably for kinds that have a primary text/markdown
 // field. Kinds we don't yet support fall back to the existing BlockShell
 // (double-click → side-panel form editor).
-export function EditableBlock({ blockId }: Props) {
+export function EditableBlock({ blockId, parentId }: Props) {
   const block = useBuilderState((s) => s.state.blocks[blockId]);
   // Read table outer-selection state from BacklogSheet context (may be null
   // when this component is rendered outside a BacklogSheet, e.g. on a screen).
@@ -398,7 +399,7 @@ export function EditableBlock({ blockId }: Props) {
       return <ChecklistLine block={block} />;
     case "link-card":
       return (
-        <BlockFrame blockId={blockId}>
+        <BlockFrame blockId={blockId} parentId={parentId}>
           <BookmarkCard block={block} />
         </BlockFrame>
       );
@@ -406,7 +407,7 @@ export function EditableBlock({ blockId }: Props) {
       return (
         // layout animation disabled for table blocks — cell focus events would
         // trigger constant re-layout causing visual jitter (plan note §PR-2).
-        <BlockFrame blockId={blockId} disableLayoutAnim>
+        <BlockFrame blockId={blockId} parentId={parentId} disableLayoutAnim>
           <EditableTable
             block={block}
             outerSelected={selectedTableId === blockId}
@@ -417,7 +418,7 @@ export function EditableBlock({ blockId }: Props) {
       return (
         // layout animation disabled — mode toggle between editing/preview
         // causes height changes that would produce layout jump.
-        <BlockFrame blockId={blockId} disableLayoutAnim>
+        <BlockFrame blockId={blockId} parentId={parentId} disableLayoutAnim>
           <MathBlock block={block} />
         </BlockFrame>
       );
@@ -428,6 +429,7 @@ export function EditableBlock({ blockId }: Props) {
 
 function BlockFrame({
   blockId,
+  parentId,
   children,
   // disableLayoutAnim is kept in the public API for call-site compatibility
   // (table, math-block) but no longer controls the layout prop — layout is
@@ -435,12 +437,16 @@ function BlockFrame({
   disableLayoutAnim: _disableLayoutAnim = false,
 }: {
   blockId: string;
+  /** Parent section/screen id — forwarded to beginDrag for cyclic-drop guard. */
+  parentId?: string;
   children: React.ReactNode;
   /** Kept for API compatibility. layout is always false in virtual rows. */
   disableLayoutAnim?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   const isFlashing = useAiFlashStore((s) => s.flashedIds.has(blockId));
+  const isDragging = useBlockDragStore((s) => s.draggingId === blockId);
+
   return (
     <motion.div
       // layout is always off: blocks are rendered inside an absolute-positioned
@@ -470,14 +476,12 @@ function BlockFrame({
       // data-block-id allows mergeIntoBlock() and DOM-walk navigation to locate
       // a specific block's InlineEditor by querying '[data-block-id="<id>"]'.
       data-block-id={blockId}
-      className="group/eb relative py-0.5"
+      className={cn("group/eb relative py-0.5", isDragging && "opacity-40")}
     >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -left-5 top-1.5 flex text-muted-foreground/60 opacity-0 transition-opacity duration-150 group-hover/eb:opacity-100 focus-within:opacity-100"
-      >
-        <GripVertical className="size-3.5" />
-      </span>
+      {/* Drag handle — reuses BlockDragHandle which delegates to the shared
+          useBlockDragStart hook. Converted from an inline button so the same
+          payload logic is not duplicated between BlockFrame and Line components. */}
+      <BlockDragHandle blockId={blockId} parentId={parentId} />
       {children}
     </motion.div>
   );
@@ -545,7 +549,7 @@ function ParagraphLine({ block }: { block: BlockEntity }) {
   };
 
   return (
-    <BlockFrame blockId={block.id}>
+    <BlockFrame blockId={block.id} parentId={block.parentId}>
       {/* Popover anchor wraps the InlineEditor so the popup positions relative
           to the paragraph row. The trigger is a zero-size invisible element;
           open state is driven programmatically via slashOpen. */}
@@ -753,7 +757,7 @@ function HeadingLine({ block }: { block: BlockEntity }) {
         : "text-title leading-snug font-semibold";
 
   return (
-    <BlockFrame blockId={block.id}>
+    <BlockFrame blockId={block.id} parentId={block.parentId}>
       <InlineEditor
         ref={handleRef}
         value={value}
@@ -853,7 +857,7 @@ function QuoteLine({ block }: { block: BlockEntity }) {
     });
   };
   return (
-    <BlockFrame blockId={block.id}>
+    <BlockFrame blockId={block.id} parentId={block.parentId}>
       <div className="border-l-4 border-muted-foreground/40 pl-3 italic">
         <InlineEditor
           ref={handleRef}
@@ -930,7 +934,7 @@ function CodeLine({ block }: { block: BlockEntity }) {
     });
   };
   return (
-    <BlockFrame blockId={block.id}>
+    <BlockFrame blockId={block.id} parentId={block.parentId}>
       <div className="rounded-md bg-muted px-3 py-2 font-mono text-sm">
         <InlineEditor
           ref={handleRef}
@@ -1123,7 +1127,7 @@ function ListLine({ block }: { block: BlockEntity }) {
   };
 
   return (
-    <BlockFrame blockId={block.id}>
+    <BlockFrame blockId={block.id} parentId={block.parentId}>
       <ul className={cn("space-y-0.5", ordered ? "list-none" : "list-none")}>
         {items.length === 0 ? (
           <ListItem
@@ -1468,7 +1472,7 @@ function ChecklistLine({ block }: { block: BlockEntity }) {
   const list = items.length === 0 ? [{ text: "", done: false }] : items;
 
   return (
-    <BlockFrame blockId={block.id}>
+    <BlockFrame blockId={block.id} parentId={block.parentId}>
       <ul className="space-y-0.5">
         {list.map((item, idx) => (
           <ChecklistItem

@@ -10,6 +10,8 @@ import {
 } from "@/builder/clipboard";
 import { selectSelectedIds } from "@/builder/selectors";
 import { BuilderContext } from "@/components/builder/builder-context";
+import { copyToClipboard } from "@/lib/clipboard";
+import { blocksToMarkdown } from "@/lib/section-to-markdown";
 import { useBuilderUiStore } from "@/services/stores";
 import { decideShortcut } from "./decide-shortcut";
 import { useBuilderDispatch, useBuilderState } from "./use-builder-store.hook";
@@ -118,7 +120,15 @@ function handleCopy(storeHook: StoreHook): boolean {
   const planId = Object.values(state.plans)[0]?.id ?? "unknown";
   const payload = serializeBlocks(state, ids, `paste:${planId}`);
   if (!payload) return false;
+  // Internal clipboard — used by Cmd+V paste within the builder.
   setClipboard(payload);
+  // System clipboard — lets users paste markdown into external apps.
+  // Fire-and-forget: clipboard permission refusals are common and non-fatal.
+  // Guard: only call when there is actual markdown content to write.
+  const markdown = blocksToMarkdown(state, ids);
+  if (markdown.trim()) {
+    void copyToClipboard(markdown);
+  }
   return true;
 }
 
