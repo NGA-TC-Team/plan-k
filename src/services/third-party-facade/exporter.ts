@@ -43,6 +43,12 @@ type ExportOptions = {
    * 미전달 시 플랜 기본값 → 시스템 기본값으로 fall through.
    */
   section?: Pick<SectionEntity, "pageSettings"> | null;
+  /**
+   * 워터마크 렌더 모드.
+   * "fixed" (기본) — 단일 fixed 오버레이 (PDF 출력용).
+   * "tiled"        — 문서 전체 높이에 반복 배치 (PNG fullPage 스크린샷 전용).
+   */
+  watermarkMode?: "fixed" | "tiled";
 };
 
 let browserPromise: Promise<Browser> | null = null;
@@ -74,6 +80,10 @@ function printUrl(opts: ExportOptions): string {
     url.searchParams.set("pageNumbers", String(opts.pageNumbers));
   if (opts.footerText) url.searchParams.set("footerText", opts.footerText);
   if (opts.versionId) url.searchParams.set("versionId", opts.versionId);
+  // watermarkMode: 명시된 경우에만 추가 ("fixed"는 기본값이므로 생략해도 동일).
+  if (opts.watermarkMode) {
+    url.searchParams.set("watermarkMode", opts.watermarkMode);
+  }
   return url.toString();
 }
 
@@ -139,6 +149,9 @@ export async function exportToPdf(opts: ExportOptions): Promise<Buffer> {
   }
 }
 
+// 96dpi 기준: 1mm = 96 / 25.4 px
+const MM_TO_PX = 96 / 25.4;
+
 export async function exportToImage(opts: ExportOptions): Promise<Buffer> {
   const browser = await getBrowser();
   const page = await browser.newPage();
@@ -148,7 +161,37 @@ export async function exportToImage(opts: ExportOptions): Promise<Buffer> {
       height: 800,
       deviceScaleFactor: 2,
     });
-    await page.goto(printUrl(opts), { waitUntil: "networkidle0" });
+
+    // PNG는 항상 tiled 워터마크 모드로 캡처한다.
+    // fullPage 스크린샷은 단일 비트맵이므로 fixed 오버레이가 첫 viewport만 찍힘.
+    const pngOpts: ExportOptions = { ...opts, watermarkMode: "tiled" };
+    await page.goto(printUrl(pngOpts), { waitUntil: "networkidle0" });
+
+    // paddingMm → px 변환 후 print-page 루트 컨테이너에 inline padding 주입.
+    // Tailwind p-8 / max-w-3xl을 inline style로 덮어쓴다.
+    const resolved = resolvePageSettings(opts.plan ?? {}, opts.section);
+    await page.evaluate(
+      ({ t, r, b, l }) => {
+        const root = document.querySelector(
+          ".print-page",
+        ) as HTMLElement | null;
+        if (root) {
+          root.style.paddingTop = `${t}px`;
+          root.style.paddingRight = `${r}px`;
+          root.style.paddingBottom = `${b}px`;
+          root.style.paddingLeft = `${l}px`;
+          // max-w-3xl이 가로 패딩 효과를 상쇄하지 않도록 제거한다.
+          root.style.maxWidth = "none";
+        }
+      },
+      {
+        t: resolved.paddingTopMm * MM_TO_PX,
+        r: resolved.paddingRightMm * MM_TO_PX,
+        b: resolved.paddingBottomMm * MM_TO_PX,
+        l: resolved.paddingLeftMm * MM_TO_PX,
+      },
+    );
+
     const buffer = await page.screenshot({
       type: "png",
       fullPage: true,

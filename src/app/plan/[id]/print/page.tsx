@@ -33,6 +33,13 @@ export default async function PrintPage({
 
   const toc = parseBoolParam(sp.toc, true);
 
+  // watermarkMode: 화이트리스트("fixed" | "tiled") 외 값은 "fixed"로 폴백.
+  const watermarkModeRaw = Array.isArray(sp.watermarkMode)
+    ? sp.watermarkMode[0]
+    : sp.watermarkMode;
+  const watermarkMode: "fixed" | "tiled" =
+    watermarkModeRaw === "tiled" ? "tiled" : "fixed";
+
   if (versionId) {
     // ── Version-scoped export path ─────────────────────────────────────────
     // Cover is forced true per design spec D7 ("버전 export: 자동 — 표지에 버전 라벨").
@@ -69,6 +76,7 @@ export default async function PrintPage({
         versionLabel={row.label}
         versionNote={versionNote || undefined}
         versionTaggedAt={row.createdAt}
+        watermarkMode={watermarkMode}
       />
     );
   }
@@ -87,6 +95,7 @@ export default async function PrintPage({
       sectionId={sectionId}
       cover={cover}
       toc={toc}
+      watermarkMode={watermarkMode}
     />
   );
 }

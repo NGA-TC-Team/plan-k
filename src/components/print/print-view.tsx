@@ -3,12 +3,102 @@
 import type { ReactNode } from "react";
 import { resolvePageSettings } from "@/builder/decider/page-settings";
 import { hydrate } from "@/builder/hydrate";
-import type { BlockEntity, SectionEntity } from "@/builder/types/entity";
+import type {
+  BlockEntity,
+  PageSettings,
+  SectionEntity,
+} from "@/builder/types/entity";
 import type { IntentLogEntry } from "@/builder/types/intent";
 import type { AppState } from "@/builder/types/state";
 import { BrowserFrame, MobileFrame } from "@/components/builder/frames";
 import { detailRenderers } from "@/components/builder/renderers/detail";
 import type { BlockHandlers } from "@/components/builder/renderers/types";
+
+// ── 워터마크 헬퍼 ────────────────────────────────────────────────────────────
+
+/** 단일 fixed 워터마크 — PDF 및 일반 화면 출력용 */
+function FixedWatermark({
+  settings,
+}: {
+  settings: Required<PageSettings>;
+}): ReactNode {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+      }}
+    >
+      <span
+        style={{
+          opacity: settings.watermarkOpacity,
+          transform: `rotate(${settings.watermarkAngleDeg}deg)`,
+          fontSize: "clamp(2rem, 8vw, 6rem)",
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+          color: "rgba(0,0,0,0.15)",
+          userSelect: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {settings.watermarkText}
+      </span>
+    </div>
+  );
+}
+
+// PNG fullPage 스크린샷은 전체 비트맵 한 장이므로 fixed 요소가 한 번만 찍힘.
+// tiled 모드는 absolute 컨테이너 안에 일정 간격(80vh)으로 워터마크를 반복 배치해
+// 문서 전체 길이에 걸쳐 워터마크가 보이도록 한다.
+// N=20 → 최대 16 viewport 높이(≈A4 약 20페이지) 커버.
+const WATERMARK_TILE_COUNT = 20;
+const WATERMARK_TILE_INTERVAL_VH = 80;
+
+/** 반복 tiled 워터마크 — PNG fullPage 스크린샷 전용 */
+function TiledWatermark({
+  settings,
+}: {
+  settings: Required<PageSettings>;
+}): ReactNode {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-50"
+      style={{
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+      }}
+    >
+      {Array.from({ length: WATERMARK_TILE_COUNT }, (_, i) => (
+        <span
+          // biome-ignore lint/suspicious/noArrayIndexKey: 정적 인덱스 배열, 순서 변경 없음
+          key={`tile-${i}`}
+          style={{
+            position: "absolute",
+            top: `${i * WATERMARK_TILE_INTERVAL_VH}vh`,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            opacity: settings.watermarkOpacity,
+            transform: `rotate(${settings.watermarkAngleDeg}deg)`,
+            fontSize: "clamp(2rem, 8vw, 6rem)",
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            color: "rgba(0,0,0,0.15)",
+            userSelect: "none",
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+          }}
+        >
+          {settings.watermarkText}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 const NOOP_HANDLERS: BlockHandlers = {
   onSelect: () => {},
@@ -37,6 +127,11 @@ type PrintViewProps = {
   versionNote?: string;
   /** The Date object from PlanVersionRow.createdAt (timestamp_ms mode). */
   versionTaggedAt?: Date;
+  /**
+   * "fixed"  → 단일 fixed 오버레이 (기본값). PDF / 일반 화면 출력에 적합.
+   * "tiled"  → document 전체 높이에 반복 배치. PNG fullPage 스크린샷 전용.
+   */
+  watermarkMode?: "fixed" | "tiled";
 };
 
 export function PrintView({
@@ -48,6 +143,7 @@ export function PrintView({
   versionLabel,
   versionNote,
   versionTaggedAt,
+  watermarkMode = "fixed",
 }: PrintViewProps) {
   const state = hydrate(snapshot, tailEntries);
   const plan = Object.values(state.plans)[0];
@@ -82,33 +178,14 @@ export function PrintView({
   });
 
   return (
-    <div className="print-page mx-auto max-w-3xl space-y-10 p-8 text-zinc-900 print:max-w-none print:p-0 print:text-black">
+    <div className="print-page relative mx-auto max-w-3xl space-y-10 p-8 text-zinc-900 print:max-w-none print:p-0 print:text-black">
       {/* 워터마크 overlay — 인쇄 시에도 표시 (print-color-adjust: exact 적용) */}
       {showWatermark ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
-          style={{
-            // print-color-adjust를 인라인으로 강제 — Tailwind purge 방지
-            WebkitPrintColorAdjust: "exact",
-            printColorAdjust: "exact",
-          }}
-        >
-          <span
-            style={{
-              opacity: pageSettingsResolved.watermarkOpacity,
-              transform: `rotate(${pageSettingsResolved.watermarkAngleDeg}deg)`,
-              fontSize: "clamp(2rem, 8vw, 6rem)",
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-              color: "rgba(0,0,0,0.15)",
-              userSelect: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {pageSettingsResolved.watermarkText}
-          </span>
-        </div>
+        watermarkMode === "tiled" ? (
+          <TiledWatermark settings={pageSettingsResolved} />
+        ) : (
+          <FixedWatermark settings={pageSettingsResolved} />
+        )
       ) : null}
 
       {/* Cover page — full-plan export only, when cover=true */}

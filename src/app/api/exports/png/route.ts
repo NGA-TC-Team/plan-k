@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { parseBoolParam } from "@/lib/utils";
+import { z } from "zod";
+import { BoolStringSchema, NonNegIntSchema } from "@/lib/api-schemas";
+import { parseSearchParams } from "@/lib/api-validation";
 import { exportToImage } from "@/services/third-party-facade/exporter";
 import {
   getPlan,
@@ -9,15 +11,33 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const ExportPngQuerySchema = z.object({
+  planId: z.string().min(1),
+  sectionId: z.string().min(1).optional(),
+  versionId: z.string().min(1).optional(),
+  width: NonNegIntSchema.optional(),
+  cover: BoolStringSchema,
+  toc: BoolStringSchema,
+  pageNumbers: BoolStringSchema,
+  footerText: z.string().max(200).optional(),
+});
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const planId = url.searchParams.get("planId");
-  if (!planId) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_PLAN_ID" },
-      { status: 400 },
-    );
-  }
+  const queryParsed = parseSearchParams(url, ExportPngQuerySchema);
+  if (!queryParsed.ok) return queryParsed.response;
+  const {
+    planId,
+    sectionId,
+    versionId,
+    footerText: footerTextRaw,
+  } = queryParsed.data;
+  const viewportWidth = queryParsed.data.width;
+  const cover = queryParsed.data.cover ?? true;
+  const toc = queryParsed.data.toc ?? true;
+  const pageNumbers = queryParsed.data.pageNumbers ?? true;
+  const footerText = footerTextRaw ?? "";
+
   const plan = await getPlan(planId);
   if (!plan) {
     return NextResponse.json(
@@ -31,21 +51,6 @@ export async function GET(req: Request) {
       { status: 409 },
     );
   }
-  const widthParam = url.searchParams.get("width");
-  const viewportWidth = widthParam
-    ? Number.parseInt(widthParam, 10)
-    : undefined;
-  const sectionId = url.searchParams.get("sectionId") ?? undefined;
-  const versionIdRaw = url.searchParams.get("versionId");
-  // Treat empty string as absent — only non-empty versionId triggers version export.
-  const versionId =
-    versionIdRaw && versionIdRaw.length > 0 ? versionIdRaw : undefined;
-  const cover = parseBoolParam(url.searchParams.get("cover"), true);
-  const toc = parseBoolParam(url.searchParams.get("toc"), true);
-  const pageNumbers = parseBoolParam(url.searchParams.get("pageNumbers"), true);
-  const footerTextRaw = url.searchParams.get("footerText") ?? "";
-  // Clamp footerText to 200 chars to avoid oversized templates.
-  const footerText = footerTextRaw.slice(0, 200);
   const planMeta = Object.values(plan.snapshot.plans)[0];
   const projectMeta = planMeta
     ? plan.snapshot.projects[planMeta.projectId]
@@ -53,14 +58,8 @@ export async function GET(req: Request) {
   const sectionTitle = sectionId
     ? plan.snapshot.sections[sectionId]?.title
     : undefined;
+  const sectionMeta = sectionId ? plan.snapshot.sections[sectionId] : undefined;
   const filename = sectionTitle ?? projectMeta?.title ?? planId;
-  // TODO(PR-3): PNG export는 1차에서 워터마크/페이지 패딩 미반영.
-  // plan.snapshot.plans / sections에서 pageSettings를 읽어
-  // exportToImage에 plan/section을 전달하면 되지만,
-  // exportToImage(puppeteer screenshot)은 Puppeteer margin API가 없으므로
-  // watermark는 print-view.tsx의 overlay가 스크린샷에 포함돼야 함.
-  // → PR-4 또는 후속 PR에서 처리.
-  // Ref: src/app/api/exports/png/route.ts (이 파일 57번 줄)
   const png = await exportToImage({
     origin: url.origin,
     planId,
@@ -71,6 +70,9 @@ export async function GET(req: Request) {
     pageNumbers,
     footerText: footerText || undefined,
     versionId,
+    // plan/section 메타 전달 → exporter가 paddingMm 계산 + tiled 워터마크 적용.
+    plan: planMeta ?? undefined,
+    section: sectionMeta ?? undefined,
   });
   return new NextResponse(new Uint8Array(png), {
     status: 200,
