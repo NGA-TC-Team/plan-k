@@ -1,40 +1,34 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { ChatModeSchema, ClaudeModelSchema } from "@/lib/api-schemas";
+import { parseJsonBody, parseSearchParams } from "@/lib/api-validation";
 import {
   createSession,
   listSessionsForPlan,
 } from "@/services/third-party-facade/chat-store";
 
+const SessionsQuerySchema = z.object({
+  planId: z.string().min(1),
+});
+
+const SessionsBodySchema = z.object({
+  planId: z.string().min(1),
+  title: z.string().trim().min(1).max(200).optional(),
+  mode: ChatModeSchema.optional(),
+  model: ClaudeModelSchema.optional(),
+});
+
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const planId = url.searchParams.get("planId");
-  if (!planId) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_PLAN_ID" },
-      { status: 400 },
-    );
-  }
-  return NextResponse.json(listSessionsForPlan(planId));
+  const parsed = parseSearchParams(new URL(req.url), SessionsQuerySchema);
+  if (!parsed.ok) return parsed.response;
+  return NextResponse.json(listSessionsForPlan(parsed.data.planId));
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as {
-    planId?: string;
-    title?: string;
-    mode?: "auto" | "approval";
-    model?: "opus" | "sonnet" | "haiku";
-  };
-  if (!body.planId) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_PLAN_ID" },
-      { status: 400 },
-    );
-  }
-  const session = createSession({
-    planId: body.planId,
-    title: body.title,
-    mode: body.mode,
-    model: body.model,
-  });
+  const parsed = await parseJsonBody(req, SessionsBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const { planId, title, mode, model } = parsed.data;
+  const session = createSession({ planId, title, mode, model });
   if (!session) {
     return NextResponse.json(
       { ok: false, reason: "PLAN_NOT_FOUND" },

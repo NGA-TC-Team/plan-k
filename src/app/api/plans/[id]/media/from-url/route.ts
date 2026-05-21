@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/api-validation";
 import {
   createMedia,
   MAX_MEDIA_BYTES,
@@ -14,6 +16,10 @@ import {
   type SafeFetchErrorCode,
   safeFetchSSRF,
 } from "@/services/third-party-facade/ssrf-guard";
+
+const MediaFromUrlBodySchema = z.object({
+  url: z.string().trim().min(1).max(2048),
+});
 
 export const runtime = "nodejs";
 
@@ -100,32 +106,9 @@ export async function POST(
   }
 
   // ── 2. Parse JSON body and extract `url` ───────────────────────────────────
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body", code: "BAD_REQUEST" },
-      { status: 400 },
-    );
-  }
-
-  if (typeof body !== "object" || body === null) {
-    return NextResponse.json(
-      { error: "Body must be a JSON object", code: "BAD_REQUEST" },
-      { status: 400 },
-    );
-  }
-
-  const rawUrl = (body as Record<string, unknown>).url;
-  if (typeof rawUrl !== "string" || rawUrl.trim().length === 0) {
-    return NextResponse.json(
-      { error: "Missing or empty `url` field", code: "BAD_REQUEST" },
-      { status: 400 },
-    );
-  }
-
-  const urlString = rawUrl.trim();
+  const bodyParsed = await parseJsonBody(req, MediaFromUrlBodySchema);
+  if (!bodyParsed.ok) return bodyParsed.response;
+  const urlString = bodyParsed.data.url;
 
   // ── 3–6. SSRF guard + safe fetch (redirect:manual, max 5 hops) ──────────────
   const fetchResult = await safeFetchSSRF(urlString, {

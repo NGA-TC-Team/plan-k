@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import type { IntentLogEntry } from "@/builder/types/intent";
+import { IntentLogEntrySchema } from "@/lib/api-schemas";
+import { parseJsonBody, parseSearchParams } from "@/lib/api-validation";
 import {
   getSession,
   stageIntent,
 } from "@/services/third-party-facade/chat-store";
 import { chatStream } from "@/services/third-party-facade/chat-stream";
+
+const StagingQuerySchema = z.object({
+  messageId: z.string().min(1),
+});
 
 export const runtime = "nodejs";
 
@@ -23,21 +30,14 @@ export async function POST(
       { status: 404 },
     );
   }
-  const url = new URL(req.url);
-  const messageId = url.searchParams.get("messageId");
-  if (!messageId) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_MESSAGE_ID" },
-      { status: 400 },
-    );
-  }
-  const entry = (await req.json()) as IntentLogEntry;
-  if (!entry?.id || !entry.planId) {
-    return NextResponse.json(
-      { ok: false, reason: "INVALID_ENTRY" },
-      { status: 400 },
-    );
-  }
+  const queryParsed = parseSearchParams(new URL(req.url), StagingQuerySchema);
+  if (!queryParsed.ok) return queryParsed.response;
+  const { messageId } = queryParsed.data;
+
+  const bodyParsed = await parseJsonBody(req, IntentLogEntrySchema);
+  if (!bodyParsed.ok) return bodyParsed.response;
+  const entry = bodyParsed.data as IntentLogEntry;
+
   if (entry.planId !== session.planId) {
     return NextResponse.json(
       { ok: false, reason: "PLAN_MISMATCH" },

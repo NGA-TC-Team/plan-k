@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { parseBoolParam } from "@/lib/utils";
+import { z } from "zod";
+import { BoolStringSchema } from "@/lib/api-schemas";
+import { parseSearchParams } from "@/lib/api-validation";
 import { exportToPdf } from "@/services/third-party-facade/exporter";
 import {
   getPlan,
@@ -9,15 +11,32 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const ExportPdfQuerySchema = z.object({
+  planId: z.string().min(1),
+  sectionId: z.string().min(1).optional(),
+  versionId: z.string().min(1).optional(),
+  cover: BoolStringSchema,
+  toc: BoolStringSchema,
+  pageNumbers: BoolStringSchema,
+  footerText: z.string().max(200).optional(),
+});
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const planId = url.searchParams.get("planId");
-  if (!planId) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_PLAN_ID" },
-      { status: 400 },
-    );
-  }
+  const queryParsed = parseSearchParams(url, ExportPdfQuerySchema);
+  if (!queryParsed.ok) return queryParsed.response;
+  const {
+    planId,
+    sectionId,
+    versionId,
+    footerText: footerTextRaw,
+  } = queryParsed.data;
+  // Default booleans when absent from query string
+  const cover = queryParsed.data.cover ?? true;
+  const toc = queryParsed.data.toc ?? true;
+  const pageNumbers = queryParsed.data.pageNumbers ?? true;
+  const footerText = footerTextRaw ?? "";
+
   const plan = await getPlan(planId);
   if (!plan) {
     return NextResponse.json(
@@ -31,17 +50,6 @@ export async function GET(req: Request) {
       { status: 409 },
     );
   }
-  const sectionId = url.searchParams.get("sectionId") ?? undefined;
-  const versionIdRaw = url.searchParams.get("versionId");
-  // Treat empty string as absent — only non-empty versionId triggers version export.
-  const versionId =
-    versionIdRaw && versionIdRaw.length > 0 ? versionIdRaw : undefined;
-  const cover = parseBoolParam(url.searchParams.get("cover"), true);
-  const toc = parseBoolParam(url.searchParams.get("toc"), true);
-  const pageNumbers = parseBoolParam(url.searchParams.get("pageNumbers"), true);
-  const footerTextRaw = url.searchParams.get("footerText") ?? "";
-  // Clamp footerText to 200 chars to avoid oversized header/footer templates.
-  const footerText = footerTextRaw.slice(0, 200);
   const planMeta = Object.values(plan.snapshot.plans)[0];
   const projectMeta = planMeta
     ? plan.snapshot.projects[planMeta.projectId]

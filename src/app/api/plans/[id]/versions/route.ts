@@ -1,7 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { hydrate } from "@/builder/hydrate";
 import { db, intents, plans } from "@/db";
+import { parseJsonBody } from "@/lib/api-validation";
 import {
   getPlan,
   isPlanLoadError,
@@ -11,6 +13,11 @@ import {
   listPlanVersions,
   PlanVersionError,
 } from "@/services/third-party-facade/plan-versions";
+
+const VersionsBodySchema = z.object({
+  label: z.string().trim().min(1).max(200),
+  note: z.string().max(2000).optional(),
+});
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -43,36 +50,10 @@ export async function POST(
 ) {
   const { id: planId } = await ctx.params;
 
-  // Parse body — 400 if not valid JSON
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json(
-      { ok: false, reason: "INVALID_JSON" },
-      { status: 400 },
-    );
-  }
-
-  // Type validation
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    typeof (body as Record<string, unknown>).label !== "string"
-  ) {
-    return NextResponse.json(
-      { ok: false, reason: "INVALID_LABEL" },
-      { status: 400 },
-    );
-  }
-
-  const { label, note } = body as { label: string; note?: unknown };
-  if (note !== undefined && typeof note !== "string") {
-    return NextResponse.json(
-      { ok: false, reason: "INVALID_LABEL" },
-      { status: 400 },
-    );
-  }
+  // Parse + validate body
+  const parsed = await parseJsonBody(req, VersionsBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const { label, note } = parsed.data;
 
   // Load plan — 404 or 409 on error
   const planResult = await getPlan(planId);
@@ -115,7 +96,7 @@ export async function POST(
     const version = createPlanVersion({
       planId,
       label,
-      note: typeof note === "string" ? note : "",
+      note: note ?? "",
       snapshot: snapshotJson,
       serverSeqAtTag,
     });

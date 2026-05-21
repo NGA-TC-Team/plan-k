@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/api-validation";
 import { safeFetchSSRF } from "@/services/third-party-facade/ssrf-guard";
 
 // ─── Response shape ─────────────────────────────────────────────────────────
@@ -148,55 +150,23 @@ function resolveUrl(href: string, base: string): string {
   }
 }
 
+// ─── Schema ───────────────────────────────────────────────────────────────────
+
+const BookmarkPreviewBodySchema = z.object({
+  url: z
+    .string()
+    .trim()
+    .min(1)
+    .max(MAX_URL_LENGTH, { message: "URL exceeds maximum allowed length" }),
+});
+
 // ─── POST handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: Request): Promise<NextResponse> {
   // ── 1. Parse + validate request body ────────────────────────────────────────
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  if (!body || typeof body !== "object") {
-    return NextResponse.json(
-      { error: "Request body must be an object" },
-      { status: 400 },
-    );
-  }
-
-  const { url } = body as Record<string, unknown>;
-
-  if (url === undefined || url === null) {
-    return NextResponse.json(
-      { error: "Missing required field: url" },
-      { status: 400 },
-    );
-  }
-
-  if (typeof url !== "string") {
-    return NextResponse.json(
-      { error: "Field 'url' must be a string" },
-      { status: 400 },
-    );
-  }
-
-  const trimmedUrl = url.trim();
-
-  if (trimmedUrl.length === 0) {
-    return NextResponse.json(
-      { error: "Field 'url' must not be empty" },
-      { status: 400 },
-    );
-  }
-
-  if (trimmedUrl.length > MAX_URL_LENGTH) {
-    return NextResponse.json(
-      { error: "URL exceeds maximum allowed length" },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(req, BookmarkPreviewBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const trimmedUrl = parsed.data.url;
 
   // ── 2. SSRF-safe fetch (validates URL + each redirect hop, max 5 hops) ────────
   // safeFetchSSRF: URL parse, protocol whitelist, hostname/IP check, DNS lookup

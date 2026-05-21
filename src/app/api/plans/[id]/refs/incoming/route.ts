@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { manifestFor } from "@/builder/blocks/registry";
 import type { BlockKind } from "@/builder/types/entity";
 import type { AppState } from "@/builder/types/state";
+import { parseSearchParams } from "@/lib/api-validation";
 import {
   getPlan,
   isPlanLoadError,
 } from "@/services/third-party-facade/plan-store";
 import { getIncomingRefs } from "@/services/third-party-facade/refs-store";
+
+const IncomingRefsQuerySchema = z.object({
+  dst: z.string().min(1),
+});
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -28,14 +34,12 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
-  const url = new URL(req.url);
-  const dst = url.searchParams.get("dst");
-  if (!dst) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_DST" },
-      { status: 400 },
-    );
-  }
+  const queryParsed = parseSearchParams(
+    new URL(req.url),
+    IncomingRefsQuerySchema,
+  );
+  if (!queryParsed.ok) return queryParsed.response;
+  const { dst } = queryParsed.data;
   const plan = await getPlan(id);
   if (!plan) {
     return NextResponse.json({ error: "Plan not found", id }, { status: 404 });

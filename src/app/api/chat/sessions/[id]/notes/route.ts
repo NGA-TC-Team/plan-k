@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/api-validation";
 import {
   appendMessage,
   getSession,
 } from "@/services/third-party-facade/chat-store";
 import { chatStream } from "@/services/third-party-facade/chat-stream";
+
+const NotesBodySchema = z.object({
+  text: z.string().trim().min(1),
+});
 
 export const runtime = "nodejs";
 
@@ -23,14 +29,9 @@ export async function POST(
       { status: 404 },
     );
   }
-  const body = (await req.json()) as { text?: string };
-  const text = body.text?.trim();
-  if (!text) {
-    return NextResponse.json(
-      { ok: false, reason: "EMPTY_TEXT" },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(req, NotesBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const text = parsed.data.text;
   const message = appendMessage({
     sessionId,
     role: "tool",

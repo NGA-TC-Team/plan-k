@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { parseJsonBody } from "@/lib/api-validation";
 import {
   type AttachmentRef,
   appendMessage,
@@ -8,6 +10,12 @@ import {
   type MentionRef,
 } from "@/services/third-party-facade/chat-store";
 import { startChatRun } from "@/services/third-party-facade/claude-runner";
+
+const MessagesBodySchema = z.object({
+  content: z.string().trim().min(1),
+  mentions: z.array(z.unknown()).optional(),
+  attachmentIds: z.array(z.string().min(1)).optional(),
+});
 
 export const runtime = "nodejs";
 
@@ -24,22 +32,13 @@ export async function POST(
     );
   }
 
-  const body = (await req.json()) as {
-    content?: string;
-    mentions?: MentionRef[];
-    attachmentIds?: string[];
-  };
-  const content = body.content?.trim();
-  if (!content) {
-    return NextResponse.json(
-      { ok: false, reason: "EMPTY_CONTENT" },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(req, MessagesBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const content = parsed.data.content;
 
   // Resolve attachment metadata so the runner can hand absolute paths to Claude.
   const allAttachments = listAttachments(sessionId);
-  const attachmentRefs: AttachmentRef[] = (body.attachmentIds ?? [])
+  const attachmentRefs: AttachmentRef[] = (parsed.data.attachmentIds ?? [])
     .map((id) => allAttachments.find((a) => a.id === id))
     .filter((a): a is (typeof allAttachments)[number] => Boolean(a))
     .map((a) => ({
@@ -54,7 +53,7 @@ export async function POST(
     sessionId,
     role: "user",
     content,
-    mentions: body.mentions ?? [],
+    mentions: (parsed.data.mentions ?? []) as MentionRef[],
     attachments: attachmentRefs,
   });
 
@@ -64,7 +63,7 @@ export async function POST(
     planId: session.planId,
     sessionId,
     userMessage: content,
-    mentions: body.mentions ?? [],
+    mentions: (parsed.data.mentions ?? []) as MentionRef[],
     attachments: attachmentRefs,
     mode: session.mode,
     model: session.model,

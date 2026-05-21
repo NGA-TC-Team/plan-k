@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { extractBlockText } from "@/builder/blocks/extract-text";
 import type { BlockEntity } from "@/builder/types/entity";
 import {
@@ -8,6 +9,7 @@ import {
   type InlineActionId,
 } from "@/components/builder/inline-ai/actions";
 import { db, plans } from "@/db";
+import { parseJsonBody } from "@/lib/api-validation";
 import {
   appendMessage,
   createAdhocSession,
@@ -17,33 +19,22 @@ import { startChatRun } from "@/services/third-party-facade/claude-runner";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type RequestBody = {
-  planId: string;
-  blockId?: string;
-  blockIds?: string[];
-  actionId: InlineActionId;
-};
+const InlineAiBodySchema = z.object({
+  planId: z.string().min(1),
+  blockId: z.string().min(1).optional(),
+  blockIds: z.array(z.string().min(1)).optional(),
+  actionId: z.string().min(1),
+});
 
 // Triggers an inline AI action against one or many blocks. Loads each
 // block from the plan snapshot, composes a single prompt that asks the
 // runner to emit one staged intent per block, and starts the run in a
 // hidden ad-hoc chat session running in approval mode.
 export async function POST(req: Request) {
-  let body: RequestBody;
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return NextResponse.json(
-      { ok: false, reason: "INVALID_JSON" },
-      { status: 400 },
-    );
-  }
-  if (!body?.planId || !body?.actionId) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_FIELDS" },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(req, InlineAiBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
+
   const ids = body.blockIds?.length
     ? body.blockIds
     : body.blockId
@@ -55,7 +46,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const action = findAction(body.actionId);
+  const action = findAction(body.actionId as InlineActionId);
   if (!action) {
     return NextResponse.json(
       { ok: false, reason: "UNKNOWN_ACTION" },

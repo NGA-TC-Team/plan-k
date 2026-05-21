@@ -1,66 +1,60 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import type { ProjectKind } from "@/builder/types/entity";
+import { z } from "zod";
 import type { AppState } from "@/builder/types/state";
 import { db, intents, intentsArchive, plans, projects } from "@/db";
 import { MigrationError, migrateSnapshot } from "@/db/migrate";
 import { rebuildSearch } from "@/db/search-index";
+import { ProjectKindSchema } from "@/lib/api-schemas";
+import { parseJsonBody, parseSearchParams } from "@/lib/api-validation";
 import { rebuildRefs } from "@/services/third-party-facade/refs-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type ImportPayload = {
-  planId: string;
-  kind: ProjectKind;
-  snapshot: unknown;
-  snapshotSeq?: number;
-  intents?: IntentRow[];
-  archived?: IntentRow[];
-};
+const IntentRowSchema = z.object({
+  id: z.string().min(1),
+  planId: z.string().min(1),
+  serverSeq: z.number().int(),
+  lamport: z.number().int(),
+  origin: z.string().min(1),
+  kind: z.enum(["primary", "inverse"]),
+  parentEntryId: z.string().nullable(),
+  intent: z.string().min(1),
+  createdAt: z.union([z.number().int(), z.string().min(1)]),
+});
 
-type IntentRow = {
-  id: string;
-  planId: string;
-  serverSeq: number;
-  lamport: number;
-  origin: string;
-  kind: "primary" | "inverse";
-  parentEntryId: string | null;
-  intent: string;
-  createdAt: number | string;
-};
+const ImportBodySchema = z.object({
+  planId: z.string().min(1),
+  kind: ProjectKindSchema,
+  snapshot: z.unknown(),
+  snapshotSeq: z.number().int().nonnegative().optional(),
+  intents: z.array(IntentRowSchema).optional(),
+  archived: z.array(IntentRowSchema).optional(),
+});
 
-type Options = {
-  asId?: string;
-  overwrite?: boolean;
-};
+const ImportQuerySchema = z.object({
+  as: z.string().min(1).optional(),
+  overwrite: z.literal("1").optional(),
+});
+
+type ImportPayload = z.infer<typeof ImportBodySchema>;
 
 // Counterpart to GET /api/plans/[id]/raw. Body shape matches that
 // endpoint's response. ?as=<id> remaps the planId on import; ?overwrite=1
 // replaces an existing row, otherwise a duplicate id 409s.
 export async function POST(req: Request) {
   const url = new URL(req.url);
-  const opts: Options = {
-    asId: url.searchParams.get("as") ?? undefined,
-    overwrite: url.searchParams.get("overwrite") === "1",
+  const queryParsed = parseSearchParams(url, ImportQuerySchema);
+  if (!queryParsed.ok) return queryParsed.response;
+  const opts = {
+    asId: queryParsed.data.as,
+    overwrite: queryParsed.data.overwrite === "1",
   };
 
-  let body: ImportPayload;
-  try {
-    body = (await req.json()) as ImportPayload;
-  } catch {
-    return NextResponse.json(
-      { ok: false, reason: "INVALID_JSON" },
-      { status: 400 },
-    );
-  }
-  if (!body || typeof body !== "object" || !body.planId || !body.kind) {
-    return NextResponse.json(
-      { ok: false, reason: "MISSING_FIELDS" },
-      { status: 400 },
-    );
-  }
+  const bodyParsed = await parseJsonBody(req, ImportBodySchema);
+  if (!bodyParsed.ok) return bodyParsed.response;
+  const body: ImportPayload = bodyParsed.data;
 
   // Forward-migrate the snapshot to the running schema so the imported
   // plan is immediately usable. Older snapshots that have no auto-migration
