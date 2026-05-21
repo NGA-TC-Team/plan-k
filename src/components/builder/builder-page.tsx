@@ -99,10 +99,10 @@ function BuilderShell() {
           data-ai-active={aiActive ? "true" : undefined}
           data-ai-state={runState}
           className={cn(
-            "canvas-shell h-full min-h-0 overflow-hidden",
+            "canvas-shell h-full min-h-0 overflow-hidden transition-[padding] duration-200",
             aiActive && "ai-active",
           )}
-          style={{ paddingLeft: RAIL_EXPANDED_PX, paddingRight: rightWidth }}
+          style={{ paddingLeft: leftWidth, paddingRight: rightWidth }}
         >
           <Canvas />
         </div>
