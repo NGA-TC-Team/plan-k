@@ -3,6 +3,7 @@ import type {
   AgentNode,
   BlockEntity,
   EntityStatus,
+  PageSettings,
   ScreenEdge,
   ScreenEntity,
   SectionEntity,
@@ -84,6 +85,24 @@ export type Intent =
       type: "UPDATE_ENTITY_META";
       entityId: string;
       patch: UpdateEntityMetaPatch;
+    }
+  /**
+   * 플랜 전역 페이지 기본값 patch.
+   * patch 값이 undefined인 키는 해당 필드를 제거해 시스템 기본값으로 fall through.
+   */
+  | {
+      type: "UPDATE_PLAN_PAGE_DEFAULTS";
+      planId: string;
+      patch: Partial<PageSettings>;
+    }
+  /**
+   * 특정 섹션의 페이지 설정 override patch.
+   * patch 값이 undefined인 키는 해당 필드를 제거해 플랜 기본값으로 fall through.
+   */
+  | {
+      type: "UPDATE_SECTION_PAGE_SETTINGS";
+      sectionId: string;
+      patch: Partial<PageSettings>;
     };
 
 /** Patch shape for UPDATE_ENTITY_META.

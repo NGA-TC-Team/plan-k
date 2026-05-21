@@ -9,6 +9,7 @@ import type {
   AgentNode,
   BlockContext,
   BlockKind,
+  PageSettings,
   SectionKind,
 } from "./types/entity";
 import type { AppState } from "./types/state";
@@ -43,6 +44,8 @@ export type SectionInspectViewModel = {
   kind: "section";
   title: string;
   sectionKind: SectionKind;
+  planId: string;
+  pageSettings?: Partial<PageSettings>;
 };
 
 export type AgentNodeInspectViewModel = {
@@ -154,6 +157,8 @@ export function projectSectionInspect(
     kind: "section",
     title: section.title,
     sectionKind: section.kind,
+    planId: section.planId,
+    pageSettings: section.pageSettings,
   };
 }
 

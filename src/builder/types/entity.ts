@@ -208,6 +208,11 @@ export type SectionEntity = {
   status?: SectionStatus;
   /** Backlog property panel entries (Notion DB page style). */
   properties?: PropertyEntry[];
+  /**
+   * 섹션별 페이지 설정 override.
+   * undefined 키는 플랜 기본값 → 시스템 기본값 순으로 fall through.
+   */
+  pageSettings?: Partial<PageSettings>;
 };
 
 export type AgentNode = {
@@ -234,10 +239,32 @@ export type ProjectMeta = {
   updatedAt: number;
 };
 
+/**
+ * 문서 페이지 수준 설정.
+ * 모든 필드는 optional — undefined는 "상위 층으로 fall through" 를 의미한다.
+ * 숫자 단위: mm (0–200), opacity (0–1), angle (-180–180).
+ */
+export type PageSettings = {
+  paddingTopMm?: number;
+  paddingRightMm?: number;
+  paddingBottomMm?: number;
+  paddingLeftMm?: number;
+  headerText?: string;
+  footerText?: string;
+  showPageNumbers?: boolean;
+  watermarkText?: string;
+  /** 0–1 */
+  watermarkOpacity?: number;
+  /** -180–180 degrees */
+  watermarkAngleDeg?: number;
+};
+
 export type PlanShell = {
   id: string;
   projectId: string;
   kind: ProjectKind;
   meta: Record<string, unknown>;
   agentTab: "scenario" | "graph";
+  /** 플랜 전역 페이지 기본값. undefined 키는 시스템 기본값으로 fall through. */
+  pageDefaults?: PageSettings;
 };

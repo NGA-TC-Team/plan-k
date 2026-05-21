@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { resolvePageSettings } from "@/builder/decider/page-settings";
 import { hydrate } from "@/builder/hydrate";
 import type { BlockEntity, SectionEntity } from "@/builder/types/entity";
 import type { IntentLogEntry } from "@/builder/types/intent";
@@ -55,6 +56,13 @@ export function PrintView({
 
   const focusedSection = sectionId ? state.sections[sectionId] : undefined;
 
+  // 워터마크: 섹션 export이면 해당 섹션 설정 우선, 없으면 플랜 기본값.
+  const pageSettingsResolved = resolvePageSettings(
+    plan ?? {},
+    focusedSection ?? null,
+  );
+  const showWatermark = pageSettingsResolved.watermarkText.trim().length > 0;
+
   const docsRoots = state.docsRootIds
     .map((id) => state.sections[id])
     .filter((s): s is SectionEntity => Boolean(s));
@@ -75,6 +83,34 @@ export function PrintView({
 
   return (
     <div className="print-page mx-auto max-w-3xl space-y-10 p-8 text-zinc-900 print:max-w-none print:p-0 print:text-black">
+      {/* 워터마크 overlay — 인쇄 시에도 표시 (print-color-adjust: exact 적용) */}
+      {showWatermark ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            // print-color-adjust를 인라인으로 강제 — Tailwind purge 방지
+            WebkitPrintColorAdjust: "exact",
+            printColorAdjust: "exact",
+          }}
+        >
+          <span
+            style={{
+              opacity: pageSettingsResolved.watermarkOpacity,
+              transform: `rotate(${pageSettingsResolved.watermarkAngleDeg}deg)`,
+              fontSize: "clamp(2rem, 8vw, 6rem)",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              color: "rgba(0,0,0,0.15)",
+              userSelect: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {pageSettingsResolved.watermarkText}
+          </span>
+        </div>
+      ) : null}
+
       {/* Cover page — full-plan export only, when cover=true */}
       {cover && !sectionId ? (
         <div className="flex min-h-[80vh] flex-col justify-between print:break-after-page">

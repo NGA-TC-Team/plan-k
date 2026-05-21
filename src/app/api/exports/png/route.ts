@@ -54,6 +54,13 @@ export async function GET(req: Request) {
     ? plan.snapshot.sections[sectionId]?.title
     : undefined;
   const filename = sectionTitle ?? projectMeta?.title ?? planId;
+  // TODO(PR-3): PNG export는 1차에서 워터마크/페이지 패딩 미반영.
+  // plan.snapshot.plans / sections에서 pageSettings를 읽어
+  // exportToImage에 plan/section을 전달하면 되지만,
+  // exportToImage(puppeteer screenshot)은 Puppeteer margin API가 없으므로
+  // watermark는 print-view.tsx의 overlay가 스크린샷에 포함돼야 함.
+  // → PR-4 또는 후속 PR에서 처리.
+  // Ref: src/app/api/exports/png/route.ts (이 파일 57번 줄)
   const png = await exportToImage({
     origin: url.origin,
     planId,

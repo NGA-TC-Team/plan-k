@@ -3,6 +3,7 @@ import type { AppState, SliceResult } from "../types/state";
 import { applyAgent } from "./agent";
 import { applyEditing } from "./editing";
 import { applyEntityMeta } from "./entity-meta";
+import { applyPageSettings } from "./page-settings";
 import { applyProjects } from "./projects";
 import { applyScreens } from "./screens";
 import { applySections } from "./sections";
@@ -26,6 +27,7 @@ const SLICES: SliceReducer[] = [
   applyAgent,
   applyProjects,
   applyEntityMeta,
+  applyPageSettings,
   applySync,
 ];
 

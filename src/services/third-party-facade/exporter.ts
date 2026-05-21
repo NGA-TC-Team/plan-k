@@ -1,4 +1,6 @@
 import puppeteer, { type Browser, type PaperFormat } from "puppeteer";
+import { resolvePageSettings } from "@/builder/decider/page-settings";
+import type { PlanShell, SectionEntity } from "@/builder/types/entity";
 
 type ExportOptions = {
   /** Absolute origin to render from, e.g. "http://localhost:3000". */
@@ -16,15 +18,31 @@ type ExportOptions = {
   cover?: boolean;
   /** Whether to render a table of contents page (PDF/print only). Defaults to true. */
   toc?: boolean;
-  /** Whether to show page numbers in the PDF footer. Defaults to true. */
+  /**
+   * Export-time page numbers override.
+   * 우선순위: 이 옵션 > 섹션 override > 플랜 기본값 > 시스템 기본값.
+   */
   pageNumbers?: boolean;
-  /** Optional label prepended to the footer page-number line. */
+  /**
+   * Export-time footer text override.
+   * 우선순위: 이 옵션 > 섹션 override > 플랜 기본값 > 시스템 기본값.
+   */
   footerText?: string;
   /**
    * When set, the print page renders the version snapshot instead of the
    * current plan state. The print page resolves the snapshot server-side.
    */
   versionId?: string;
+  /**
+   * 플랜 엔티티. pageDefaults를 읽기 위해 사용.
+   * 미전달 시 시스템 기본값으로 fall through.
+   */
+  plan?: Pick<PlanShell, "pageDefaults">;
+  /**
+   * 섹션 엔티티. pageSettings override를 읽기 위해 사용.
+   * 미전달 시 플랜 기본값 → 시스템 기본값으로 fall through.
+   */
+  section?: Pick<SectionEntity, "pageSettings"> | null;
 };
 
 let browserPromise: Promise<Browser> | null = null;
@@ -75,18 +93,44 @@ export async function exportToPdf(opts: ExportOptions): Promise<Buffer> {
   const page = await browser.newPage();
   try {
     await page.goto(printUrl(opts), { waitUntil: "networkidle0" });
-    const headerText = opts.headerTitle ?? opts.planId;
-    const showPageNumbers = opts.pageNumbers !== false;
-    const footerLabel = opts.footerText ? escapeHtml(opts.footerText) : "";
+
+    // 페이지 설정 머지: export-time 옵션 > 섹션 override > 플랜 기본값 > 시스템 기본값.
+    const resolved = resolvePageSettings(opts.plan ?? {}, opts.section);
+
+    // export-time opts가 명시된 경우 resolved 값을 덮어쓴다.
+    const showPageNumbers =
+      opts.pageNumbers !== undefined
+        ? opts.pageNumbers
+        : resolved.showPageNumbers;
+
+    // footerText: export-time opts 우선, 없으면 resolved 값 사용.
+    const resolvedFooterText =
+      opts.footerText !== undefined ? opts.footerText : resolved.footerText;
+    const footerLabel = resolvedFooterText
+      ? escapeHtml(resolvedFooterText)
+      : "";
+
+    // headerText: export-time headerTitle 우선, 없으면 resolved.headerText, 없으면 planId.
+    const headerTextResolved =
+      opts.headerTitle ?? resolved.headerText ?? opts.planId;
+
     const footerTemplate = showPageNumbers
       ? `<div style="${PDF_HEADER_FOOTER_STYLE}"><span>${footerLabel}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`
-      : `<div style="${PDF_HEADER_FOOTER_STYLE}"></div>`;
+      : resolvedFooterText
+        ? `<div style="${PDF_HEADER_FOOTER_STYLE}"><span>${footerLabel}</span><span></span></div>`
+        : `<div style="${PDF_HEADER_FOOTER_STYLE}"></div>`;
+
     const buffer = await page.pdf({
       format: opts.format ?? "A4",
       printBackground: true,
       displayHeaderFooter: true,
-      margin: { top: "20mm", bottom: "16mm", left: "16mm", right: "16mm" },
-      headerTemplate: `<div style="${PDF_HEADER_FOOTER_STYLE}"><span>${escapeHtml(headerText)}</span><span></span></div>`,
+      margin: {
+        top: `${resolved.paddingTopMm}mm`,
+        bottom: `${resolved.paddingBottomMm}mm`,
+        left: `${resolved.paddingLeftMm}mm`,
+        right: `${resolved.paddingRightMm}mm`,
+      },
+      headerTemplate: `<div style="${PDF_HEADER_FOOTER_STYLE}"><span>${escapeHtml(headerTextResolved)}</span><span></span></div>`,
       footerTemplate,
     });
     return Buffer.from(buffer);

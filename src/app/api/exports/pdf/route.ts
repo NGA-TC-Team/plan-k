@@ -46,9 +46,8 @@ export async function GET(req: Request) {
   const projectMeta = planMeta
     ? plan.snapshot.projects[planMeta.projectId]
     : undefined;
-  const sectionTitle = sectionId
-    ? plan.snapshot.sections[sectionId]?.title
-    : undefined;
+  const sectionMeta = sectionId ? plan.snapshot.sections[sectionId] : undefined;
+  const sectionTitle = sectionMeta?.title;
   const headerTitle =
     [projectMeta?.title ?? planId, sectionTitle]
       .filter((s): s is string => Boolean(s))
@@ -64,6 +63,9 @@ export async function GET(req: Request) {
     pageNumbers,
     footerText: footerText || undefined,
     versionId,
+    // pageSettings 머지를 위해 plan/section 엔티티 전달
+    plan: planMeta,
+    section: sectionMeta,
   });
   return new NextResponse(new Uint8Array(pdf), {
     status: 200,

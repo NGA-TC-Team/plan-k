@@ -37,6 +37,7 @@ import {
 import {
   PANEL_WIDTH_BOUNDS,
   type SidePanelTab,
+  useBuilderUiStore,
   useChatStore,
   usePanelStore,
   usePanelWidthPersistence,
@@ -46,6 +47,7 @@ import { BuilderContext } from "./builder-context";
 import { ChatPane } from "./chat/chat-pane";
 import {
   AgentNodeInspector,
+  DocsPageDefaultsInspector,
   ScreenInspector,
   SectionInspector,
 } from "./inspectors";
@@ -127,6 +129,13 @@ export function SidePanel() {
 }
 
 function IdleState() {
+  // topMode는 primitive(string)를 반환하므로 안전 — useShallow 불필요.
+  const topMode = useBuilderUiStore((s) => s.topMode);
+
+  if (topMode === "docs") {
+    return <DocsPageDefaultsInspector />;
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col items-center justify-center gap-2 p-5 text-center text-xs text-muted-foreground">
       <div className="font-medium text-foreground">Select a block</div>

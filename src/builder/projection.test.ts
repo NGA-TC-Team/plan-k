@@ -205,6 +205,8 @@ describe("projectSectionInspect", () => {
       kind: "section",
       title: "Overview",
       sectionKind: "overview",
+      planId: "p1",
+      pageSettings: undefined,
     });
   });
 
