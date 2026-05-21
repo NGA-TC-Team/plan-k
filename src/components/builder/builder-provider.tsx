@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { hydrate } from "@/builder/hydrate";
 import { defaultIdFactory } from "@/builder/ids";
 import { createBuilderStore } from "@/builder/store";
@@ -83,6 +84,11 @@ export function BuilderProvider({ planId, children }: Props) {
     });
   }
 
+  // Debounce remote-intent toast so a burst of intents from another tab shows
+  // a single notification rather than spamming. Agent-origin intents already
+  // surface via the AI flash overlay — skip the toast there to avoid noise.
+  const remoteToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remoteToastCount = useRef(0);
   const onRemoteIntent = useCallback((entry: IntentLogEntry) => {
     storeRef.current
       ?.getState()
@@ -90,7 +96,20 @@ export function BuilderProvider({ planId, children }: Props) {
     if (entry.kind === "primary" && isAgentOrigin(entry.origin)) {
       const ids = affectedNodeIdsFor(entry.intent);
       if (ids.length > 0) useAiFlashStore.getState().flash(ids);
+      return;
     }
+    if (entry.kind !== "primary") return;
+    remoteToastCount.current += 1;
+    if (remoteToastTimer.current) clearTimeout(remoteToastTimer.current);
+    remoteToastTimer.current = setTimeout(() => {
+      const n = remoteToastCount.current;
+      remoteToastCount.current = 0;
+      remoteToastTimer.current = null;
+      toast(n > 1 ? `다른 세션에서 ${n}건 변경됨` : "다른 세션에서 변경됨", {
+        id: "remote-intent",
+        duration: 4000,
+      });
+    }, 500);
   }, []);
 
   usePlanStream({
