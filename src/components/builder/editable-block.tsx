@@ -474,7 +474,7 @@ function BlockFrame({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-5 top-1.5 flex text-muted-foreground/40"
+        className="pointer-events-none absolute -left-5 top-1.5 flex text-muted-foreground/60 opacity-0 transition-opacity duration-150 group-hover/eb:opacity-100 focus-within:opacity-100"
       >
         <GripVertical className="size-3.5" />
       </span>

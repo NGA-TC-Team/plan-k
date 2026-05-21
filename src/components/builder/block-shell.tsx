@@ -149,6 +149,7 @@ export function BlockShell({ blockId }: { blockId: string }) {
           onClick={(e) => e.stopPropagation()}
           className={cn(
             "absolute -left-6 top-1/2 -translate-y-1/2 flex h-6 w-5 cursor-grab items-center justify-center rounded text-muted-foreground/60",
+            "opacity-0 transition-opacity duration-150 group-hover/block:opacity-100 focus-visible:opacity-100",
             "hover:text-foreground active:cursor-grabbing focus-visible:text-foreground",
           )}
         >
