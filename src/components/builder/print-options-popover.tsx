@@ -39,23 +39,23 @@ export function PrintOptionsPopover() {
         <Settings className="size-4" />
       </PopoverTrigger>
       <PopoverContent side="bottom" align="end" className="w-[300px]">
-        <p className="mb-3 text-sm font-medium">Print options</p>
+        <p className="mb-3 text-sm font-medium">프린트 옵션</p>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="po-cover" className="cursor-pointer">
-              Cover page
+              표지
             </Label>
             <Switch id="po-cover" checked={cover} onCheckedChange={setCover} />
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="po-toc" className="cursor-pointer">
-              Table of contents
+              목차
             </Label>
             <Switch id="po-toc" checked={toc} onCheckedChange={setToc} />
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="po-page-numbers" className="cursor-pointer">
-              Page numbers
+              페이지 번호
             </Label>
             <Switch
               id="po-page-numbers"
@@ -64,7 +64,7 @@ export function PrintOptionsPopover() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="po-footer-text">Footer text</Label>
+            <Label htmlFor="po-footer-text">푸터 텍스트</Label>
             <Input
               id="po-footer-text"
               type="text"

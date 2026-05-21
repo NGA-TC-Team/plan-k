@@ -6,14 +6,10 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Download,
-  FileImage,
-  FileText,
   GitBranch,
   ListTree,
   Monitor,
   Plus,
-  Printer,
   Smartphone,
   Trash2,
 } from "lucide-react";
@@ -48,7 +44,6 @@ import {
 } from "@/hooks/builder/use-builder-store.hook";
 import { cn } from "@/lib/utils";
 import { useBacklogStore, useBuilderUiStore } from "@/services/stores";
-import { exportPlanWithToast } from "@/services/third-party-facade/export";
 import { ConfirmDestructiveDialog } from "./confirm-destructive-dialog";
 import { StatusChipMenu } from "./status-chip";
 
@@ -620,13 +615,6 @@ function SectionTreeNode({
         >
           <Plus className="size-3" />
         </button>
-        {planId ? (
-          <SectionExportMenu
-            planId={planId}
-            sectionId={section.id}
-            sectionTitle={section.title}
-          />
-        ) : null}
         <button
           type="button"
           onClick={(e) => {
@@ -659,58 +647,6 @@ function SectionTreeNode({
         </ul>
       ) : null}
     </li>
-  );
-}
-
-function SectionExportMenu({
-  planId,
-  sectionId,
-  sectionTitle,
-}: {
-  planId: string;
-  sectionId: string;
-  sectionTitle: string;
-}) {
-  const trigger = (kind: "pdf" | "png") => {
-    exportPlanWithToast({ planId, kind, sectionId });
-  };
-  const openPrint = () => {
-    window.open(
-      `/plan/${encodeURIComponent(planId)}/print?sectionId=${encodeURIComponent(sectionId)}`,
-      "_blank",
-      "noopener",
-    );
-  };
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            aria-label={`Export ${sectionTitle}`}
-            title="Export section"
-            onClick={(e) => e.stopPropagation()}
-            className="size-5 shrink-0 rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:text-foreground flex items-center justify-center"
-          >
-            <Download className="size-3" />
-          </button>
-        }
-      />
-      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem onClick={() => trigger("pdf")}>
-          <FileText className="size-3.5" />
-          <span>PDF로 내보내기</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => trigger("png")}>
-          <FileImage className="size-3.5" />
-          <span>PNG로 내보내기</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={openPrint}>
-          <Printer className="size-3.5" />
-          <span>Open print view</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 

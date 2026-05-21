@@ -93,11 +93,11 @@ export function VersionsListItem({ planId, version }: VersionsListItemProps) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => triggerVersionExport("pdf")}>
             <FileText className="size-3.5" />
-            Export as PDF
+            PDF로 내보내기
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => triggerVersionExport("png")}>
             <FileImage className="size-3.5" />
-            Export as PNG
+            PNG로 내보내기
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

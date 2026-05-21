@@ -354,11 +354,11 @@ function ExportMenu({ planId }: { planId: string }) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => trigger("pdf")}>
             <FileText className="size-3.5" />
-            <span>Export as PDF</span>
+            <span>PDF로 내보내기</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => trigger("png")}>
             <FileImage className="size-3.5" />
-            <span>Export as PNG</span>
+            <span>PNG로 내보내기</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
@@ -379,7 +379,7 @@ function ExportMenu({ planId }: { planId: string }) {
             }}
           >
             <Printer className="size-3.5" />
-            <span>Open print view</span>
+            <span>프린트 뷰 열기</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
