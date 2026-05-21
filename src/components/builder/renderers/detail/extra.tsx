@@ -1,9 +1,22 @@
 "use client";
 
-import { CheckCircle2, Info, TriangleAlert, User, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Search,
+  Star,
+  TriangleAlert,
+  Upload,
+  User,
+  X,
+  XCircle,
+} from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { inlineMdToHtml } from "@/components/builder/inline-editor";
 import { MarkdownView } from "@/components/builder/markdown/markdown-view";
+import { parseNumberCsv } from "@/components/builder/renderers/editors/parsing";
 import { useMediaUrl } from "@/hooks/builder/use-media-url.hook";
 import { cn } from "@/lib/utils";
 import { renderTexToHtml } from "@/services/third-party-facade/katex";
@@ -1670,5 +1683,926 @@ export const MathBlockDetail: BlockRenderer = ({ vm }) => {
       // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted KaTeX output.
       dangerouslySetInnerHTML={{ __html: html }}
     />
+  );
+};
+
+// ────────── Input group (PR-2) ──────────
+
+export const CheckboxDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const checked = !!vm.displayValue.checked;
+  const disabled = !!vm.displayValue.disabled;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 text-sm",
+        disabled ? "opacity-50" : "",
+      )}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        readOnly
+        disabled={disabled}
+        className="size-4 rounded-sm border-hairline-strong accent-foreground"
+      />
+      <span>{label || empty("Checkbox")}</span>
+    </div>
+  );
+};
+
+export const RadioGroupDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const options =
+    (vm.displayValue.options as { value: string; label: string }[]) ?? [];
+  const value = stringValue(vm, "value");
+  const orientation = stringValue(vm, "orientation") || "col";
+  // Orphan: value is non-empty but not present in options.
+  const isOrphan = !!value && !options.some((o) => o.value === value);
+  if (options.length === 0)
+    return <div className="text-sm">{empty("No options")}</div>;
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? <div className="text-xs font-medium">{label}</div> : null}
+      <div
+        className={cn(
+          "flex gap-3",
+          orientation === "col" ? "flex-col" : "flex-row flex-wrap",
+        )}
+      >
+        {options.map((opt, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: stable.
+          <label key={i} className="flex items-center gap-2">
+            <input
+              type="radio"
+              readOnly
+              checked={opt.value === value}
+              className="accent-foreground"
+            />
+            <span>{opt.label || opt.value || `Option ${i + 1}`}</span>
+          </label>
+        ))}
+      </div>
+      {isOrphan ? (
+        <p className="text-xs text-destructive/70">
+          선택된 값이 옵션에 없습니다.
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+const SWITCH_SIZE: Record<string, { track: string; thumb: string }> = {
+  sm: {
+    track: "w-7 h-4",
+    thumb: "size-3 data-[checked]:translate-x-3",
+  },
+  md: {
+    track: "w-9 h-5",
+    thumb: "size-4 data-[checked]:translate-x-4",
+  },
+  lg: {
+    track: "w-11 h-6",
+    thumb: "size-5 data-[checked]:translate-x-5",
+  },
+};
+
+export const SwitchDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const checked = !!vm.displayValue.checked;
+  const size = stringValue(vm, "size") || "md";
+  const s = SWITCH_SIZE[size] ?? SWITCH_SIZE.md;
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      {/* Static mockup switch — read-only, no interactive handler */}
+      {/* biome-ignore lint/a11y/useFocusableInteractive: intentional non-interactive mockup display, no keyboard handling needed */}
+      <div
+        className={cn(
+          "relative inline-flex items-center rounded-full transition-colors",
+          s.track,
+          checked ? "bg-primary" : "bg-muted-foreground/30",
+        )}
+        aria-checked={checked}
+        role="switch"
+        aria-label={label || "Switch"}
+      >
+        <span
+          data-checked={checked ? "" : undefined}
+          className={cn(
+            "absolute left-0.5 rounded-full bg-white shadow transition-transform",
+            s.thumb,
+          )}
+        />
+      </div>
+      {label ? <span>{label}</span> : null}
+    </div>
+  );
+};
+
+export const SelectDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const placeholder = stringValue(vm, "placeholder");
+  const options =
+    (vm.displayValue.options as { value: string; label: string }[]) ?? [];
+  const value = stringValue(vm, "value");
+  const required = !!vm.displayValue.required;
+  const matchedOption = options.find((o) => o.value === value);
+  // Orphan: value is non-empty but not present in options.
+  const isOrphan = !!value && !matchedOption;
+  const displayLabel =
+    matchedOption?.label ?? (isOrphan ? value : (value ?? placeholder));
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? (
+        <div className="text-xs font-medium">
+          {label}
+          {required ? <span className="text-destructive"> *</span> : null}
+        </div>
+      ) : null}
+      <div className="flex items-center justify-between rounded border bg-background px-2 py-1.5 text-sm">
+        {isOrphan ? (
+          <span className="text-xs text-destructive/70">{displayLabel}</span>
+        ) : (
+          <span className={displayLabel ? "" : "text-muted-foreground"}>
+            {displayLabel || placeholder || empty("Select…")}
+          </span>
+        )}
+        <span className="text-muted-foreground">▾</span>
+      </div>
+      {isOrphan ? (
+        <p className="text-xs text-destructive/70">
+          선택된 값이 옵션에 없습니다.
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+export const TextareaDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const placeholder = stringValue(vm, "placeholder");
+  const rows = (vm.displayValue.rows as number) ?? 3;
+  // Clamp rows to a sane range defensively.
+  const clampedRows = Math.max(1, Math.min(20, rows));
+  const required = !!vm.displayValue.required;
+  const maxLength = (vm.displayValue.maxLength as number) ?? 0;
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? (
+        <div className="text-xs font-medium">
+          {label}
+          {required ? <span className="text-destructive"> *</span> : null}
+        </div>
+      ) : null}
+      <textarea
+        placeholder={placeholder}
+        rows={clampedRows}
+        maxLength={maxLength > 0 ? maxLength : undefined}
+        readOnly
+        className="w-full resize-none rounded border bg-background px-2 py-1 text-sm"
+      />
+      {maxLength > 0 ? (
+        <p className="text-right text-caption text-muted-foreground">
+          0/{maxLength}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+export const SliderDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const min = (vm.displayValue.min as number) ?? 0;
+  const max = (vm.displayValue.max as number) ?? 100;
+  // Clamp max >= min to avoid invalid range.
+  const safeMax = max >= min ? max : min;
+  const rawValue = (vm.displayValue.value as number) ?? min;
+  // Clamp value to [min, safeMax].
+  const value = Math.min(safeMax, Math.max(min, rawValue));
+  const showValue = vm.displayValue.showValue !== false;
+  const pct = safeMax === min ? 0 : ((value - min) / (safeMax - min)) * 100;
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="flex items-center justify-between">
+        {label ? <span className="text-xs font-medium">{label}</span> : null}
+        {showValue ? (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {value}
+          </span>
+        ) : null}
+      </div>
+      <div className="relative h-5 flex items-center">
+        <div className="h-1.5 w-full rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div
+          className="absolute size-4 rounded-full border-2 border-primary bg-background shadow"
+          style={{ left: `calc(${pct}% - 8px)` }}
+        />
+      </div>
+      <div className="flex justify-between text-caption text-muted-foreground">
+        <span>{min}</span>
+        <span>{safeMax}</span>
+      </div>
+    </div>
+  );
+};
+
+export const StepperDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const min = (vm.displayValue.min as number) ?? 0;
+  const max = (vm.displayValue.max as number) ?? 100;
+  const safeMax = max >= min ? max : min;
+  const rawValue = (vm.displayValue.value as number) ?? min;
+  const value = Math.min(safeMax, Math.max(min, rawValue));
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? <div className="text-xs font-medium">{label}</div> : null}
+      <div className="inline-flex items-center rounded border bg-background">
+        <span className="flex size-8 items-center justify-center text-muted-foreground border-r">
+          −
+        </span>
+        <span className="min-w-[3rem] px-3 text-center tabular-nums">
+          {value}
+        </span>
+        <span className="flex size-8 items-center justify-center text-muted-foreground border-l">
+          +
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export const RatingDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const max = Math.max(1, (vm.displayValue.max as number) ?? 5);
+  const rawValue = (vm.displayValue.value as number) ?? 0;
+  // Clamp value to [0, max].
+  const value = Math.min(max, Math.max(0, rawValue));
+  const allowHalf = !!vm.displayValue.allowHalf;
+  // Determine fill for each star slot.
+  const stars = Array.from({ length: max }, (_, i) => {
+    const slotMin = i;
+    const slotMax = i + 1;
+    if (value >= slotMax) return "full";
+    if (allowHalf && value >= slotMin + 0.5) return "half";
+    return "empty";
+  });
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? <div className="text-xs font-medium">{label}</div> : null}
+      <div className="flex gap-0.5">
+        {stars.map((fill, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: stable.
+          <span key={i} className="relative inline-block">
+            {/* background (empty) star */}
+            <Star className="size-5 text-muted-foreground/30" />
+            {/* overlay filled portion */}
+            {fill !== "empty" ? (
+              <span
+                className="absolute inset-0 overflow-hidden"
+                style={{ width: fill === "half" ? "50%" : "100%" }}
+              >
+                <Star className="size-5 fill-amber-400 text-amber-400" />
+              </span>
+            ) : null}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const FileUploadDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const accept = stringValue(vm, "accept");
+  const multiple = !!vm.displayValue.multiple;
+  const helpText = stringValue(vm, "helpText");
+  const maxSizeMb = (vm.displayValue.maxSizeMb as number) ?? 0;
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? <div className="text-xs font-medium">{label}</div> : null}
+      <div className="flex flex-col items-center justify-center gap-2 rounded border border-dashed bg-muted/30 p-6 text-center">
+        <Upload className="size-8 text-muted-foreground/50" />
+        <span className="text-xs text-muted-foreground">
+          {multiple
+            ? "Drop files or click to browse"
+            : "Drop a file or click to browse"}
+        </span>
+        {accept ? (
+          <span className="text-caption text-muted-foreground/70">
+            {accept}
+          </span>
+        ) : null}
+        {maxSizeMb > 0 ? (
+          <span className="text-caption text-muted-foreground/70">
+            Max {maxSizeMb} MB
+          </span>
+        ) : null}
+      </div>
+      {helpText ? (
+        <p className="text-caption text-muted-foreground">{helpText}</p>
+      ) : null}
+    </div>
+  );
+};
+
+export const SearchInputDetail: BlockRenderer = ({ vm }) => {
+  const placeholder = stringValue(vm, "placeholder");
+  const withButton = !!vm.displayValue.withButton;
+  return (
+    <div className="flex items-center gap-1">
+      <div className="relative flex-1">
+        <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          readOnly
+          placeholder={placeholder || "Search…"}
+          className="w-full rounded border bg-background pl-7 pr-2 py-1.5 text-sm"
+        />
+      </div>
+      {withButton ? (
+        <button
+          type="button"
+          className="rounded bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+        >
+          Search
+        </button>
+      ) : null}
+    </div>
+  );
+};
+
+const SEGMENTED_SIZE: Record<string, string> = {
+  sm: "py-0.5 px-2 text-xs",
+  md: "py-1 px-3 text-sm",
+  lg: "py-1.5 px-4 text-base",
+};
+
+export const SegmentedControlDetail: BlockRenderer = ({ vm }) => {
+  const options =
+    (vm.displayValue.options as { value: string; label: string }[]) ?? [];
+  const value = stringValue(vm, "value");
+  const size = stringValue(vm, "size") || "md";
+  const cls = SEGMENTED_SIZE[size] ?? SEGMENTED_SIZE.md;
+  // Orphan: value is non-empty (not "") but not found in options.
+  // When value is "" the existing i===0 fallback is intentional — preserve it.
+  const isOrphan = !!value && !options.some((o) => o.value === value);
+  if (options.length === 0)
+    return <div className="text-sm">{empty("No options")}</div>;
+  return (
+    <div className="space-y-1">
+      <div className="inline-flex rounded-md border bg-muted p-0.5">
+        {options.map((opt, i) => {
+          // When orphan, dim all options (no active highlight).
+          const active =
+            !isOrphan && (opt.value === value || (i === 0 && !value));
+          return (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: stable.
+              key={i}
+              className={cn(
+                "rounded transition-colors",
+                cls,
+                isOrphan
+                  ? "text-muted-foreground/50"
+                  : active
+                    ? "bg-background shadow font-medium"
+                    : "text-muted-foreground",
+              )}
+            >
+              {opt.label || opt.value || `${i + 1}`}
+            </span>
+          );
+        })}
+      </div>
+      {isOrphan ? (
+        <p className="text-xs text-destructive/70">유효한 옵션이 없습니다.</p>
+      ) : null}
+    </div>
+  );
+};
+
+// ISO date validation helper — does not throw if invalid.
+function isValidIso(s: string): boolean {
+  if (!s) return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
+}
+
+export const DatepickerDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const placeholder = stringValue(vm, "placeholder");
+  const rawValue = stringValue(vm, "value");
+  const range = !!vm.displayValue.range;
+  // Safely display the value; fall back to placeholder if invalid ISO.
+  const displayValue = isValidIso(rawValue) ? rawValue : "";
+  return (
+    <div className="space-y-1 text-sm">
+      {label ? <div className="text-xs font-medium">{label}</div> : null}
+      <input
+        type="date"
+        readOnly
+        value={displayValue}
+        placeholder={placeholder || "YYYY-MM-DD"}
+        className="w-full rounded border bg-background px-2 py-1.5 text-sm"
+      />
+      {range ? (
+        <p className="text-caption text-muted-foreground">Range mode</p>
+      ) : null}
+    </div>
+  );
+};
+
+// ────────── Data group (PR-3) ──────────
+
+// Sparkline micro-chart used in KPI card.
+function Sparkline({ csv }: { csv: string }) {
+  const values = parseNumberCsv(csv);
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const safeMax = max > min ? max : min + 1;
+  const W = 80;
+  const H = 24;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * W;
+    const y = H - ((v - min) / (safeMax - min)) * H;
+    return `${x},${y}`;
+  });
+  const color = "var(--primary)";
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} aria-hidden>
+      <title>Sparkline</title>
+      <polyline
+        points={pts.join(" ")}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export const KpiCardDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const value = stringValue(vm, "value");
+  const change = stringValue(vm, "change");
+  const changeKind =
+    (vm.displayValue.changeKind as string | undefined) ?? "flat";
+  const sparkline = stringValue(vm, "sparkline");
+
+  const changeColor =
+    changeKind === "up"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : changeKind === "down"
+        ? "text-red-500 dark:text-red-400"
+        : "text-muted-foreground";
+
+  const changePrefix =
+    changeKind === "up" ? "▲ " : changeKind === "down" ? "▼ " : "";
+
+  return (
+    <div className="rounded-lg border border-hairline bg-background p-3 shadow-[0_0_0_1px_transparent]">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-0.5 min-w-0">
+          {label ? (
+            <div className="text-xs text-muted-foreground truncate">
+              {label}
+            </div>
+          ) : null}
+          <div className="text-2xl font-bold leading-none tabular-nums">
+            {value || "—"}
+          </div>
+          {change ? (
+            <div className={cn("text-xs font-medium", changeColor)}>
+              {changePrefix}
+              {change}
+            </div>
+          ) : null}
+        </div>
+        {sparkline ? (
+          <div className="shrink-0 mt-1">
+            <Sparkline csv={sparkline} />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+// Progress bar variant → Tailwind fill color class.
+const PROGRESS_COLORS: Record<string, string> = {
+  default: "bg-primary",
+  success: "bg-emerald-500",
+  warning: "bg-amber-500",
+  danger: "bg-red-500",
+};
+
+export const ProgressBarDetail: BlockRenderer = ({ vm }) => {
+  const label = stringValue(vm, "label");
+  const rawValue = (vm.displayValue.value as number | undefined) ?? 0;
+  const rawMax = (vm.displayValue.max as number | undefined) ?? 100;
+  const showPercent = vm.displayValue.showPercent !== false;
+  const striped = !!vm.displayValue.striped;
+  const variant =
+    typeof vm.displayValue.variant === "string"
+      ? vm.displayValue.variant
+      : "default";
+
+  // Boundary safety: max ≤ 0 → treat as 1 to avoid division by zero.
+  const safeMax = rawMax > 0 ? rawMax : 1;
+  const safeValue = Math.min(safeMax, Math.max(0, rawValue));
+  const pct = (safeValue / safeMax) * 100;
+
+  const fillClass = PROGRESS_COLORS[variant] ?? PROGRESS_COLORS.default;
+
+  // Striped via repeating-linear-gradient inline style — no Tailwind class needed.
+  const stripedStyle = striped
+    ? {
+        backgroundImage:
+          "repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(255,255,255,0.25) 4px, rgba(255,255,255,0.25) 8px)",
+      }
+    : undefined;
+
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="flex items-center justify-between text-xs">
+        {label ? <span className="font-medium">{label}</span> : <span />}
+        {showPercent ? (
+          <span className="tabular-nums text-muted-foreground">
+            {Math.round(pct)}%
+          </span>
+        ) : null}
+      </div>
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn("h-full rounded-full transition-all", fillClass)}
+          style={{ width: `${pct}%`, ...stripedStyle }}
+        />
+      </div>
+      <div className="flex justify-between text-caption text-muted-foreground">
+        <span>{safeValue}</span>
+        <span>{safeMax}</span>
+      </div>
+    </div>
+  );
+};
+
+// ────────── Navigation / Feedback group (PR-6) ──────────
+
+// ── BreadcrumbDetail ─────────────────────────────────────────────────────────
+
+type BreadcrumbItem = { label: string; href: string };
+
+function isBreadcrumbItem(v: unknown): v is BreadcrumbItem {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "label" in v &&
+    typeof (v as Record<string, unknown>).label === "string"
+  );
+}
+
+export const BreadcrumbDetail: BlockRenderer = ({ vm }) => {
+  const dv = vm.displayValue;
+  const rawItems = Array.isArray(dv.items) ? dv.items : [];
+  // Defensively coerce each item; skip malformed entries.
+  const items: BreadcrumbItem[] = rawItems
+    .filter(isBreadcrumbItem)
+    .map((it) => ({
+      label: it.label.trim(),
+      href: typeof it.href === "string" ? it.href : "",
+    }));
+
+  const separator =
+    typeof dv.separator === "string" && ["/", ">", "·"].includes(dv.separator)
+      ? dv.separator
+      : "/";
+
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center gap-1 text-xs text-muted-foreground/70 italic">
+        No items
+      </div>
+    );
+  }
+
+  return (
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1">
+      {items.map((item, idx) => {
+        const isLast = idx === items.length - 1;
+        return (
+          <span
+            key={`${idx}-${item.label}`}
+            className="flex items-center gap-1"
+          >
+            <span
+              className={cn(
+                "text-xs",
+                isLast
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              {item.label || empty("empty")}
+            </span>
+            {!isLast && (
+              <span
+                className="text-xs select-none text-muted-foreground/50"
+                aria-hidden
+              >
+                {separator}
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </nav>
+  );
+};
+
+// ── PaginationDetail ──────────────────────────────────────────────────────────
+
+// Max pages shown in numbered mode (surrounding current page).
+const PAGINATION_WINDOW = 7;
+
+export const PaginationDetail: BlockRenderer = ({ vm }) => {
+  const dv = vm.displayValue;
+
+  const rawTotal = typeof dv.total === "number" ? dv.total : 0;
+  const rawPerPage = typeof dv.perPage === "number" ? dv.perPage : 10;
+  // Guard boundary values: perPage must be at least 1 to avoid division by zero.
+  const perPage = Math.max(1, rawPerPage);
+  const total = Math.max(0, rawTotal);
+  const totalPages = total > 0 ? Math.ceil(total / perPage) : 0;
+  const rawPage = typeof dv.page === "number" ? dv.page : 1;
+  // Clamp page within [1, totalPages]. When totalPages=0, keep page=1.
+  const page = Math.max(1, Math.min(rawPage, Math.max(1, totalPages)));
+
+  const mode =
+    typeof dv.mode === "string" &&
+    ["numbered", "prev-next", "load-more"].includes(dv.mode)
+      ? (dv.mode as "numbered" | "prev-next" | "load-more")
+      : "numbered";
+
+  if (total === 0) {
+    return (
+      <div className="flex items-center justify-center text-xs text-muted-foreground/70 italic">
+        No results
+      </div>
+    );
+  }
+
+  if (mode === "load-more") {
+    return (
+      <div className="flex justify-center">
+        <button
+          type="button"
+          className="rounded-md border border-input bg-background px-4 py-1.5 text-xs font-medium hover:bg-accent"
+        >
+          Load more
+        </button>
+      </div>
+    );
+  }
+
+  if (mode === "prev-next") {
+    return (
+      <div className="flex items-center justify-center gap-3 text-xs">
+        <button
+          type="button"
+          disabled={page <= 1}
+          className="flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 hover:bg-accent disabled:opacity-40"
+        >
+          <ChevronLeft className="size-3" />
+          Prev
+        </button>
+        <span className="text-muted-foreground">
+          {page} of {totalPages}
+        </span>
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          className="flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 hover:bg-accent disabled:opacity-40"
+        >
+          Next
+          <ChevronRight className="size-3" />
+        </button>
+      </div>
+    );
+  }
+
+  // numbered — build page array with ellipsis when totalPages > PAGINATION_WINDOW
+  const pages: (number | "…")[] = [];
+  if (totalPages <= PAGINATION_WINDOW) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    // Always show first, last, and ±2 around current.
+    const around = new Set([
+      1,
+      totalPages,
+      page,
+      page - 1,
+      page + 1,
+      page - 2,
+      page + 2,
+    ]);
+    const sorted = Array.from(around)
+      .filter((p) => p >= 1 && p <= totalPages)
+      .sort((a, b) => a - b);
+    for (let i = 0; i < sorted.length; i++) {
+      if (i > 0 && sorted[i] - sorted[i - 1] > 1) pages.push("…");
+      pages.push(sorted[i]);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-1">
+      {pages.map((p, idx) => {
+        if (p === "…") {
+          return (
+            <span
+              // Ellipsis entries have no stable identity — using a position+context key.
+              // biome-ignore lint/suspicious/noArrayIndexKey: ellipsis entries don't have stable keys; position is the only identifier
+              key={`ellipsis-${idx}`}
+              className="px-1.5 text-xs text-muted-foreground select-none"
+            >
+              …
+            </span>
+          );
+        }
+        const isCurrent = p === page;
+        return (
+          <button
+            key={p}
+            type="button"
+            className={cn(
+              "h-7 min-w-[28px] rounded-md border px-2 text-xs",
+              isCurrent
+                ? "border-primary bg-primary text-primary-foreground font-semibold"
+                : "border-input bg-background hover:bg-accent",
+            )}
+          >
+            {p}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+// ── ToastDetail ───────────────────────────────────────────────────────────────
+
+const TOAST_TONES: Record<
+  string,
+  { bar: string; icon: ReactNode; textColor: string }
+> = {
+  info: {
+    bar: "bg-blue-500",
+    icon: <Info className="size-4 text-blue-500" />,
+    textColor: "text-blue-700 dark:text-blue-300",
+  },
+  success: {
+    bar: "bg-emerald-500",
+    icon: <CheckCircle2 className="size-4 text-emerald-500" />,
+    textColor: "text-emerald-700 dark:text-emerald-300",
+  },
+  warning: {
+    bar: "bg-amber-500",
+    icon: <TriangleAlert className="size-4 text-amber-500" />,
+    textColor: "text-amber-700 dark:text-amber-300",
+  },
+  error: {
+    bar: "bg-red-500",
+    icon: <XCircle className="size-4 text-red-500" />,
+    textColor: "text-red-700 dark:text-red-300",
+  },
+};
+
+export const ToastDetail: BlockRenderer = ({ vm }) => {
+  const dv = vm.displayValue;
+  const variant =
+    typeof dv.variant === "string" && dv.variant in TOAST_TONES
+      ? dv.variant
+      : "info";
+  const title = typeof dv.title === "string" ? dv.title : "";
+  const body = typeof dv.body === "string" ? dv.body : "";
+  const dismissible = dv.dismissible !== false;
+  const tone = TOAST_TONES[variant];
+
+  return (
+    <div className="relative overflow-hidden rounded-lg border border-hairline bg-background shadow-md">
+      {/* Left accent bar */}
+      <div className={cn("absolute left-0 top-0 h-full w-1", tone.bar)} />
+      <div className="flex items-start gap-3 px-4 py-3 pl-5">
+        <span className="mt-0.5 shrink-0">{tone.icon}</span>
+        <div className="flex-1 min-w-0">
+          {title ? (
+            <p className={cn("text-xs font-semibold", tone.textColor)}>
+              {title}
+            </p>
+          ) : null}
+          {body ? (
+            <p className="mt-0.5 text-xs text-muted-foreground leading-snug">
+              {body}
+            </p>
+          ) : null}
+          {!title && !body ? (
+            <p className={cn("text-xs italic", tone.textColor)}>
+              {variant} toast
+            </p>
+          ) : null}
+        </div>
+        {dismissible && (
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className="shrink-0 text-muted-foreground/60 hover:text-muted-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── TooltipDetail ─────────────────────────────────────────────────────────────
+
+// Positions for the tooltip bubble and arrow relative to the trigger.
+type TooltipSide = "top" | "right" | "bottom" | "left";
+
+const ALLOWED_SIDES: readonly TooltipSide[] = [
+  "top",
+  "right",
+  "bottom",
+  "left",
+];
+
+function safeTooltipSide(v: unknown): TooltipSide {
+  return ALLOWED_SIDES.includes(v as TooltipSide) ? (v as TooltipSide) : "top";
+}
+
+const TOOLTIP_SIDE_CLASSES: Record<
+  TooltipSide,
+  { container: string; bubble: string; arrow: string }
+> = {
+  top: {
+    container: "flex flex-col items-center gap-1",
+    bubble: "order-first",
+    arrow:
+      "order-none w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-foreground",
+  },
+  bottom: {
+    container: "flex flex-col items-center gap-1",
+    bubble: "order-last",
+    arrow:
+      "order-none w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-foreground",
+  },
+  left: {
+    container: "flex flex-row items-center gap-1",
+    bubble: "order-first",
+    arrow:
+      "order-none w-0 h-0 border-t-4 border-b-4 border-l-4 border-t-transparent border-b-transparent border-l-foreground",
+  },
+  right: {
+    container: "flex flex-row items-center gap-1",
+    bubble: "order-last",
+    arrow:
+      "order-none w-0 h-0 border-t-4 border-b-4 border-r-4 border-t-transparent border-b-transparent border-r-foreground",
+  },
+};
+
+export const TooltipDetail: BlockRenderer = ({ vm }) => {
+  const dv = vm.displayValue;
+  const trigger = typeof dv.trigger === "string" ? dv.trigger : "Hover me";
+  const content = typeof dv.content === "string" ? dv.content : "";
+  const side = safeTooltipSide(dv.side);
+  const cls = TOOLTIP_SIDE_CLASSES[side];
+
+  return (
+    <div className={cn("inline-flex", cls.container)}>
+      {/* Tooltip bubble */}
+      <div
+        className={cn(
+          "max-w-[180px] rounded-md bg-foreground px-2 py-1",
+          cls.bubble,
+        )}
+      >
+        <p className="text-[10px] text-background leading-snug break-words whitespace-pre-wrap">
+          {content || <span className="italic opacity-60">Tooltip text</span>}
+        </p>
+      </div>
+      {/* Arrow */}
+      <span className={cls.arrow} aria-hidden />
+      {/* Trigger */}
+      <span className="text-xs underline decoration-dotted text-foreground cursor-default">
+        {trigger}
+      </span>
+    </div>
   );
 };

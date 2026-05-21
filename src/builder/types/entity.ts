@@ -40,7 +40,19 @@ export type AppBlockKind =
   | "card-grid"
   | "form"
   | "button"
+  | "checkbox"
+  | "datepicker"
+  | "file-upload"
   | "input"
+  | "radio-group"
+  | "rating"
+  | "search-input"
+  | "segmented-control"
+  | "select"
+  | "slider"
+  | "stepper"
+  | "switch"
+  | "textarea"
   | "image"
   | "text"
   | "list"
@@ -62,7 +74,29 @@ export type AppBlockKind =
   | "sheet"
   // legacy alias kept for the existing nav renderer (commit 3 transition)
   | "nav"
-  | "layout";
+  | "layout"
+  // Data group (PR-3)
+  | "chart"
+  | "kpi-card"
+  | "progress-bar"
+  | "timeline"
+  | "calendar"
+  // Media group (PR-4)
+  | "canvas"
+  | "video"
+  | "audio"
+  | "code-block"
+  // Communication group (PR-5)
+  | "ai-chat"
+  | "message-bubble"
+  // Navigation group (PR-6)
+  | "breadcrumb"
+  | "pagination"
+  | "dropdown-menu"
+  // Feedback group (PR-6)
+  | "toast"
+  | "tooltip"
+  | "popover";
 
 export type AgentBlockKind = "agent-step";
 

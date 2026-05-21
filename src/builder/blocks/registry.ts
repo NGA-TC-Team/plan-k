@@ -1,9 +1,42 @@
 import { z } from "zod";
 import type { BlockContext, BlockKind } from "@/builder/types/entity";
 import {
+  AI_CHAT_DEFAULTS,
+  AiChatSchema,
+  type AiChatValues,
+  AUDIO_DEFAULTS,
+  AudioSchema,
+  type AudioValues,
+  BREADCRUMB_DEFAULTS,
+  BreadcrumbSchema,
+  type BreadcrumbValues,
+  CALENDAR_DEFAULTS,
+  CANVAS_APP_DEFAULTS,
   CARD_GRID_DEFAULTS,
+  CalendarSchema,
+  type CalendarValues,
+  CanvasAppSchema,
+  type CanvasAppValues,
   CardGridSchema,
   type CardGridValues,
+  CHART_DEFAULTS,
+  CHECKBOX_DEFAULTS,
+  ChartSchema,
+  type ChartValues,
+  CheckboxSchema,
+  type CheckboxValues,
+  CODE_BLOCK_APP_DEFAULTS,
+  CodeBlockAppSchema,
+  type CodeBlockAppValues,
+  DATEPICKER_DEFAULTS,
+  DatepickerSchema,
+  type DatepickerValues,
+  DROPDOWN_MENU_DEFAULTS,
+  DropdownMenuSchema,
+  type DropdownMenuValues,
+  FILE_UPLOAD_DEFAULTS,
+  FileUploadSchema,
+  type FileUploadValues,
   FORM_DEFAULTS,
   FormSchema,
   type FormValues,
@@ -13,18 +46,72 @@ import {
   type HeaderValues,
   HeroSchema,
   type HeroValues,
+  KPI_CARD_DEFAULTS,
+  KpiCardSchema,
+  type KpiCardValues,
   LAYOUT_DEFAULTS,
   LayoutSchema,
   type LayoutValues,
   LIST_DEFAULTS,
   ListSchema,
   type ListValues,
+  MESSAGE_BUBBLE_DEFAULTS,
+  MessageBubbleSchema,
+  type MessageBubbleValues,
   NAV_DEFAULTS,
   NavSchema,
   type NavValues,
+  PAGINATION_DEFAULTS,
+  PaginationSchema,
+  type PaginationValues,
+  POPOVER_DEFAULTS,
+  PopoverSchema,
+  type PopoverValues,
+  PROGRESS_BAR_DEFAULTS,
+  ProgressBarSchema,
+  type ProgressBarValues,
+  RADIO_GROUP_DEFAULTS,
+  RATING_DEFAULTS,
+  RadioGroupSchema,
+  type RadioGroupValues,
+  RatingSchema,
+  type RatingValues,
+  SEARCH_INPUT_DEFAULTS,
+  SEGMENTED_CONTROL_DEFAULTS,
+  SELECT_DEFAULTS,
+  SearchInputSchema,
+  type SearchInputValues,
+  SegmentedControlSchema,
+  type SegmentedControlValues,
+  SelectSchema,
+  type SelectValues,
+  SLIDER_DEFAULTS,
+  SliderSchema,
+  type SliderValues,
+  STEPPER_DEFAULTS,
+  StepperSchema,
+  type StepperValues,
+  SWITCH_DEFAULTS,
+  SwitchSchema,
+  type SwitchValues,
   TEXT_DEFAULTS,
+  TEXTAREA_DEFAULTS,
+  TextareaSchema,
+  type TextareaValues,
   TextSchema,
   type TextValues,
+  TIMELINE_DEFAULTS,
+  TimelineSchema,
+  type TimelineValues,
+  TOAST_DEFAULTS,
+  TOOLTIP_DEFAULTS,
+  ToastSchema,
+  type ToastValues,
+  TooltipSchema,
+  type TooltipValues,
+  VIDEO_DEFAULTS,
+  VideoSchema,
+  type VideoValues,
 } from "@/components/builder/renderers/editors/schemas";
 import type { BlockManifest } from "./types";
 
@@ -952,6 +1039,126 @@ const inputManifest = manifest({
   summary: (v) => v.label || v.placeholder || "Input",
 });
 
+const checkboxManifest = manifest<CheckboxValues>({
+  context: "app",
+  kind: "checkbox",
+  label: "Checkbox",
+  group: "Input",
+  schema: CheckboxSchema,
+  defaults: CHECKBOX_DEFAULTS,
+  summary: (v) => `${v.checked ? "☑" : "☐"} ${v.label || "Checkbox"}`,
+});
+
+const radioGroupManifest = manifest<RadioGroupValues>({
+  context: "app",
+  kind: "radio-group",
+  label: "Radio group",
+  group: "Input",
+  schema: RadioGroupSchema,
+  defaults: RADIO_GROUP_DEFAULTS,
+  summary: (v) => `Radio: ${v.options.length} options`,
+});
+
+const switchManifest = manifest<SwitchValues>({
+  context: "app",
+  kind: "switch",
+  label: "Switch",
+  group: "Input",
+  schema: SwitchSchema,
+  defaults: SWITCH_DEFAULTS,
+  summary: (v) => `Switch: ${v.label || "Toggle"}`,
+});
+
+const selectManifest = manifest<SelectValues>({
+  context: "app",
+  kind: "select",
+  label: "Select",
+  group: "Input",
+  schema: SelectSchema,
+  defaults: SELECT_DEFAULTS,
+  summary: (v) => `Select: ${v.options.length} options`,
+});
+
+const textareaManifest = manifest<TextareaValues>({
+  context: "app",
+  kind: "textarea",
+  label: "Textarea",
+  group: "Input",
+  schema: TextareaSchema,
+  defaults: TEXTAREA_DEFAULTS,
+  summary: (v) => `Textarea: ${v.label || v.placeholder || "Text area"}`,
+});
+
+const sliderManifest = manifest<SliderValues>({
+  context: "app",
+  kind: "slider",
+  label: "Slider",
+  group: "Input",
+  schema: SliderSchema,
+  defaults: SLIDER_DEFAULTS,
+  summary: (v) => `Slider: ${v.min}~${v.max}`,
+});
+
+const stepperManifest = manifest<StepperValues>({
+  context: "app",
+  kind: "stepper",
+  label: "Stepper",
+  group: "Input",
+  schema: StepperSchema,
+  defaults: STEPPER_DEFAULTS,
+  summary: (v) => `Stepper: ${v.label || "Quantity"}`,
+});
+
+const ratingManifest = manifest<RatingValues>({
+  context: "app",
+  kind: "rating",
+  label: "Rating",
+  group: "Input",
+  schema: RatingSchema,
+  defaults: RATING_DEFAULTS,
+  summary: (v) => `Rating: ${v.value}/${v.max}`,
+});
+
+const fileUploadManifest = manifest<FileUploadValues>({
+  context: "app",
+  kind: "file-upload",
+  label: "File upload",
+  group: "Input",
+  schema: FileUploadSchema,
+  defaults: FILE_UPLOAD_DEFAULTS,
+  summary: (v) => `Upload: ${v.accept || "any"}`,
+});
+
+const searchInputManifest = manifest<SearchInputValues>({
+  context: "app",
+  kind: "search-input",
+  label: "Search input",
+  group: "Input",
+  schema: SearchInputSchema,
+  defaults: SEARCH_INPUT_DEFAULTS,
+  summary: (v) => `Search: ${v.placeholder || "Find anything"}`,
+});
+
+const segmentedControlManifest = manifest<SegmentedControlValues>({
+  context: "app",
+  kind: "segmented-control",
+  label: "Segmented control",
+  group: "Input",
+  schema: SegmentedControlSchema,
+  defaults: SEGMENTED_CONTROL_DEFAULTS,
+  summary: (v) => `Segmented: ${v.options.length} options`,
+});
+
+const datepickerManifest = manifest<DatepickerValues>({
+  context: "app",
+  kind: "datepicker",
+  label: "Date picker",
+  group: "Input",
+  schema: DatepickerSchema,
+  defaults: DATEPICKER_DEFAULTS,
+  summary: (v) => `Date: ${v.value || "unset"}`,
+});
+
 const bannerManifest = manifest({
   context: "app",
   kind: "banner",
@@ -1112,6 +1319,211 @@ const sheetManifest = manifest({
   summary: (v) => v.title || "Sheet",
 });
 
+// ────────────────────────────── Data group (PR-3) ──────────────────────────────
+
+const chartManifest = manifest<ChartValues>({
+  context: "app",
+  kind: "chart",
+  label: "Chart",
+  group: "Data",
+  shortcut: "G",
+  schema: ChartSchema,
+  defaults: CHART_DEFAULTS,
+  summary: (v) => {
+    const count = v.series.length;
+    return `Chart: ${v.kind} (${count} series)`;
+  },
+});
+
+const kpiCardManifest = manifest<KpiCardValues>({
+  context: "app",
+  kind: "kpi-card",
+  label: "KPI Card",
+  group: "Data",
+  schema: KpiCardSchema,
+  defaults: KPI_CARD_DEFAULTS,
+  summary: (v) => {
+    const label = v.label || "KPI";
+    const value = v.value || "—";
+    return `KPI: ${label} ${value}${v.change ? ` (${v.change})` : ""}`;
+  },
+});
+
+const progressBarManifest = manifest<ProgressBarValues>({
+  context: "app",
+  kind: "progress-bar",
+  label: "Progress Bar",
+  group: "Data",
+  schema: ProgressBarSchema,
+  defaults: PROGRESS_BAR_DEFAULTS,
+  summary: (v) => `Progress: ${v.value}/${v.max}`,
+});
+
+const timelineManifest = manifest<TimelineValues>({
+  context: "app",
+  kind: "timeline",
+  label: "Timeline",
+  group: "Data",
+  schema: TimelineSchema,
+  defaults: TIMELINE_DEFAULTS,
+  summary: (v) => `Timeline: ${v.items.length} items`,
+});
+
+const calendarManifest = manifest<CalendarValues>({
+  context: "app",
+  kind: "calendar",
+  label: "Calendar",
+  group: "Data",
+  schema: CalendarSchema,
+  defaults: CALENDAR_DEFAULTS,
+  summary: (v) => `Calendar: ${v.view} (${v.events.length} events)`,
+});
+
+// ────────────────────────────── Media group (PR-4) — app ──────────────────────────────
+
+// canvas — app context variant. docs context variant uses `canvasManifest` above.
+const canvasAppManifest = manifest<CanvasAppValues>({
+  context: "app",
+  kind: "canvas",
+  label: "Canvas",
+  group: "Media",
+  shortcut: "X",
+  schema: CanvasAppSchema,
+  defaults: CANVAS_APP_DEFAULTS,
+  summary: (v) => v.title || "Canvas",
+});
+
+const videoManifest = manifest<VideoValues>({
+  context: "app",
+  kind: "video",
+  label: "Video",
+  group: "Media",
+  shortcut: "V",
+  schema: VideoSchema,
+  defaults: VIDEO_DEFAULTS,
+  summary: (v) => v.src || "Video",
+});
+
+const audioManifest = manifest<AudioValues>({
+  context: "app",
+  kind: "audio",
+  label: "Audio",
+  group: "Media",
+  shortcut: "U",
+  schema: AudioSchema,
+  defaults: AUDIO_DEFAULTS,
+  summary: (v) => v.title || v.src || "Audio",
+});
+
+// code-block — app context variant. docs context variant uses `codeBlockManifest` above.
+const codeBlockAppManifest = manifest<CodeBlockAppValues>({
+  context: "app",
+  kind: "code-block",
+  label: "Code block",
+  group: "Media",
+  shortcut: "C",
+  schema: CodeBlockAppSchema,
+  defaults: CODE_BLOCK_APP_DEFAULTS,
+  summary: (v) => `${v.language}${v.showLineNumbers ? " · #" : ""}`,
+});
+
+// ────────────────────────────── Communication group (PR-5) ──────────────────────────────
+
+const aiChatManifest = manifest<AiChatValues>({
+  context: "app",
+  kind: "ai-chat",
+  label: "AI Chat",
+  group: "Communication",
+  shortcut: "A",
+  schema: AiChatSchema,
+  defaults: AI_CHAT_DEFAULTS,
+  summary: (v) => {
+    const count = v.messages.length;
+    return v.title ? `${v.title} (${count} msgs)` : `AI Chat (${count} msgs)`;
+  },
+});
+
+const messageBubbleManifest = manifest<MessageBubbleValues>({
+  context: "app",
+  kind: "message-bubble",
+  label: "Message Bubble",
+  group: "Communication",
+  shortcut: "B",
+  schema: MessageBubbleSchema,
+  defaults: MESSAGE_BUBBLE_DEFAULTS,
+  summary: (v) =>
+    v.sender
+      ? `${v.sender}: ${(v.content || "").slice(0, 40)}`
+      : (v.content || "").slice(0, 50) || "Message bubble",
+});
+
+// ────────────────────────────── Navigation group (PR-6) ──────────────────────────────
+
+const breadcrumbManifest = manifest<BreadcrumbValues>({
+  context: "app",
+  kind: "breadcrumb",
+  label: "Breadcrumb",
+  group: "Navigation",
+  shortcut: "R",
+  schema: BreadcrumbSchema,
+  defaults: BREADCRUMB_DEFAULTS,
+  summary: (v) => `${v.items.length} items · ${v.separator}`,
+});
+
+const paginationManifest = manifest<PaginationValues>({
+  context: "app",
+  kind: "pagination",
+  label: "Pagination",
+  group: "Navigation",
+  schema: PaginationSchema,
+  defaults: PAGINATION_DEFAULTS,
+  summary: (v) =>
+    `${v.mode} · p${v.page}/${Math.max(1, Math.ceil(Math.max(0, v.total) / Math.max(1, v.perPage)))}`,
+});
+
+const dropdownMenuManifest = manifest<DropdownMenuValues>({
+  context: "app",
+  kind: "dropdown-menu",
+  label: "Dropdown Menu",
+  group: "Navigation",
+  schema: DropdownMenuSchema,
+  defaults: DROPDOWN_MENU_DEFAULTS,
+  summary: (v) => `${v.trigger}: ${v.items.length} items`,
+});
+
+// ────────────────────────────── Feedback group (PR-6) ──────────────────────────────
+
+const toastManifest = manifest<ToastValues>({
+  context: "app",
+  kind: "toast",
+  label: "Toast",
+  group: "Feedback",
+  schema: ToastSchema,
+  defaults: TOAST_DEFAULTS,
+  summary: (v) => `[${v.variant}] ${v.title || v.body || "Toast"}`,
+});
+
+const tooltipManifest = manifest<TooltipValues>({
+  context: "app",
+  kind: "tooltip",
+  label: "Tooltip",
+  group: "Feedback",
+  schema: TooltipSchema,
+  defaults: TOOLTIP_DEFAULTS,
+  summary: (v) => `"${(v.content || "").slice(0, 40)}" · ${v.side}`,
+});
+
+const popoverManifest = manifest<PopoverValues>({
+  context: "app",
+  kind: "popover",
+  label: "Popover",
+  group: "Feedback",
+  schema: PopoverSchema,
+  defaults: POPOVER_DEFAULTS,
+  summary: (v) =>
+    `${v.trigger}: ${(v.title || v.body || "Popover").slice(0, 40)}`,
+});
+
 // ────────────────────────────── agent ──────────────────────────────
 
 // Agent-step block data is { role, spec: object }. The editor's form schema
@@ -1212,7 +1624,19 @@ export const blockManifests = {
   badge: badgeManifest,
   form: formManifest,
   button: buttonManifest,
+  checkbox: checkboxManifest,
+  datepicker: datepickerManifest,
+  "file-upload": fileUploadManifest,
   input: inputManifest,
+  "radio-group": radioGroupManifest,
+  rating: ratingManifest,
+  "search-input": searchInputManifest,
+  "segmented-control": segmentedControlManifest,
+  select: selectManifest,
+  slider: sliderManifest,
+  stepper: stepperManifest,
+  switch: switchManifest,
+  textarea: textareaManifest,
   banner: bannerManifest,
   "empty-state": emptyStateManifest,
   "status-bar": statusBarManifest,
@@ -1220,6 +1644,28 @@ export const blockManifests = {
   "list-row": listRowManifest,
   fab: fabManifest,
   sheet: sheetManifest,
+  // Data group
+  chart: chartManifest,
+  "kpi-card": kpiCardManifest,
+  "progress-bar": progressBarManifest,
+  timeline: timelineManifest,
+  calendar: calendarManifest,
+  // Media group (PR-4) — video/audio are new BlockKinds.
+  // canvas/code-block app variants are registered in BLOCK_KIND_REGISTRY below
+  // (same pattern as layout which has docs+app entries).
+  video: videoManifest,
+  audio: audioManifest,
+  // Communication group (PR-5)
+  "ai-chat": aiChatManifest,
+  "message-bubble": messageBubbleManifest,
+  // Navigation group (PR-6)
+  breadcrumb: breadcrumbManifest,
+  pagination: paginationManifest,
+  "dropdown-menu": dropdownMenuManifest,
+  // Feedback group (PR-6)
+  toast: toastManifest,
+  tooltip: tooltipManifest,
+  popover: popoverManifest,
   // agent
   "agent-step": agentStepManifest,
   // biome-ignore lint/suspicious/noExplicitAny: Each manifest is parameterised over its kind's defaults type; the aggregate widens via `any` because TS can't infer a common contravariant `summary` signature across heterogeneous T.
@@ -1286,6 +1732,22 @@ export const BLOCK_KIND_REGISTRY: BlockKindSpec[] = [
     label: layoutAppManifest.label,
     group: layoutAppManifest.group,
     shortcut: layoutAppManifest.shortcut,
+  },
+  // canvas appears in both docs (via blockManifests) and app.
+  {
+    context: "app" as BlockContext,
+    kind: "canvas" as BlockKind,
+    label: canvasAppManifest.label,
+    group: canvasAppManifest.group,
+    shortcut: canvasAppManifest.shortcut,
+  },
+  // code-block appears in both docs (via blockManifests) and app.
+  {
+    context: "app" as BlockContext,
+    kind: "code-block" as BlockKind,
+    label: codeBlockAppManifest.label,
+    group: codeBlockAppManifest.group,
+    shortcut: codeBlockAppManifest.shortcut,
   },
 ];
 
