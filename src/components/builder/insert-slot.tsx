@@ -23,6 +23,7 @@ type Props = {
   index?: number;
   variant?: "between" | "trailing";
   orientation?: "horizontal" | "vertical";
+  forceVisible?: boolean;
 };
 
 export function InsertSlot({
@@ -30,6 +31,7 @@ export function InsertSlot({
   index,
   variant = "between",
   orientation = "vertical",
+  forceVisible = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -151,7 +153,10 @@ export function InsertSlot({
             "flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground transition-opacity",
             "hover:bg-accent hover:text-accent-foreground",
             variant === "between" &&
-              "opacity-0 group-hover/slot:opacity-100 focus-within:opacity-100 data-[popup-open]:opacity-100",
+              cn(
+                "opacity-0 group-hover/slot:opacity-100 focus-within:opacity-100 data-[popup-open]:opacity-100",
+                forceVisible && "opacity-100",
+              ),
           )}
           aria-label="Insert block"
           onPointerDown={(e) => e.stopPropagation()}

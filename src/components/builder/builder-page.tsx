@@ -2,7 +2,7 @@
 
 import { Download, FileImage, FileText } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import type { ProjectKind, ScreenEntity } from "@/builder/types/entity";
 import { Button } from "@/components/ui/button";
 import {
@@ -159,6 +159,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
   const rootRef = useRef<HTMLElement | null>(null);
   const marquee = useMarquee(rootRef, dispatch);
   const insertFirst = useInsertSlot(screen?.id ?? "");
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!screen) {
     return (
@@ -192,8 +193,17 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
     <>
       <AnimatePresence initial={false}>
         {childIds.map((id, idx) => (
-          <div key={id}>
-            <InsertSlot parentId={screen.id} index={idx} />
+          // biome-ignore lint/a11y/noStaticElementInteractions: hover tracker for InsertSlot forceVisible — no keyboard alternative needed; slot has its own focusable trigger
+          <div
+            key={id}
+            onMouseEnter={() => setHoveredIdx(idx)}
+            onMouseLeave={() => setHoveredIdx((v) => (v === idx ? null : v))}
+          >
+            <InsertSlot
+              parentId={screen.id}
+              index={idx}
+              forceVisible={hoveredIdx === idx}
+            />
             <BlockShell blockId={id} />
           </div>
         ))}
@@ -202,6 +212,7 @@ function ScreenCanvas({ planKind }: { planKind: ProjectKind | null }) {
         parentId={screen.id}
         index={childIds.length}
         variant="trailing"
+        forceVisible={hoveredIdx === childIds.length - 1}
       />
     </>
   );
@@ -245,6 +256,7 @@ function SectionCanvas() {
   const rootRef = useRef<HTMLElement | null>(null);
   const marquee = useMarquee(rootRef, dispatch);
   const insertFirst = useInsertSlot(section?.id ?? "");
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!section) {
     return (
@@ -300,8 +312,19 @@ function SectionCanvas() {
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {childBlockIds.map((id, idx) => (
-              <div key={id}>
-                <InsertSlot parentId={section.id} index={idx} />
+              // biome-ignore lint/a11y/noStaticElementInteractions: hover tracker for InsertSlot forceVisible — no keyboard alternative needed; slot has its own focusable trigger
+              <div
+                key={id}
+                onMouseEnter={() => setHoveredIdx(idx)}
+                onMouseLeave={() =>
+                  setHoveredIdx((v) => (v === idx ? null : v))
+                }
+              >
+                <InsertSlot
+                  parentId={section.id}
+                  index={idx}
+                  forceVisible={hoveredIdx === idx}
+                />
                 <BlockShell blockId={id} />
               </div>
             ))}
@@ -310,6 +333,7 @@ function SectionCanvas() {
             parentId={section.id}
             index={childBlockIds.length}
             variant="trailing"
+            forceVisible={hoveredIdx === childBlockIds.length - 1}
           />
         </div>
       </div>
