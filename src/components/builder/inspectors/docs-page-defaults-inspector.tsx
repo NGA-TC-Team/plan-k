@@ -11,6 +11,7 @@ import {
   useBuilderDispatch,
   useBuilderState,
 } from "@/hooks/builder/use-builder-store.hook";
+import { PageMarginBox } from "./page-margin-box";
 
 /**
  * Docs 탭 유휴 상태(블록 미선택)에서 인스펙터 패널에 표시되는
@@ -62,37 +63,29 @@ export function DocsPageDefaultsInspector() {
           </p>
         </header>
 
-        {/* 여백 */}
+        {/* 여백 — A4 기준 4면 */}
         <section className="space-y-3">
           <h2 className="text-caption font-semibold uppercase tracking-eyebrow text-muted-foreground">
-            여백 (mm)
+            여백 (mm) · A4
           </h2>
-          <div className="grid grid-cols-2 gap-3">
-            <PaddingField
-              label="위"
-              value={pd.paddingTopMm}
-              systemDefault={SYSTEM_PAGE_DEFAULTS.paddingTopMm}
-              onChange={(v) => patch({ paddingTopMm: v })}
-            />
-            <PaddingField
-              label="아래"
-              value={pd.paddingBottomMm}
-              systemDefault={SYSTEM_PAGE_DEFAULTS.paddingBottomMm}
-              onChange={(v) => patch({ paddingBottomMm: v })}
-            />
-            <PaddingField
-              label="왼쪽"
-              value={pd.paddingLeftMm}
-              systemDefault={SYSTEM_PAGE_DEFAULTS.paddingLeftMm}
-              onChange={(v) => patch({ paddingLeftMm: v })}
-            />
-            <PaddingField
-              label="오른쪽"
-              value={pd.paddingRightMm}
-              systemDefault={SYSTEM_PAGE_DEFAULTS.paddingRightMm}
-              onChange={(v) => patch({ paddingRightMm: v })}
-            />
-          </div>
+          <PageMarginBox
+            top={pd.paddingTopMm}
+            right={pd.paddingRightMm}
+            bottom={pd.paddingBottomMm}
+            left={pd.paddingLeftMm}
+            defaults={{
+              top: SYSTEM_PAGE_DEFAULTS.paddingTopMm,
+              right: SYSTEM_PAGE_DEFAULTS.paddingRightMm,
+              bottom: SYSTEM_PAGE_DEFAULTS.paddingBottomMm,
+              left: SYSTEM_PAGE_DEFAULTS.paddingLeftMm,
+            }}
+            onChange={(side, value) => {
+              if (side === "top") patch({ paddingTopMm: value });
+              else if (side === "right") patch({ paddingRightMm: value });
+              else if (side === "bottom") patch({ paddingBottomMm: value });
+              else patch({ paddingLeftMm: value });
+            }}
+          />
         </section>
 
         {/* 머리말 / 꼬리말 */}
@@ -220,48 +213,6 @@ export function DocsPageDefaultsInspector() {
           </div>
         </section>
       </div>
-    </div>
-  );
-}
-
-// ── 내부 컴포넌트 ─────────────────────────────────────────────────────────────
-
-type PaddingFieldProps = {
-  label: string;
-  value: number | undefined;
-  systemDefault: number;
-  onChange: (v: number | undefined) => void;
-};
-
-function PaddingField({
-  label,
-  value,
-  systemDefault,
-  onChange,
-}: PaddingFieldProps) {
-  return (
-    <div className="space-y-1">
-      <Label className="text-caption text-muted-foreground">{label}</Label>
-      <Input
-        type="number"
-        className="h-7 text-xs"
-        min={0}
-        max={200}
-        step={1}
-        placeholder={String(systemDefault)}
-        value={value ?? ""}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (raw === "") {
-            onChange(undefined);
-            return;
-          }
-          const n = Number(raw);
-          if (!Number.isNaN(n) && n >= 0 && n <= 200) {
-            onChange(n);
-          }
-        }}
-      />
     </div>
   );
 }

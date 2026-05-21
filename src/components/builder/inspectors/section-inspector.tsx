@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useBuilderDispatch } from "@/hooks/builder/use-builder-store.hook";
 import { PropertyTable } from "../property-list";
 import { PropertyStatus } from "../property-status";
+import { PageMarginBox } from "./page-margin-box";
 
 type Props = {
   vm: SectionInspectViewModel;
@@ -104,41 +105,37 @@ export function SectionInspector({ vm }: Props) {
               되돌립니다.
             </p>
 
-            {/* 여백 */}
+            {/* 여백 — A4 기준 4면 (override) */}
             <div className="space-y-2">
               <p className="text-caption font-medium text-muted-foreground">
-                여백 (mm)
+                여백 (mm) · A4
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                <SectionPaddingField
-                  label="위"
-                  value={ps.paddingTopMm}
-                  systemDefault={SYSTEM_PAGE_DEFAULTS.paddingTopMm}
-                  onChange={(v) => patchSection({ paddingTopMm: v })}
-                  onReset={() => resetField("paddingTopMm")}
-                />
-                <SectionPaddingField
-                  label="아래"
-                  value={ps.paddingBottomMm}
-                  systemDefault={SYSTEM_PAGE_DEFAULTS.paddingBottomMm}
-                  onChange={(v) => patchSection({ paddingBottomMm: v })}
-                  onReset={() => resetField("paddingBottomMm")}
-                />
-                <SectionPaddingField
-                  label="왼쪽"
-                  value={ps.paddingLeftMm}
-                  systemDefault={SYSTEM_PAGE_DEFAULTS.paddingLeftMm}
-                  onChange={(v) => patchSection({ paddingLeftMm: v })}
-                  onReset={() => resetField("paddingLeftMm")}
-                />
-                <SectionPaddingField
-                  label="오른쪽"
-                  value={ps.paddingRightMm}
-                  systemDefault={SYSTEM_PAGE_DEFAULTS.paddingRightMm}
-                  onChange={(v) => patchSection({ paddingRightMm: v })}
-                  onReset={() => resetField("paddingRightMm")}
-                />
-              </div>
+              <PageMarginBox
+                top={ps.paddingTopMm}
+                right={ps.paddingRightMm}
+                bottom={ps.paddingBottomMm}
+                left={ps.paddingLeftMm}
+                defaults={{
+                  top: SYSTEM_PAGE_DEFAULTS.paddingTopMm,
+                  right: SYSTEM_PAGE_DEFAULTS.paddingRightMm,
+                  bottom: SYSTEM_PAGE_DEFAULTS.paddingBottomMm,
+                  left: SYSTEM_PAGE_DEFAULTS.paddingLeftMm,
+                }}
+                onChange={(side, value) => {
+                  if (side === "top") patchSection({ paddingTopMm: value });
+                  else if (side === "right")
+                    patchSection({ paddingRightMm: value });
+                  else if (side === "bottom")
+                    patchSection({ paddingBottomMm: value });
+                  else patchSection({ paddingLeftMm: value });
+                }}
+                onReset={(side) => {
+                  if (side === "top") resetField("paddingTopMm");
+                  else if (side === "right") resetField("paddingRightMm");
+                  else if (side === "bottom") resetField("paddingBottomMm");
+                  else resetField("paddingLeftMm");
+                }}
+              />
             </div>
 
             {/* 머리말 / 꼬리말 */}
@@ -294,61 +291,6 @@ export function SectionInspector({ vm }: Props) {
 }
 
 // ── 내부 컴포넌트 ─────────────────────────────────────────────────────────────
-
-type SectionPaddingFieldProps = {
-  label: string;
-  value: number | undefined;
-  systemDefault: number;
-  onChange: (v: number | undefined) => void;
-  onReset: () => void;
-};
-
-function SectionPaddingField({
-  label,
-  value,
-  systemDefault,
-  onChange,
-  onReset,
-}: SectionPaddingFieldProps) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <Label className="text-caption text-muted-foreground">{label}</Label>
-        {value !== undefined && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-4 w-4 p-0 text-muted-foreground"
-            title="플랜 기본값으로 되돌리기"
-            onClick={onReset}
-          >
-            <RotateCcw className="size-2.5" />
-          </Button>
-        )}
-      </div>
-      <Input
-        type="number"
-        className="h-7 text-xs"
-        min={0}
-        max={200}
-        step={1}
-        placeholder={String(systemDefault)}
-        value={value ?? ""}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (raw === "") {
-            onChange(undefined);
-            return;
-          }
-          const n = Number(raw);
-          if (!Number.isNaN(n) && n >= 0 && n <= 200) {
-            onChange(n);
-          }
-        }}
-      />
-    </div>
-  );
-}
 
 type ResetableTextFieldProps = {
   label: string;
